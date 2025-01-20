@@ -1,0 +1,6 @@
+(executable
+ (public_name deliberation_model)
+ (name main)
+ (modules main)
+ (libraries deliberation_model pyml)
+ (modes byte exe))
