@@ -19,7 +19,7 @@
  (name deliberation_model)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml pyml)
+ (depends ocaml pyml owl)
  (tags
   ("add topics" "to describe" your project)))
 

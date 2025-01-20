@@ -1,4 +1,5 @@
 (library
  (name deliberation_model)
  (public_name deliberation_model.lib)
+ (libraries owl)
  (modules model utils))
