@@ -5,9 +5,9 @@ let objectiveFun voter1 voter2 distMeasure updatedProfile =
   let r' = 1. -. r in
   let p1 = voter1.preference in
   let p2 = voter2.preference in
-  let l = Float.pow (distMeasure p1 updatedProfile) 2.0 in
-  let r = Float.pow (distMeasure p2 updatedProfile) 2.0 in
-  Float.sqrt ((r *. l) -. (r' *. r))
+  let lhs = Float.pow (distMeasure p1 updatedProfile) 2.0 in
+  let rhs = Float.pow (distMeasure p2 updatedProfile) 2.0 in
+  Float.sqrt ((r *. lhs) +. (r' *. rhs))
 
 let judgementSet p =
   let alternatives = List.init (List.length p) (fun x -> x + 1) in
@@ -27,13 +27,13 @@ let judgementSet p =
     combinations
 
 let ksDistance p p' =
-  (* Kemeny Snell distance, it converts both preferences into judgement sets, 
-     and computes the minimum number of binary changes needed to get from one 
+  (* Kemeny Snell distance, it converts both preferences into judgement sets,
+     and computes the minimum number of binary changes needed to get from one
      set to another *)
   let j1 = judgementSet p in
   let j2 = judgementSet p' in
-  List.map2 (fun x y -> if x = y then 0 else 1) j1 j2
-  |> List.fold_left (fun x acc -> acc + x) 0
+  List.map2 (fun x y -> if x = y then 0. else 1.) j1 j2
+  |> List.fold_left (fun x acc -> acc +. x) 0.
 
 let csDistance p p' =
   (* calculates the distance between to profiles as the differ in rank of each alternative *)
@@ -41,9 +41,9 @@ let csDistance p p' =
   List.fold_left
     (fun acc x ->
       match (List.find_index (( = ) x) p, List.find_index (( = ) x) p') with
-      | Some r, Some r' -> acc + abs (r - r')
+      | Some r, Some r' -> acc +. (float_of_int @@ abs (r - r'))
       | _ -> acc)
-    0 alternatives
+    0. alternatives
 
 let rec permutations lst =
   match lst with
@@ -59,29 +59,35 @@ let rec permutations lst =
            lst)
 
 let update_profile v1 v2 distance =
-  if v1 = v2 then v1.preference
+  if v1 = v2 then v1
   else
     let obj = objectiveFun v1 v2 distance in
     let alternatives = List.init (List.length v1.preference) (fun x -> x + 1) in
     let profiles = permutations alternatives in
     let scores = List.map obj profiles in
     let min =
-      List.fold_right (fun x acc -> if x < acc then x else acc) scores 1.
+      List.fold_right
+        (fun x acc -> if x < acc then x else acc)
+        scores (List.nth scores 0)
     in
     let i =
       match List.find_index (( = ) min) scores with
-      | None -> failwith "Could not find index"
+      | None -> failwith ("Could not find index of: " ^ string_of_float min)
       | Some idx -> idx
     in
-    List.nth profiles i
+    let new_voter = { preference = List.nth profiles i; bias = v1.bias } in
+    new_voter
 
 let deliberate voters rounds distance =
   let announce voters announcer =
     List.map (fun voter -> update_profile voter announcer distance) voters
   in
-  (* This is wrong, it should overwrite the preferrences after each announcement*)
-  let round voters = List.map announce voters in
-  let rec aux vs r = if r < rounds then vs else aux (round vs) (r + 1) in
+  let rec round acc voters =
+    match voters with [] -> acc | hd :: tl -> round (announce acc hd) tl
+  in
+  let rec aux vs r = if r >= rounds then vs else aux (round vs vs) (r + 1) in
   aux voters 0
 
-(* let dpDistance p p' = *)
+let print_voter voter =
+  let p = List.map string_of_int voter.preference |> String.concat " > " in
+  Printf.printf "Voter : %s\n" p
