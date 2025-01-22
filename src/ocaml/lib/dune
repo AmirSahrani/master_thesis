@@ -1,5 +1,5 @@
 (library
  (name deliberation_model)
  (public_name deliberation_model.lib)
- (libraries owl)
+ (libraries owl pyml)
  (modules model utils))
