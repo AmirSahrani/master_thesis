@@ -2,7 +2,7 @@ open Deliberation_model.Model
 open Deliberation_model.Utils
 
 let testDeliberate voters =
-  let out_voters = deliberate voters 1 csDistance csBetween in
+  let out_voters = deliberate voters 1 dpDistance dpBetween in
   List.iter print_voter out_voters
 
 let () =

@@ -1,5 +1,16 @@
 type voter = { preference : int list; bias : float }
 
+let rec permutations lst =
+  match lst with
+  | [] -> [ [] ]
+  | _ ->
+      List.flatten
+        (List.map
+           (fun x ->
+             let rest = List.filter (( <> ) x) lst in
+             List.map (fun perm -> x :: perm) (permutations rest))
+           lst)
+
 let judgementSet p =
   let alternatives = List.init (List.length p) (fun x -> x + 1) in
   let combinations =
@@ -26,14 +37,38 @@ let ksDistance p p' =
   List.map2 (fun x y -> if x = y then 0. else 1.) j1 j2
   |> List.fold_left (fun x acc -> acc +. x) 0.
 
-let dpDistnace = ksDistance
-
 let ksBetween p p' np =
   let p = judgementSet p in
   let p' = judgementSet p' in
   let np = judgementSet np in
   let combination = List.combine p p' in
-  List.for_all2 (fun (l, r) m -> l = m || r = m) combination np && p <> p'
+  List.for_all2 (fun (l, r) m -> l = m || r = m) combination np
+  && not (p = p' || p = np || np = p')
+
+let dpBetween p p' = ksBetween p p'
+
+type node = { neighbors : int list list }
+
+let buildGraph p =
+  let allNodes = permutations p in
+  List.map
+    (fun n ->
+      {
+        neighbors =
+          List.filter
+            (fun potential ->
+              (not @@ List.exists (dpBetween n potential) allNodes) && n <> p)
+            allNodes;
+      })
+    allNodes
+
+(* TODO: Implement some sort of shortest path (probably dijkstra) *)
+let shortestPath graph src tgt = ()
+
+let dpDistance p p' =
+  let graph = buildGraph p in
+  let aux = shortestPath graph p p' in
+  aux
 
 let csBetween p p' np =
   let combination = List.combine p p' in
@@ -48,17 +83,6 @@ let csDistance p p' =
       | Some r, Some r' -> acc +. (float_of_int @@ abs (r - r'))
       | _ -> acc)
     0. alternatives
-
-let rec permutations lst =
-  match lst with
-  | [] -> [ [] ]
-  | _ ->
-      List.flatten
-        (List.map
-           (fun x ->
-             let rest = List.filter (( <> ) x) lst in
-             List.map (fun perm -> x :: perm) (permutations rest))
-           lst)
 
 let initPython () =
   (* Dynamically determine the project root directory *)
@@ -97,6 +121,11 @@ let parse_tuple py_tuple =
   (int_list, float_val)
 
 let tupleToVoters (p, b) = { preference = p; bias = b }
+
+let print_list lst convert =
+  print_string "[";
+  String.concat " ; " (List.map convert lst) |> print_string;
+  print_string "]"
 
 let parse_pyVoters pv =
   Py.List.to_list_map parse_tuple pv |> List.map tupleToVoters
