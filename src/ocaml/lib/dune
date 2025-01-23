@@ -1,5 +1,5 @@
 (library
  (name deliberation_model)
  (public_name deliberation_model.lib)
- (libraries owl pyml)
- (modules model utils))
+ (libraries owl pyml ocamlgraph)
+ (modules model utils graphs distances initpy))

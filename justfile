@@ -11,4 +11,4 @@ clean:
 	dune clean --root="src/ocaml/"
 
 install:
-	opam install . --deps-only
+	opam install ./src/ocaml --deps-only

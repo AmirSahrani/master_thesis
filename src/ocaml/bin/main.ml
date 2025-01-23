@@ -1,11 +1,16 @@
 open Deliberation_model.Model
 open Deliberation_model.Utils
+open Deliberation_model.Graphs
+open Deliberation_model.Distances
+open Deliberation_model.Initpy
 
 let testDeliberate voters =
   let out_voters = deliberate voters 1 dpDistance dpBetween in
   List.iter print_voter out_voters
 
 let () =
+  let g = buildGraph [ 1; 2; 3 ] dpBetween in
+  Dot.output_graph stdout g;
   let _ = initPython () in
   (* Import your Python script *)
   let vg = Py.Import.import_module "voterGenerator" in
