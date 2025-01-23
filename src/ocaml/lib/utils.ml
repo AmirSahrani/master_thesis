@@ -1,4 +1,5 @@
 type voter = { preference : int list; bias : float }
+type spaces = KS | CS | DP
 
 let rec permutations lst =
   match lst with

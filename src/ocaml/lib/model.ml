@@ -1,4 +1,5 @@
 open Utils
+open Distances
 
 let objectiveFun voter1 voter2 distMeasure updatedProfile =
   let r = voter1.bias in
@@ -18,20 +19,29 @@ let update_profile v1 v2 distance between =
 
     let profiles = List.filter (between v1.preference v2.preference) profiles in
     let scores = List.map obj profiles in
-    let min =
-      List.fold_right
-        (fun x acc -> if x < acc then x else acc)
-        scores (List.nth scores 0)
-    in
-    let i =
-      match List.find_index (( = ) min) scores with
-      | None -> failwith ("Could not find index of: " ^ string_of_float min)
-      | Some idx -> idx
-    in
-    let new_voter = { preference = List.nth profiles i; bias = v1.bias } in
-    new_voter
+    if List.length scores = 0 then v1
+    else
+      let min =
+        List.fold_right
+          (fun x acc -> if x < acc then x else acc)
+          scores (List.nth scores 0)
+      in
+      let i =
+        match List.find_index (( = ) min) scores with
+        | None -> failwith ("Could not find index of: " ^ string_of_float min)
+        | Some idx -> idx
+      in
+      let new_voter = { preference = List.nth profiles i; bias = v1.bias } in
+      new_voter
 
-let deliberate voters rounds distance between =
+let deliberate voters rounds space =
+  let p = (List.nth voters 0).preference in
+  let distance, between =
+    match space with
+    | KS -> (ksDistance, ksBetween)
+    | CS -> (csDistance, csBetween)
+    | DP -> (dpDistance p, dpBetween)
+  in
   let announce voters announcer =
     List.map
       (fun voter -> update_profile voter announcer distance between)

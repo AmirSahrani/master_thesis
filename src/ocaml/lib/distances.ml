@@ -20,9 +20,10 @@ let ksBetween p p' np =
 
 let dpBetween p p' = ksBetween p p'
 
-let dpDistance p p' =
+let dpDistance p =
   let g = buildGraph p dpBetween in
-  shortest_path g p p' |> float_of_int
+  let d p p' = shortest_path g p p' |> float_of_int in
+  d
 
 let csBetween p p' np =
   let combination = List.combine p p' in
