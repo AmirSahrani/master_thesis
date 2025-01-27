@@ -21,7 +21,7 @@ let () =
     vg.&("generateVoters")
       [|
         Py.Int.of_int 10 (* number of voters *);
-        Py.Int.of_int 5 (* number of alternatives*);
+        Py.Int.of_int 3 (* number of alternatives*);
         Py.Float.of_float 0.9;
       |]
     |> parse_pyVoters

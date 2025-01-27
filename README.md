@@ -4,9 +4,9 @@
 
 This project uses [opam](https://opam.ocaml.org/) for all Ocaml's dependencies
 and [dune](https://dune.build/) as its build system.
-[uv](https://docs.astral.sh/uv/) is used for the python dependencies.
-Finally, [just](https://github.com/casey/just) is used to deal running
-automating building running, and installing all software.
+[Uv](https://docs.astral.sh/uv/) is used for the python dependencies.
+Finally, [just](https://github.com/casey/just) is used to deal with running
+building, and installing all software through one interface.
 The following recipes are provided:
 
 To set up your environment run

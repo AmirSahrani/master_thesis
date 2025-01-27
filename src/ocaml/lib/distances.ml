@@ -30,7 +30,7 @@ let csBetween p p' np =
   List.for_all2 (fun (l, r) m -> l = m || r = m) combination np && p <> p'
 
 let csDistance p p' =
-  (* calculates the distance between to profiles as the differ in rank of each alternative *)
+  (* calculates the distance between two profiles as the difference in rank of each alternative *)
   let alternatives = List.init (List.length p) (fun x -> x + 1) in
   List.fold_left
     (fun acc x ->
