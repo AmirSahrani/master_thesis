@@ -2,5 +2,5 @@
  (public_name deliberation_model)
  (name main)
  (modules main)
- (libraries deliberation_model pyml)
+ (libraries deliberation_model pyml csv)
  (modes byte exe))

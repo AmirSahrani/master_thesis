@@ -12,22 +12,62 @@ let rec permutations lst =
              List.map (fun perm -> x :: perm) (permutations rest))
            lst)
 
-let judgementSet p =
-  let alternatives = List.init (List.length p) (fun x -> x + 1) in
-  let combinations =
-    List.map
-      (fun x ->
-        List.map (fun y -> if x <> y then Some (x, y) else None) alternatives)
-      alternatives
-    |> List.flatten
-    |> List.filter_map (fun x -> x)
+let rec shuffle = function
+  | [] -> []
+  | [ single ] -> [ single ]
+  | list ->
+      let before, after = List.partition (fun _ -> Random.bool ()) list in
+      List.rev_append (shuffle before) (shuffle after)
+
+let arange start stop step =
+  let rec aux l curr =
+    if curr > stop then List.rev l else aux (curr :: l) (curr +. step)
   in
+  aux [] start
+
+let pairs p =
+  let alternatives = List.init (List.length p) (fun x -> x + 1) in
+  List.map
+    (fun x ->
+      List.map (fun y -> if x <> y then Some (x, y) else None) alternatives)
+    alternatives
+  |> List.flatten
+  |> List.filter_map (fun x -> x)
+
+let judgementSet p =
+  let combinations = pairs p in
   List.map
     (fun (x, y) ->
       if List.find_index (Int.equal x) p > List.find_index (Int.equal y) p then
         1
       else -1)
     combinations
+
+let maj profile =
+  let combinations = pairs (List.nth profile 0) in
+  let tbl = Hashtbl.create (List.length combinations) in
+  List.iter
+    (fun (x, y) ->
+      let count =
+        List.fold_left
+          (fun count p ->
+            if List.find_index (( = ) x) p < List.find_index (( = ) y) p then
+              count + 1
+            else count)
+          0 profile
+      in
+
+      Hashtbl.add tbl (x, y) count)
+    combinations;
+  tbl
+
+let unique_preferences profiles =
+  let rec aux unique orig =
+    match orig with
+    | [] -> unique
+    | hd :: tl -> aux (if List.mem hd unique then unique else hd :: unique) tl
+  in
+  List.length (aux [] profiles)
 
 let pyList_toInt py_list = Py.List.to_list_map Py.Int.to_int py_list
 
@@ -36,6 +76,7 @@ let parse_tuple py_tuple =
   let float_val = Py.Tuple.get_item py_tuple 1 |> Py.Float.to_float in
   (int_list, float_val)
 
+let extract_preferences voters = List.map (fun v -> v.preference) voters
 let tupleToVoters (p, b) = { preference = p; bias = b }
 
 let parse_pyVoters pv =
@@ -46,6 +87,9 @@ let string_of_list lst convert =
 
 let string_of_list_pref lst convert =
   Printf.sprintf "$ %s $" (String.concat " \\pref " (List.map convert lst))
+
+let print_profile prof =
+  List.iter (fun p -> print_endline @@ string_of_list p string_of_int) prof
 
 let print_list lst convert =
   Printf.printf "[ %s ]" (String.concat " ; " (List.map convert lst))

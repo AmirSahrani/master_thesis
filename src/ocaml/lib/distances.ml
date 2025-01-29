@@ -15,8 +15,7 @@ let ksBetween p p' np =
   let p' = judgementSet p' in
   let np = judgementSet np in
   let combination = List.combine p p' in
-  List.for_all2 (fun (l, r) m -> l = m || r = m) combination np
-  && not (p = p' || p = np || np = p')
+  List.for_all2 (fun (l, r) m -> l = m || r = m) combination np && np <> p'
 
 let dpBetween p p' = ksBetween p p'
 

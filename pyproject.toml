@@ -8,5 +8,5 @@ dependencies = [
     "SALib",
     "numpy",
     "pandas",
-    "matplotlib"
+    "matplotlib",
 ]

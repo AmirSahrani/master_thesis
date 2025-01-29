@@ -12,3 +12,9 @@ clean:
 
 install:
 	opam install ./src/ocaml --deps-only
+
+vis: 
+	uv run ./src/python/visualize.py
+
+debug: 
+	ocamldebug src/ocaml/_build/default/bin/main.bc

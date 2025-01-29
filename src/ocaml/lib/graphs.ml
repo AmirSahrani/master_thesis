@@ -1,11 +1,20 @@
 open Utils
 
-module Node = struct
+module ProfileNode = struct
   type t = int list
 
   let compare = compare
   let hash = Hashtbl.hash
   let equal = ( = )
+end
+
+module PreferenceNode = struct
+  type t = int
+
+  let compare = compare
+  let hash = Hashtbl.hash
+  let equal = ( = )
+  let name x = string_of_int x
 end
 
 module Edge = struct
@@ -15,10 +24,14 @@ module Edge = struct
   let default = 0
 end
 
-module G = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (Node) (Edge)
+module ProfileGraph =
+  Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (ProfileNode) (Edge)
+
+module PreferenceGraph =
+  Graph.Persistent.Digraph.ConcreteBidirectionalLabeled (PreferenceNode) (Edge)
 
 module Weight = struct
-  type edge = G.E.t
+  type edge = ProfileGraph.E.t
   type t = int
 
   let weight (_, e, _) = e
@@ -27,10 +40,10 @@ module Weight = struct
   let zero = 0
 end
 
-module Dijkstra = Graph.Path.Dijkstra (G) (Weight)
+module Dijkstra = Graph.Path.Dijkstra (ProfileGraph) (Weight)
 
 module Dot = Graph.Graphviz.Dot (struct
-  include G (* Use the graph module from above *)
+  include ProfileGraph (* Use the graph module from above *)
 
   let edge_attributes (_, _, _) = []
 
@@ -48,10 +61,73 @@ module Dot = Graph.Graphviz.Dot (struct
   let graph_attributes _ = [ `Rankdir `LeftToRight ]
 end)
 
+module DotPref = Graph.Graphviz.Dot (struct
+  include PreferenceGraph (* Use the graph module from above *)
+
+  let edge_attributes (_, _, _) = []
+
+  (* Convert edge label to string *)
+  let default_edge_attributes _ = []
+  let get_subgraph _ = None
+  let vertex_attributes x = [ `Shape `Box; `Label (string_of_int x) ]
+  let vertex_name x = string_of_int x
+  (* Convert vertex to string *)
+
+  let default_vertex_attributes _ = []
+  let graph_attributes _ = [ `Rankdir `LeftToRight ]
+end)
+
+let buildMajorityGraph maj =
+  let g =
+    Seq.fold_left
+      (fun acc (start, _) -> PreferenceGraph.add_vertex acc start)
+      PreferenceGraph.empty (Hashtbl.to_seq_keys maj)
+  in
+  Hashtbl.fold
+    (fun (x, y) count acc ->
+      if Hashtbl.find maj (y, x) < count then
+        PreferenceGraph.add_edge_e acc (x, 1, y)
+      else acc)
+    maj g
+
+let is_cyclic profile =
+  let graph = profile |> maj |> buildMajorityGraph in
+  (* DotPref.output_graph (open_out "test.dot") graph; *)
+  let visited = Hashtbl.create 16 in
+  let rec_stack = Hashtbl.create 16 in
+
+  let rec dfs node =
+    if Hashtbl.mem rec_stack node then true
+      (* Cycle detected: node is in recursion stack *)
+    else if not (Hashtbl.mem visited node) then (
+      (* Mark the current node as visited and add to recursion stack *)
+      Hashtbl.replace visited node true;
+      Hashtbl.replace rec_stack node true;
+
+      (* Visit all neighbors *)
+      let neighbors = PreferenceGraph.succ graph node in
+      let cycle_found = List.exists dfs neighbors in
+
+      (* Remove the node from the recursion stack before returning *)
+      Hashtbl.remove rec_stack node;
+
+      cycle_found)
+    else false (* Node already visited, no cycle detected *)
+  in
+
+  (* Run DFS for every unvisited node *)
+  PreferenceGraph.fold_vertex
+    (fun node acc -> acc || ((not (Hashtbl.mem visited node)) && dfs node))
+    graph false
+
 let buildGraph p edge_constructor =
   let all_nodes = permutations p in
   (* Create a graph with all vertices *)
-  let g = List.fold_left (fun acc n -> G.add_vertex acc n) G.empty all_nodes in
+  let g =
+    List.fold_left
+      (fun acc n -> ProfileGraph.add_vertex acc n)
+      ProfileGraph.empty all_nodes
+  in
   (* Add edges between every combination of vertices *)
   let g =
     List.fold_left
@@ -59,11 +135,11 @@ let buildGraph p edge_constructor =
         List.fold_left
           (fun acc n2 ->
             if n1 <> n2 then
-              (* Add an edge if dpBetween returns true *)
               let valid_edge =
                 not @@ List.exists (edge_constructor n1 n2) all_nodes
               in
-              if valid_edge then G.add_edge_e acc (n1, 1, n2) else acc
+              if valid_edge then ProfileGraph.add_edge_e acc (n1, 1, n2)
+              else acc
             else acc)
           acc all_nodes)
       g all_nodes

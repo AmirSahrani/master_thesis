@@ -3,7 +3,7 @@ open Distances
 
 let objectiveFun voter1 voter2 distMeasure updatedProfile =
   let r = voter1.bias in
-  let r' = 1. -. r in
+  let r' = 1.0 -. r in
   let p1 = voter1.preference in
   let p2 = voter2.preference in
   let lhs = Float.pow (distMeasure p1 updatedProfile) 2.0 in
@@ -47,10 +47,17 @@ let deliberate voters rounds space =
       (fun voter -> update_profile voter announcer distance between)
       voters
   in
+
   let rec round acc voters =
     match voters with [] -> acc | hd :: tl -> round (announce acc hd) tl
   in
-  let rec aux vs r = if r >= rounds then vs else aux (round vs vs) (r + 1) in
+
+  let rec aux vs r =
+    if r >= rounds then vs
+    else
+      let vs = shuffle vs in
+      aux (round vs vs) (r + 1)
+  in
   aux voters 0
 
 let print_voter voter =
