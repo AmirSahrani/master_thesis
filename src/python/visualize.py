@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.random.mtrand import get_bit_generator
 import pandas as pd
+
+# Generate a color cycle from the 'viridis' colormap
 
 plt.rcParams.update(
     {
@@ -25,37 +26,63 @@ def read_data(filename):
     return pd.read_csv(filename)
 
 
-def compute_cyclic_proportion(data):
+def compute_proportion(data, col_start, col_end, new_col):
     # Ensure 'cyclic_start' and 'cyclic_end' are numeric
-    data["cyclic_start"] = data["cyclic_start"].astype(float)
-    data["cyclic_end"] = data["cyclic_end"].astype(float)
+    data[col_start] = data[col_start].astype(float)
+    data[col_end] = data[col_end].astype(float)
 
     # Group by bias
-    aggregated_start = data.groupby("bias")["cyclic_start"].mean()
-    aggregated_end = data.groupby("bias")["cyclic_end"].mean()
+    aggregated_start = data.groupby(["bias", "metric_space"])[col_start].mean()
+    aggregated_end = data.groupby(["bias", "metric_space"])[col_end].mean()
 
     # Compute proportion (avoid division by zero)
-    aggregated_prop = (
-        (aggregated_end / aggregated_start).replace(np.inf, np.nan).fillna(0)
-    )
+    agg_prop = (aggregated_end / aggregated_start).replace(np.inf, 0)
 
     # Convert Series to DataFrame and reset index
-    return aggregated_prop.reset_index(name="cyclic_proportion")
+    return agg_prop.reset_index(name=new_col)
+
+
+def plot(data, col, ylab):
+    spaces = ["KS", "DP", "CS"]
+    marker = ["o", "^", "s"]
+    colors = ["#A93C93", "#008B72", "#613F99"]
+    for marker, space, color in zip(marker, spaces, colors):
+        subset = data[data["metric_space"] == space]
+        x = subset["bias"]
+        y = subset[col]
+
+        # Plot
+        plt.plot(
+            x,
+            y,
+            label=space,
+            marker=marker,
+            color=color,
+            linestyle="-",
+        )
+    plt.xticks(x)
+    plt.xlabel("Bias")
+    plt.ylabel(ylab)
+    plt.legend()
+    plt.savefig(f"figures/{ylab}.pdf")
+    plt.show()
 
 
 if __name__ == "__main__":
     data = pd.read_csv("results/data.csv")
-    cyclic_proportion = compute_cyclic_proportion(data)
-
-    # Plot
-    plt.plot(
-        cyclic_proportion["bias"],
-        cyclic_proportion["cyclic_proportion"],
-        marker="o",
-        linestyle="-",
+    cyclic_proportion = compute_proportion(
+        data, "cyclic_start", "cyclic_end", "cyclic_proportion"
     )
-    plt.xlabel("Bias")
-    plt.ylabel("Proportion of Cyclic Profiles Remaining")
-    plt.title("Proportion of Cyclic Profiles After Deliberation")
-    plt.grid(True)
-    plt.show()
+    condorcet_proportion = compute_proportion(
+        data, "condorcet_start", "condorcet_end", "condorcet_proportion"
+    )
+    plot(
+        cyclic_proportion,
+        "cyclic_proportion",
+        "Proportion of Cyclic Profiles Remaining",
+    )
+    plot(
+        condorcet_proportion,
+        "condorcet_proportion",
+        "Proportion of Condorcet Winners Remaining",
+    )

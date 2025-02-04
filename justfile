@@ -1,6 +1,8 @@
 build: 
-	dune build --root="src/ocaml/"
+	dune build --root="src/ocaml/" --profile=dev --debug-backtraces
 
+test: 
+	dune runtest --root="src/ocaml/" --profile=dev --debug-backtraces
 run:
 	dune exec deliberation_model --root="src/ocaml/"
 

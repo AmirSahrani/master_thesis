@@ -1,2 +1,3 @@
 (library
- (name deliberaiton_model))
+ (name deliberaiton_model)
+ )

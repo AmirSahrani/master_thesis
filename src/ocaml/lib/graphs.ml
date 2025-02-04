@@ -1,11 +1,15 @@
 open Utils
 
 module ProfileNode = struct
-  type t = int list
+  type t = int list list
 
   let compare = compare
   let hash = Hashtbl.hash
   let equal = ( = )
+
+  let print x =
+    print_list x string_of_int;
+    print_char '\n'
 end
 
 module PreferenceNode = struct
@@ -54,7 +58,7 @@ module Dot = Graph.Graphviz.Dot (struct
   let vertex_attributes v =
     [ `Shape `Box; `Label (string_of_list_pref v string_of_int) ]
 
-  let vertex_name v = String.concat "" (List.map string_of_int v)
+  let vertex_name v = String.concat "" (List.map string_of_int @@ List.flatten v)
   (* Convert vertex to string *)
 
   let default_vertex_attributes _ = []
@@ -90,9 +94,22 @@ let buildMajorityGraph maj =
       else acc)
     maj g
 
+let has_condorcet profile =
+  let maj_pref = profile |> maj in
+  let alternatives = List.flatten @@ List.hd profile in
+  List.exists
+    (fun cand ->
+      List.for_all
+        (fun cand' ->
+          cand' = cand
+          || Hashtbl.find maj_pref (cand, cand')
+             > Hashtbl.find maj_pref (cand', cand))
+        alternatives)
+    alternatives
+
 let is_cyclic profile =
   let graph = profile |> maj |> buildMajorityGraph in
-  (* DotPref.output_graph (open_out "test.dot") graph; *)
+  (* DotPref.output_graph (open_out "figures/test.dot") graph; *)
   let visited = Hashtbl.create 16 in
   let rec_stack = Hashtbl.create 16 in
 
@@ -120,8 +137,8 @@ let is_cyclic profile =
     (fun node acc -> acc || ((not (Hashtbl.mem visited node)) && dfs node))
     graph false
 
-let buildGraph p edge_constructor =
-  let all_nodes = permutations p in
+let buildGraph p set_between =
+  let all_nodes = all_profiles p in
   (* Create a graph with all vertices *)
   let g =
     List.fold_left
@@ -136,7 +153,7 @@ let buildGraph p edge_constructor =
           (fun acc n2 ->
             if n1 <> n2 then
               let valid_edge =
-                not @@ List.exists (edge_constructor n1 n2) all_nodes
+                not @@ List.exists (set_between n1 n2) all_nodes
               in
               if valid_edge then ProfileGraph.add_edge_e acc (n1, 1, n2)
               else acc
@@ -147,5 +164,7 @@ let buildGraph p edge_constructor =
   g
 
 let shortest_path graph source target =
-  match Dijkstra.shortest_path graph source target with
-  | _, distance -> distance
+  if source = target then 0
+  else
+    match Dijkstra.shortest_path graph source target with
+    | _, distance -> distance

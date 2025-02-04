@@ -1,4 +1,4 @@
-type voter = { preference : int list; bias : float }
+type voter = { preference : int list list; bias : float }
 type spaces = KS | CS | DP
 
 let rec permutations lst =
@@ -11,6 +11,24 @@ let rec permutations lst =
              let rest = List.filter (( <> ) x) lst in
              List.map (fun perm -> x :: perm) (permutations rest))
            lst)
+
+let all_profiles _ =
+  [
+    [ [ 1; 2; 3 ] ];
+    [ [ 1 ]; [ 2 ]; [ 3 ] ];
+    [ [ 1; 2 ]; [ 3 ] ];
+    [ [ 1 ]; [ 2; 3 ] ];
+    [ [ 1 ]; [ 3 ]; [ 2 ] ];
+    [ [ 1; 3 ]; [ 2 ] ];
+    [ [ 2; 3 ]; [ 1 ] ];
+    [ [ 2 ]; [ 3; 1 ] ];
+    [ [ 2 ]; [ 3 ]; [ 1 ] ];
+    [ [ 2; 1 ]; [ 3 ] ];
+    [ [ 2 ]; [ 1 ]; [ 3 ] ];
+    [ [ 3 ]; [ 2; 1 ] ];
+    [ [ 3 ]; [ 2 ]; [ 1 ] ];
+    [ [ 3 ]; [ 1 ]; [ 2 ] ];
+  ]
 
 let rec shuffle = function
   | [] -> []
@@ -35,24 +53,33 @@ let pairs p =
   |> List.filter_map (fun x -> x)
 
 let judgementSet p =
-  let combinations = pairs p in
+  let combinations = pairs @@ List.flatten p in
   List.map
     (fun (x, y) ->
-      if List.find_index (Int.equal x) p > List.find_index (Int.equal y) p then
-        1
+      if List.find_index (List.mem x) p <= List.find_index (List.mem y) p then 1
       else -1)
     combinations
 
+let unique lst =
+  let rec aux l l' =
+    match l with
+    | [] -> l'
+    | hd :: tl -> if List.mem hd l' then aux tl l' else aux tl (hd :: l')
+  in
+  aux lst []
+
 let maj profile =
-  let combinations = pairs (List.nth profile 0) in
+  let combinations = pairs (List.flatten @@ List.nth profile 0) in
   let tbl = Hashtbl.create (List.length combinations) in
   List.iter
     (fun (x, y) ->
       let count =
         List.fold_left
           (fun count p ->
-            if List.find_index (( = ) x) p < List.find_index (( = ) y) p then
-              count + 1
+            if
+              List.find_index (fun rank -> List.mem x rank) p
+              < List.find_index (fun rank -> List.mem y rank) p
+            then count + 1
             else count)
           0 profile
       in
@@ -69,6 +96,24 @@ let unique_preferences profiles =
   in
   List.length (aux [] profiles)
 
+let profile_sub a p = List.filter (fun elem -> List.mem elem a) p
+
+let intersection s1 s2 =
+  List.filter (fun elem -> List.mem elem s1 && List.mem elem s2) (s1 @ s2)
+  |> List.sort_uniq Stdlib.compare
+
+let union s1 s2 =
+  List.filter (fun elem -> List.mem elem s1 || List.mem elem s2) (s1 @ s2)
+  |> List.sort_uniq Stdlib.compare
+
+let bottom p a =
+  List.map (fun pref -> List.hd @@ List.rev @@ profile_sub a pref) p |> unique
+
+let get_index e p = List.find_index (( = ) e) p |> Option.value ~default:0
+
+let between l m r p =
+  get_index l p < get_index m p && get_index m p < get_index r p
+
 let pyList_toInt py_list = Py.List.to_list_map Py.Int.to_int py_list
 
 let parse_tuple py_tuple =
@@ -77,7 +122,7 @@ let parse_tuple py_tuple =
   (int_list, float_val)
 
 let extract_preferences voters = List.map (fun v -> v.preference) voters
-let tupleToVoters (p, b) = { preference = p; bias = b }
+let tupleToVoters (p, b) = { preference = [ p ]; bias = b }
 
 let parse_pyVoters pv =
   Py.List.to_list_map parse_tuple pv |> List.map tupleToVoters
@@ -86,10 +131,20 @@ let string_of_list lst convert =
   Printf.sprintf "\"%s\"" (String.concat " > " (List.map convert lst))
 
 let string_of_list_pref lst convert =
-  Printf.sprintf "$ %s $" (String.concat " \\pref " (List.map convert lst))
+  Printf.sprintf "$ %s $"
+    (String.concat " \\pref " (List.map convert @@ List.flatten lst))
 
 let print_profile prof =
   List.iter (fun p -> print_endline @@ string_of_list p string_of_int) prof
 
+let string_of_space = function KS -> "KS" | DP -> "DP" | CS -> "CS"
+
 let print_list lst convert =
   Printf.printf "[ %s ]" (String.concat " ; " (List.map convert lst))
+
+let print_judgementset s p =
+  List.iter
+    (fun (sign, (x, y)) ->
+      if sign = 1 then Printf.printf "(%d, %d) " x y
+      else Printf.printf "-(%d, %d) " x y)
+    (List.combine s (pairs p))

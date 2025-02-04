@@ -4,3 +4,5 @@
  (modules main)
  (libraries deliberation_model pyml csv)
  (modes byte exe))
+(env
+ (_ (flags (:standard -g) )))

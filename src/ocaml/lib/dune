@@ -1,5 +1,7 @@
 (library
  (name deliberation_model)
  (public_name deliberation_model.lib)
- (libraries owl pyml ocamlgraph)
- (modules model utils graphs distances initpy))
+ (inline_tests)
+ (libraries owl pyml ocamlgraph progress)
+ (modules model utils graphs distances initpy dimensions)
+ (preprocess (pps ppx_inline_test)))

@@ -11,29 +11,49 @@ let ksDistance p p' =
   |> List.fold_left (fun x acc -> acc +. x) 0.
 
 let ksBetween p p' np =
-  let p = judgementSet p in
-  let p' = judgementSet p' in
-  let np = judgementSet np in
-  let combination = List.combine p p' in
-  List.for_all2 (fun (l, r) m -> l = m || r = m) combination np && np <> p'
+  (* assert (p <> p); *)
+  let j1 = judgementSet p in
+  let j2 = judgementSet p' in
+  let j3 = judgementSet np in
+  let combination = List.combine j1 j2 in
+  List.for_all2 (fun (l, r) m -> l = m || r = m) combination j3
+  && j1 <> j3 && j3 <> j2
 
-let dpBetween p p' = ksBetween p p'
+let dpBetween = ksBetween
 
 let dpDistance p =
   let g = buildGraph p dpBetween in
-  let d p p' = shortest_path g p p' |> float_of_int in
+  let d p p' =
+    let distance = shortest_path g p p' in
+    float_of_int distance
+  in
   d
 
 let csBetween p p' np =
-  let combination = List.combine p p' in
-  List.for_all2 (fun (l, r) m -> l = m || r = m) combination np && p <> p'
+  List.for_all
+    (fun x ->
+      let np_x_indx =
+        List.find_index (fun r -> List.mem x r) np |> Option.value ~default:0
+      in
+      let p_x_indx =
+        List.find_index (fun r -> List.mem x r) p |> Option.value ~default:0
+      in
+      let p'_x_indx =
+        List.find_index (fun r -> List.mem x r) p' |> Option.value ~default:0
+      in
+      (p_x_indx <= np_x_indx && np_x_indx <= p'_x_indx)
+      || (p'_x_indx <= np_x_indx && np_x_indx <= p_x_indx))
+    (List.flatten np)
 
 let csDistance p p' =
   (* calculates the distance between two profiles as the difference in rank of each alternative *)
   let alternatives = List.init (List.length p) (fun x -> x + 1) in
   List.fold_left
     (fun acc x ->
-      match (List.find_index (( = ) x) p, List.find_index (( = ) x) p') with
+      match
+        ( List.find_index (fun rank -> List.mem x rank) p,
+          List.find_index (fun rank -> List.mem x rank) p' )
+      with
       | Some r, Some r' -> acc +. (float_of_int @@ abs (r - r'))
       | _ -> acc)
     0. alternatives
