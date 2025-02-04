@@ -9,5 +9,4 @@ dependencies = [
     "numpy",
     "pandas",
     "matplotlib",
-    "pyqt6>=6.8.0",
 ]
