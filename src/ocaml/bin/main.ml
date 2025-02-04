@@ -55,22 +55,12 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps =
     spaces
 
 let main () =
-  (* let all_preferences = permutations [ 1; 2; 3 ] in
-  List.iter (fun l -> print_list l string_of_int) all_preferences;
-  let d = dpDistance [ 1; 2; 3 ] in
-  List.iter
-    (fun pref ->
-      List.iter
-        (fun pref2 -> Printf.printf "%d " (d pref pref2 |> int_of_float))
-        all_preferences;
-      print_endline "")
-    all_preferences; *)
   let _ = initPython () in
-  let biases = arange 0.2 1.0 0.03 in
-  let num_experiments = 10 in
+  let biases = arange 0.4 0.93 0.03 in
+  let num_experiments = 100 in
   let nVoters = 51 in
   let nAlternatives = 3 in
-  let nDeliberationSteps = 1 in
+  let nDeliberationSteps = 2 in
 
   print_endline "Starting experiments";
 
@@ -95,7 +85,7 @@ let main () =
 
   (* Run experiments *)
   let results =
-    param_grid nVoters nAlternatives [ KS; CS ] num_experiments biases
+    param_grid nVoters nAlternatives [ KS; DP; CS ] num_experiments biases
       nDeliberationSteps
   in
 

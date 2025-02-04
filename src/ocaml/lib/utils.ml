@@ -22,9 +22,8 @@ let all_profiles _ =
     [ [ 1; 3 ]; [ 2 ] ];
     [ [ 2; 3 ]; [ 1 ] ];
     [ [ 2 ]; [ 3; 1 ] ];
-    [ [ 2 ]; [ 3 ]; [ 1 ] ];
-    [ [ 2; 1 ]; [ 3 ] ];
     [ [ 2 ]; [ 1 ]; [ 3 ] ];
+    [ [ 2 ]; [ 3 ]; [ 1 ] ];
     [ [ 3 ]; [ 2; 1 ] ];
     [ [ 3 ]; [ 2 ]; [ 1 ] ];
     [ [ 3 ]; [ 1 ]; [ 2 ] ];
@@ -68,6 +67,9 @@ let unique lst =
   in
   aux lst []
 
+let print_list lst convert =
+  Printf.printf "[ %s ]" (String.concat " ; " (List.map convert lst))
+
 let maj profile =
   let combinations = pairs (List.flatten @@ List.nth profile 0) in
   let tbl = Hashtbl.create (List.length combinations) in
@@ -76,14 +78,24 @@ let maj profile =
       let count =
         List.fold_left
           (fun count p ->
-            if
-              List.find_index (fun rank -> List.mem x rank) p
-              < List.find_index (fun rank -> List.mem y rank) p
-            then count + 1
-            else count)
+            let ix =
+              List.find_index
+                (fun ranking ->
+                  (* print_list ranking string_of_int; *)
+                  List.mem x ranking)
+                p
+              |> Option.value ~default:0
+            in
+            let iy =
+              List.find_index (fun ranking -> List.mem y ranking) p
+              |> Option.value ~default:0
+            in
+
+            (* Printf.printf " ix: %d iy: %x\n" ix iy; *)
+            if ix < iy then count + 1 else count)
           0 profile
       in
-
+      (* Printf.printf "%d > %d %d\n" x y count; *)
       Hashtbl.add tbl (x, y) count)
     combinations;
   tbl
@@ -114,7 +126,8 @@ let get_index e p = List.find_index (( = ) e) p |> Option.value ~default:0
 let between l m r p =
   get_index l p < get_index m p && get_index m p < get_index r p
 
-let pyList_toInt py_list = Py.List.to_list_map Py.Int.to_int py_list
+let pyList_toInt py_list =
+  Py.List.to_list_map Py.Int.to_int py_list |> List.map (fun x -> [ x ])
 
 let parse_tuple py_tuple =
   let int_list = Py.Tuple.get_item py_tuple 0 |> pyList_toInt in
@@ -122,7 +135,7 @@ let parse_tuple py_tuple =
   (int_list, float_val)
 
 let extract_preferences voters = List.map (fun v -> v.preference) voters
-let tupleToVoters (p, b) = { preference = [ p ]; bias = b }
+let tupleToVoters (p, b) = { preference = p; bias = b }
 
 let parse_pyVoters pv =
   Py.List.to_list_map parse_tuple pv |> List.map tupleToVoters
@@ -132,15 +145,24 @@ let string_of_list lst convert =
 
 let string_of_list_pref lst convert =
   Printf.sprintf "$ %s $"
-    (String.concat " \\pref " (List.map convert @@ List.flatten lst))
+    (String.concat " \\pref "
+       (List.map
+          (fun inner ->
+            Printf.sprintf "(%s)" (String.concat ", " (List.map convert inner)))
+          lst))
 
 let print_profile prof =
-  List.iter (fun p -> print_endline @@ string_of_list p string_of_int) prof
+  List.iter
+    (fun p ->
+      print_endline
+      @@ String.concat " > "
+           (List.map
+              (fun inner ->
+                "( " ^ String.concat ", " (List.map string_of_int inner) ^ " )")
+              p))
+    prof
 
 let string_of_space = function KS -> "KS" | DP -> "DP" | CS -> "CS"
-
-let print_list lst convert =
-  Printf.printf "[ %s ]" (String.concat " ; " (List.map convert lst))
 
 let print_judgementset s p =
   List.iter

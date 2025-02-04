@@ -58,7 +58,12 @@ module Dot = Graph.Graphviz.Dot (struct
   let vertex_attributes v =
     [ `Shape `Box; `Label (string_of_list_pref v string_of_int) ]
 
-  let vertex_name v = String.concat "" (List.map string_of_int @@ List.flatten v)
+  let vertex_name v =
+    String.concat ">"
+      (List.map
+         (fun inner ->
+           "( " ^ String.concat ", " (List.map string_of_int inner) ^ " )")
+         v)
   (* Convert vertex to string *)
 
   let default_vertex_attributes _ = []
@@ -89,6 +94,7 @@ let buildMajorityGraph maj =
   in
   Hashtbl.fold
     (fun (x, y) count acc ->
+      (* Printf.printf "%d > %d: %d\n" x y count; *)
       if Hashtbl.find maj (y, x) < count then
         PreferenceGraph.add_edge_e acc (x, 1, y)
       else acc)
@@ -161,6 +167,7 @@ let buildGraph p set_between =
           acc all_nodes)
       g all_nodes
   in
+  (* Dot.output_graph (open_out "figures/test.dot") g; *)
   g
 
 let shortest_path graph source target =

@@ -23,7 +23,9 @@ let dpBetween = ksBetween
 
 let dpDistance p =
   let g = buildGraph p dpBetween in
+  let profiles = all_profiles p in
   let d p p' =
+    if not (List.mem p profiles) then print_profile [ p ] else ();
     let distance = shortest_path g p p' in
     float_of_int distance
   in

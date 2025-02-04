@@ -1,6 +1,8 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 
 # Generate a color cycle from the 'viridis' colormap
 

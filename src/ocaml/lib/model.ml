@@ -55,6 +55,8 @@ let deliberate voters rounds space =
   in
 
   let rec aux vs r =
+    (* print_endline "-------------------------------";
+       print_profile (List.map (fun v -> v.preference) vs); *)
     if r >= rounds then vs
     else
       let vs = shuffle vs in
@@ -63,5 +65,5 @@ let deliberate voters rounds space =
   aux voters 0
 
 (* let print_voter voter =
-  let p = List.map string_of_int voter.preference |> String.concat " > " in
-  Printf.printf "Voter : %s\n" p *)
+   let p = List.map string_of_int voter.preference |> String.concat " > " in
+   Printf.printf "Voter : %s\n" p *)
