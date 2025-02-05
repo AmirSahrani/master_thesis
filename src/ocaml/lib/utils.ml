@@ -4,13 +4,13 @@ type spaces = KS | CS | DP
 
 let rec permutations lst =
   match lst with
-  | [] -> []
+  | [] -> [ [] ]
   | _ ->
       List.flatten
         (List.map
            (fun x ->
              let rest = List.filter (( <> ) x) lst in
-             List.map (fun perm -> [ x ] :: perm) (permutations rest))
+             List.map (fun perm -> x :: perm) (permutations rest))
            lst)
 
 let all_profiles_weak _ =
@@ -165,7 +165,10 @@ let print_profile prof =
               p))
     prof
 
-let print_voter v = print_profile [ v.preference ]
+let print_voter v =
+  Printf.printf "Bias: %.2f " v.bias;
+  print_profile [ v.preference ]
+
 let string_of_space = function KS -> "KS" | DP -> "DP" | CS -> "CS"
 
 let print_judgementset s p =

@@ -8,7 +8,10 @@ let objectiveFun v1 v2 distMeasure updatedProfile =
   let p2 = v2.preference in
   let d1 = distMeasure p1 updatedProfile in
   let d2 = distMeasure updatedProfile p2 in
-  (* assert (Float.compare d1 1.0 <> -1 || Float.compare d2 1.0 <> -1); *)
+  assert (
+    Float.compare d1 1.0 <> -1
+    || Float.compare d2 1.0 <> -1
+    || v1.preference = v2.preference);
   let lhs = Float.pow d1 2.0 in
   let rhs = Float.pow d2 2.0 in
   Float.sqrt ((r *. lhs) +. (r' *. rhs))
@@ -17,12 +20,13 @@ let update_profile v1 v2 distance between =
   if v1.preference = v2.preference then v1
   else
     let obj = objectiveFun v1 v2 distance in
-    let alternatives = List.init (List.length v1.preference) (fun x -> x + 1) in
+    let alternatives =
+      List.init (List.length v1.preference) (fun x -> [ x + 1 ])
+    in
     let profiles = all_profiles alternatives in
 
     let profiles = List.filter (between v1.preference v2.preference) profiles in
     let profiles = v1.preference :: v2.preference :: profiles in
-    Printf.printf "num profiles: %d\n" (List.length profiles);
     let scores = List.map obj profiles in
     if List.length scores = 0 then v1
     else
@@ -34,15 +38,13 @@ let update_profile v1 v2 distance between =
           (List.mapi (fun i x -> (x, i)) (List.tl scores))
       in
       let new_voter = { preference = List.nth profiles i; bias = v1.bias } in
-      (* print_endline "-----------------------";
-      print_float (obj v1.preference);
-      print_voter v1;
-
-      print_float (obj v2.preference);
-      print_voter v2;
-
-      print_float (obj new_voter.preference);
-      print_voter new_voter; *)
+      (* let d1 = distance v1.preference new_voter.preference in
+         let d2 = distance new_voter.preference v2.preference in
+         print_list scores string_of_float;
+         Printf.printf "\nD1: %.2f, D2: %.2f: val: %.2f\n" d1 d2 min_val;
+         print_voter v1;
+         print_voter v2;
+         print_voter new_voter; *)
       new_voter
 
 let deliberate voters rounds space =

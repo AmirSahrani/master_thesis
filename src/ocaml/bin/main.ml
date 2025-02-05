@@ -55,11 +55,11 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps =
 
 let main () =
   let _ = initPython () in
-  let biases = arange 0.5 0.86 0.03 in
+  let biases = arange 0.0 0.99 0.03 in
   let num_experiments = 100 in
   let nVoters = 51 in
   let nAlternatives = 3 in
-  let nDeliberationSteps = 1 in
+  let nDeliberationSteps = 2 in
 
   (* Open CSV file *)
   let oc = open_out "results/data.csv" in
