@@ -11,7 +11,6 @@ let ksDistance p p' =
   |> List.fold_left (fun x acc -> acc +. x) 0.
 
 let ksBetween p p' np =
-  (* assert (p <> p); *)
   let j1 = judgementSet p in
   let j2 = judgementSet p' in
   let j3 = judgementSet np in
@@ -23,9 +22,7 @@ let dpBetween = ksBetween
 
 let dpDistance p =
   let g = buildGraph p dpBetween in
-  let profiles = all_profiles p in
   let d p p' =
-    if not (List.mem p profiles) then print_profile [ p ] else ();
     let distance = shortest_path g p p' in
     float_of_int distance
   in
@@ -35,13 +32,11 @@ let csBetween p p' np =
   List.for_all
     (fun x ->
       let np_x_indx =
-        List.find_index (fun r -> List.mem x r) np |> Option.value ~default:0
+        List.find_index (fun r -> List.mem x r) np |> Option.get
       in
-      let p_x_indx =
-        List.find_index (fun r -> List.mem x r) p |> Option.value ~default:0
-      in
+      let p_x_indx = List.find_index (fun r -> List.mem x r) p |> Option.get in
       let p'_x_indx =
-        List.find_index (fun r -> List.mem x r) p' |> Option.value ~default:0
+        List.find_index (fun r -> List.mem x r) p' |> Option.get
       in
       (p_x_indx <= np_x_indx && np_x_indx <= p'_x_indx)
       || (p'_x_indx <= np_x_indx && np_x_indx <= p_x_indx))

@@ -42,9 +42,20 @@ def compute_proportion(data, col_start, col_end, new_col):
     return agg_prop.reset_index(name=new_col)
 
 
+def compute_average(data, col_start, new_col):
+    # Ensure 'cyclic_start' and 'cyclic_end' are numeric
+    data[col_start] = data[col_start].astype(float)
+
+    # Group by bias
+    aggregated_start = data.groupby(["bias", "metric_space"])[col_start].mean()
+
+    # Convert Series to DataFrame and reset index
+    return aggregated_start.reset_index(name=new_col)
+
+
 def plot(data, col, ylab):
     spaces = ["KS", "DP", "CS"]
-    marker = ["o", "^", "s"]
+    marker = ["o", "s", "^"]
     colors = ["#A93C93", "#008B72", "#613F99"]
     for marker, space, color in zip(marker, spaces, colors):
         subset = data[data["metric_space"] == space]
@@ -60,10 +71,12 @@ def plot(data, col, ylab):
             color=color,
             linestyle="-",
         )
-    plt.xticks(x)
+    plt.xticks(x, rotation=45)
     plt.xlabel("Bias")
     plt.ylabel(ylab)
     plt.legend()
+    plt.grid(axis="y")
+    plt.tight_layout()
     plt.savefig(f"figures/{ylab}.pdf")
     plt.show()
 
@@ -76,6 +89,7 @@ if __name__ == "__main__":
     condorcet_proportion = compute_proportion(
         data, "condorcet_start", "condorcet_end", "condorcet_proportion"
     )
+    unique_profiles = compute_average(data, "unique_end", "unique")
     plot(
         cyclic_proportion,
         "cyclic_proportion",
@@ -85,4 +99,9 @@ if __name__ == "__main__":
         condorcet_proportion,
         "condorcet_proportion",
         "Proportion of Condorcet Winners Remaining",
+    )
+    plot(
+        unique_profiles,
+        "unique",
+        "Number of unique Preferences",
     )

@@ -1,33 +1,36 @@
-type voter = { preference : int list list; bias : float }
+type preference = int list list
+type voter = { preference : preference; bias : float }
 type spaces = KS | CS | DP
 
 let rec permutations lst =
   match lst with
-  | [] -> [ [] ]
+  | [] -> []
   | _ ->
       List.flatten
         (List.map
            (fun x ->
              let rest = List.filter (( <> ) x) lst in
-             List.map (fun perm -> x :: perm) (permutations rest))
+             List.map (fun perm -> [ x ] :: perm) (permutations rest))
            lst)
 
-let all_profiles _ =
+let all_profiles_weak _ =
   [
-    (* [ [ 1; 2; 3 ] ]; *)
+    [ [ 1; 2; 3 ] ];
     [ [ 1 ]; [ 2 ]; [ 3 ] ];
-    (* [ [ 1; 2 ]; [ 3 ] ]; *)
-    (* [ [ 1 ]; [ 2; 3 ] ]; *)
+    [ [ 1; 2 ]; [ 3 ] ];
+    [ [ 1 ]; [ 2; 3 ] ];
     [ [ 1 ]; [ 3 ]; [ 2 ] ];
-    (* [ [ 1; 3 ]; [ 2 ] ]; *)
-    (* [ [ 2; 3 ]; [ 1 ] ]; *)
-    (* [ [ 2 ]; [ 3; 1 ] ]; *)
+    [ [ 1; 3 ]; [ 2 ] ];
+    [ [ 2; 3 ]; [ 1 ] ];
+    [ [ 2 ]; [ 3; 1 ] ];
     [ [ 2 ]; [ 1 ]; [ 3 ] ];
     [ [ 2 ]; [ 3 ]; [ 1 ] ];
-    (* [ [ 3 ]; [ 2; 1 ] ]; *)
+    [ [ 3 ]; [ 2; 1 ] ];
     [ [ 3 ]; [ 2 ]; [ 1 ] ];
     [ [ 3 ]; [ 1 ]; [ 2 ] ];
   ]
+
+let all_profiles p = permutations p
 
 let rec shuffle = function
   | [] -> []
@@ -84,11 +87,11 @@ let maj profile =
                   (* print_list ranking string_of_int; *)
                   List.mem x ranking)
                 p
-              |> Option.value ~default:0
+              |> Option.get
             in
             let iy =
               List.find_index (fun ranking -> List.mem y ranking) p
-              |> Option.value ~default:0
+              |> Option.get
             in
 
             (* Printf.printf " ix: %d iy: %x\n" ix iy; *)
@@ -162,6 +165,7 @@ let print_profile prof =
               p))
     prof
 
+let print_voter v = print_profile [ v.preference ]
 let string_of_space = function KS -> "KS" | DP -> "DP" | CS -> "CS"
 
 let print_judgementset s p =

@@ -50,19 +50,16 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps =
               run_experiment nVoters nAlternatives space trial bias
                 nDeliberationsteps)
             biases)
-        (List.init trials Fun.id)
-      (* Generates trials as [0; 1; 2; ...] *))
+        (List.init trials Fun.id))
     spaces
 
 let main () =
   let _ = initPython () in
-  let biases = arange 0.4 0.93 0.03 in
+  let biases = arange 0.5 0.86 0.03 in
   let num_experiments = 100 in
   let nVoters = 51 in
   let nAlternatives = 3 in
-  let nDeliberationSteps = 2 in
-
-  print_endline "Starting experiments";
+  let nDeliberationSteps = 1 in
 
   (* Open CSV file *)
   let oc = open_out "results/data.csv" in
@@ -102,7 +99,11 @@ let main () =
 
 let () =
   Printexc.record_backtrace true;
-  try main () with
+  try
+    main ();
+    let _ = Sys.command "notify-send 'Simulations finished'" in
+    ()
+  with
   | Not_found ->
       Printexc.print_backtrace stderr;
       prerr_endline "Caught Not_found!";

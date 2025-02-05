@@ -144,7 +144,7 @@ let is_cyclic profile =
     graph false
 
 let buildGraph p set_between =
-  let all_nodes = all_profiles p in
+  let all_nodes = all_profiles_weak p in
   (* Create a graph with all vertices *)
   let g =
     List.fold_left
