@@ -16,7 +16,7 @@ let ksBetween p p' np =
   let j3 = judgementSet np in
   let combination = List.combine j1 j2 in
   List.for_all2 (fun (l, r) m -> l = m || r = m) combination j3
-  && j1 <> j3 && j3 <> j2
+  && j1 <> j3 && j3 <> j2 && j1 <> j2
 
 let dpBetween = ksBetween
 

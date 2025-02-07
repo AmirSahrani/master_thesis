@@ -1,5 +1,5 @@
 type preference = int list list
-type voter = { preference : preference; bias : float }
+type voter = { preference : preference; bias : float; announced : int }
 type spaces = KS | CS | DP
 
 let rec permutations lst =
@@ -138,7 +138,7 @@ let parse_tuple py_tuple =
   (int_list, float_val)
 
 let extract_preferences voters = List.map (fun v -> v.preference) voters
-let tupleToVoters (p, b) = { preference = p; bias = b }
+let tupleToVoters (p, b) = { preference = p; bias = b; announced = 0 }
 
 let parse_pyVoters pv =
   Py.List.to_list_map parse_tuple pv |> List.map tupleToVoters

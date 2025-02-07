@@ -3,6 +3,7 @@
  (name main)
  (modules main)
  (libraries deliberation_model pyml csv)
- (modes byte exe))
+ (modes byte exe)
+ (instrumentation (backend earlybird)))
 (env
  (_ (flags (:standard -g) )))

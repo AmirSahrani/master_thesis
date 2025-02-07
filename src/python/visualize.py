@@ -36,7 +36,7 @@ def compute_proportion(data, col_start, col_end, new_col):
     aggregated_end = data.groupby(["bias", "metric_space"])[col_end].mean()
 
     # Compute proportion (avoid division by zero)
-    agg_prop = (aggregated_end / aggregated_start).replace(np.inf, 0)
+    agg_prop = (aggregated_end / aggregated_start).replace(np.nan, 0)
 
     # Convert Series to DataFrame and reset index
     return agg_prop.reset_index(name=new_col)

@@ -167,7 +167,7 @@ let buildGraph p set_between =
           acc all_nodes)
       g all_nodes
   in
-  (* Dot.output_graph (open_out "figures/test.dot") g; *)
+  (* Dot.output_graph (open_out "figures/dpGraph.dot") g; *)
   g
 
 let shortest_path graph source target =

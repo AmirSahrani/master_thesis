@@ -1,10 +1,11 @@
 build: 
-	dune build --root="src/ocaml/" --profile=dev --debug-backtraces
+	dune build --root="src/ocaml/" --profile=dev --debug-backtraces --instrument-with ocamlearlybird
 
 test: 
 	dune runtest --root="src/ocaml/" --profile=dev --debug-backtraces
 run:
-	dune exec deliberation_model --root="src/ocaml/"
+	dune exec deliberation_model --root="src/ocaml/" --instrument-with ocamlearlybird
+
 
 sync:
 	uv sync
