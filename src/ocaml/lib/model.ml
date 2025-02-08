@@ -41,7 +41,7 @@ let update_profile v1 v2 distance between =
   in
   new_voter
 
-let deliberate voters rounds distance between =
+let deliberate ?(should_shuffle = true) voters rounds distance between =
   let announce listeners announcer =
     List.map
       (fun voter ->
@@ -57,23 +57,23 @@ let deliberate voters rounds distance between =
       listeners
   in
 
-  let rec round updated_voters unnannounced_voters =
+  let rec round updated_voters round_num =
+    let unnannounced_voters =
+      List.filter (fun v -> v.announced < round_num) updated_voters
+    in
     match unnannounced_voters with
     | [] -> updated_voters
-    | announcer :: listeners ->
-        round (announce updated_voters announcer) listeners
+    | announcer :: _ -> round (announce updated_voters announcer) round_num
   in
 
   let rec aux vs r =
-    (*
-    print_profile (List.map (fun v -> v.preference) vs);
-    Printf.printf "\nUnique preferences: %d\n" (unique_preferences vs); *)
     if
       r >= rounds
-      || unique_preferences (List.map (fun v -> v.preference) vs) = 1
+      || List.length @@ unique_preferences (List.map (fun v -> v.preference) vs)
+         = 1
     then vs
     else
-      let vs = shuffle vs in
-      aux (round vs vs) (r + 1)
+      let vs = if should_shuffle then shuffle vs else vs in
+      aux (round vs (r + 1)) (r + 1)
   in
   aux voters 0

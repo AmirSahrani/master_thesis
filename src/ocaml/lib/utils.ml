@@ -1,4 +1,5 @@
 type preference = int list list
+type profile = preference list
 type voter = { preference : preference; bias : float; announced : int }
 type spaces = KS | CS | DP
 
@@ -109,7 +110,7 @@ let unique_preferences profiles =
     | [] -> unique
     | hd :: tl -> aux (if List.mem hd unique then unique else hd :: unique) tl
   in
-  List.length (aux [] profiles)
+  aux [] profiles
 
 let profile_sub a p = List.filter (fun elem -> List.mem elem a) p
 

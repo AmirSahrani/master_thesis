@@ -86,6 +86,9 @@ if __name__ == "__main__":
     cyclic_proportion = compute_proportion(
         data, "cyclic_start", "cyclic_end", "cyclic_proportion"
     )
+    transtive_proportion = compute_proportion(
+        data, "inttransative_start", "inttransative_end", "intransative_proportion"
+    )
     condorcet_proportion = compute_proportion(
         data, "condorcet_start", "condorcet_end", "condorcet_proportion"
     )
@@ -94,6 +97,11 @@ if __name__ == "__main__":
         cyclic_proportion,
         "cyclic_proportion",
         "Proportion of Cyclic Profiles Remaining",
+    )
+    plot(
+        transtive_proportion,
+        "intransative_proportion",
+        "Proportion of Intransative Profiles Remaining",
     )
     plot(
         condorcet_proportion,

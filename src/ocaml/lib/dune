@@ -2,4 +2,4 @@
  (name deliberation_model)
  (public_name deliberation_model.lib)
  (libraries owl pyml ocamlgraph progress)
- (modules model utils graphs distances initpy dimensions))
+ (modules model utils graphs distances initpy dimensions evaluations))

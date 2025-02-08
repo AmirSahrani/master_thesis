@@ -1,13 +1,13 @@
 open Deliberation_model.Model
 open Deliberation_model.Utils
-open Deliberation_model.Graphs
+open Deliberation_model.Evaluations
 open Deliberation_model.Distances
 open Deliberation_model.Initpy
 open Pyops
 
 (* Function to run a single experiment *)
 let run_experiment nVoters nAlternatives space distance between trial bias
-    nDeliberationsteps =
+    nDeliberationsteps evals =
   let vg = Py.Import.import_module "voterGenerator" in
   (* Generate fresh voter set for each bias in every trial *)
   let voters =
@@ -20,29 +20,17 @@ let run_experiment nVoters nAlternatives space distance between trial bias
     |> parse_pyVoters
   in
   (* Process the voters *)
-  let original_preferences = extract_preferences voters in
-  let original_cyclic = is_cyclic original_preferences in
-  let original_condorcet = has_condorcet original_preferences in
-  let n_original_profiles = unique_preferences original_preferences in
+  let original_profile = extract_preferences voters in
   let outcome = deliberate voters nDeliberationsteps distance between in
-  let preferences = extract_preferences outcome in
-  let cyclic = is_cyclic preferences in
-  let condorcet = has_condorcet preferences in
-  let n_profiles = unique_preferences preferences in
-  (* Convert to CSV row format *)
-  [
-    string_of_float bias;
-    string_of_int trial;
-    string_of_bool original_cyclic;
-    string_of_bool cyclic;
-    string_of_bool original_condorcet;
-    string_of_bool condorcet;
-    string_of_int n_original_profiles;
-    string_of_int n_profiles;
-    string_of_space space;
-  ]
+  let updated_profile = extract_preferences outcome in
 
-let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps =
+  (* Convert to CSV row format *)
+  [ string_of_float bias; string_of_int trial; string_of_space space ]
+  @ List.map (fun eval -> eval original_profile) evals
+  @ List.map (fun eval -> eval updated_profile) evals
+
+let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
+    evals =
   List.concat_map
     (fun space ->
       let p = List.init nAlternatives (fun x -> [ x + 1 ]) in
@@ -51,10 +39,10 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps =
         | KS ->
             print_endline "Testing KS";
             (ksDistance, ksBetween)
-        | DP ->
+        | CS ->
             print_endline "Testing DP";
             (csDistance, csBetween)
-        | CS ->
+        | DP ->
             print_endline "Testing CS";
             (dpDistance p, dpBetween)
       in
@@ -78,7 +66,7 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps =
           List.map
             (fun bias ->
               run_experiment nVoters nAlternatives space distance between trial
-                bias nDeliberationsteps)
+                bias nDeliberationsteps evals)
             biases)
         (List.init trials Fun.id))
     spaces
@@ -92,27 +80,16 @@ let main () =
   let nDeliberationSteps = 5 in
   (* Open CSV file *)
   let oc = open_out "results/data.csv" in
+  let titles, evals = get_all_evals () in
 
   (* Prepare header row *)
   Csv.output_all (Csv.to_channel oc)
-    [
-      [
-        "bias";
-        "trial";
-        "cyclic_start";
-        "cyclic_end";
-        "condorcet_start";
-        "condorcet_end";
-        "unique_start";
-        "unique_end";
-        "metric_space";
-      ];
-    ];
+    [ [ "bias"; "trial"; "metric_space" ] @ titles ];
 
   (* Run experiments *)
   let results =
     param_grid nVoters nAlternatives [ KS; DP; CS ] num_experiments biases
-      nDeliberationSteps
+      nDeliberationSteps evals
   in
 
   (* Write results *)
@@ -136,7 +113,7 @@ let () =
   (* let biases = [ 0.5; 0.5; 0.5 ] in *)
   let voters =
     List.map2
-      (fun p b -> { preference = p; bias = b; announced = false })
+      (fun p b -> { preference = p; bias = b; announced = 0 })
       prefs biases
   in
   print_endline "----------------";
