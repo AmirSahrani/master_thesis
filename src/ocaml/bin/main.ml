@@ -26,8 +26,8 @@ let run_experiment nVoters nAlternatives space distance between trial bias
 
   (* Convert to CSV row format *)
   [ string_of_float bias; string_of_int trial; string_of_space space ]
-  @ List.map (fun eval -> eval original_profile) evals
-  @ List.map (fun eval -> eval updated_profile) evals
+  @ List.map (fun eval -> eval original_profile distance) evals
+  @ List.map (fun eval -> eval updated_profile distance) evals
 
 let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
     evals =
@@ -46,8 +46,9 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
             print_endline "Testing CS";
             (dpDistance p, dpBetween)
       in
+      let distance = distance in
       let distTbl = Hashtbl.create (List.length p * List.length p) in
-      let profiles = all_profiles p in
+      let profiles = all_profiles_weak p in
 
       List.iter
         (fun p ->
@@ -104,25 +105,6 @@ let main () =
   Py.finalize ()
 
 let () =
-  let prefs =
-    [
-      [ [ 3 ]; [ 1 ]; [ 2 ] ]; [ [ 2 ]; [ 1 ]; [ 3 ] ]; [ [ 2 ]; [ 3 ]; [ 1 ] ];
-    ]
-  in
-  let biases = [ 0.77; 0.77; 0.77 ] in
-  (* let biases = [ 0.5; 0.5; 0.5 ] in *)
-  let voters =
-    List.map2
-      (fun p b -> { preference = p; bias = b; announced = 0 })
-      prefs biases
-  in
-  print_endline "----------------";
-  List.iter print_voter voters;
-  let updated = deliberate voters 4 ksDistance ksBetween in
-  print_endline "----------------";
-  List.iter print_voter updated;
-  print_endline "----------------";
-
   Printexc.record_backtrace true;
   try
     main ();

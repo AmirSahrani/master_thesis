@@ -53,6 +53,24 @@ def compute_average(data, col_start, new_col):
     return aggregated_start.reset_index(name=new_col)
 
 
+def compute_percentage_change(data, col_start, col_end, new_col):
+    # Ensure 'cyclic_start' and 'cyclic_end' are numeric
+    data[col_start] = data[col_start].astype(float)
+    data[col_end] = data[col_end].astype(float)
+
+    # Group by bias
+    aggregated_start = data.groupby(["bias", "metric_space"])[col_start].mean()
+    aggregated_end = data.groupby(["bias", "metric_space"])[col_end].mean()
+
+    # Compute proportion (avoid division by zero)
+    agg_prop = ((aggregated_end - aggregated_start) / aggregated_start).replace(
+        np.nan, 0
+    )
+
+    # Convert Series to DataFrame and reset index
+    return agg_prop.reset_index(name=new_col)
+
+
 def plot(data, col, ylab):
     spaces = ["KS", "DP", "CS"]
     marker = ["o", "s", "^"]
@@ -86,8 +104,11 @@ if __name__ == "__main__":
     cyclic_proportion = compute_proportion(
         data, "cyclic_start", "cyclic_end", "cyclic_proportion"
     )
+    consensus_change = compute_percentage_change(
+        data, "consensus_dist_start", "consensus_dist_end", "consensus_dist_change"
+    )
     transtive_proportion = compute_proportion(
-        data, "inttransative_start", "inttransative_end", "intransative_proportion"
+        data, "intransative_start", "intransative_end", "intransative_proportion"
     )
     condorcet_proportion = compute_proportion(
         data, "condorcet_start", "condorcet_end", "condorcet_proportion"
@@ -102,6 +123,11 @@ if __name__ == "__main__":
         transtive_proportion,
         "intransative_proportion",
         "Proportion of Intransative Profiles Remaining",
+    )
+    plot(
+        consensus_change,
+        "consensus_dist_change",
+        "Move towards consensus",
     )
     plot(
         condorcet_proportion,

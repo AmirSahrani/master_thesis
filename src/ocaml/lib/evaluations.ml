@@ -80,20 +80,40 @@ let is_transitive profile =
 
 let n_unique_preferences profile = List.length @@ unique_preferences profile
 
+let distance_to_consensus profile distance =
+  if n_unique_preferences profile = 1 then 1.
+  else
+    let dist_to_profiles =
+      List.map
+        (fun cand_pref ->
+          List.fold_left
+            (fun dist pref -> dist +. distance cand_pref pref)
+            0.
+            (all_profiles_weak (List.hd profile)))
+        profile
+    in
+    List.fold_left
+      (fun min_found curr -> if curr < min_found then curr else min_found)
+      (List.hd dist_to_profiles) dist_to_profiles
+
 let get_all_evals () =
   ( [
       "cyclic_start";
       "condorcet_start";
       "unique_start";
       "intransative_start";
+      "consensus_dist_start";
       "cyclic_end";
       "condorcet_end";
       "unique_end";
       "intransative_end";
+      "consensus_dist_end";
     ],
     [
-      (fun prof -> string_of_bool @@ is_cyclic prof);
-      (fun prof -> string_of_bool @@ has_condorcet prof);
-      (fun prof -> string_of_int @@ n_unique_preferences prof);
-      (fun prof -> string_of_bool @@ not @@ is_transitive prof);
+      (fun prof _ -> string_of_bool @@ is_cyclic prof);
+      (fun prof _ -> string_of_bool @@ has_condorcet prof);
+      (fun prof _ -> string_of_int @@ n_unique_preferences prof);
+      (fun prof _ -> string_of_bool @@ not @@ is_transitive prof);
+      (fun prof distance ->
+        string_of_float @@ distance_to_consensus prof distance);
     ] )
