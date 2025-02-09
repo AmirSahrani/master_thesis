@@ -1,6 +1,15 @@
 open Graphs
 open Utils
 
+(*
+
+TODO 
+   - Move towards consensus
+   - Proximity to single peakedness 
+   - Proximity to single plateauedness
+
+*)
+
 let has_condorcet profile =
   let maj_pref = profile |> maj in
   let alternatives = List.flatten @@ List.hd profile in
