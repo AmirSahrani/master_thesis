@@ -89,18 +89,18 @@ def plot(data, col, ylab):
             color=color,
             linestyle="-",
         )
-    plt.xticks(x, rotation=45)
+    plt.xticks(rotation=45)
     plt.xlabel("Bias")
     plt.ylabel(ylab)
     plt.legend()
     plt.grid(axis="y")
     plt.tight_layout()
-    plt.savefig(f"figures/{ylab}.pdf")
+    plt.savefig(f"figures/{col}_{ylab}.pdf")
     plt.show()
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("results/data.csv")
+    data = pd.read_csv("results/data_replication_final.csv")
     cyclic_proportion = compute_proportion(
         data, "cyclic_start", "cyclic_end", "cyclic_proportion"
     )
@@ -117,25 +117,25 @@ if __name__ == "__main__":
     plot(
         cyclic_proportion,
         "cyclic_proportion",
-        "Proportion of Cyclic Profiles Remaining",
+        "Proportion",
     )
     plot(
         transtive_proportion,
         "intransative_proportion",
-        "Proportion of Intransative Profiles Remaining",
+        "Proportion",
     )
     plot(
         consensus_change,
         "consensus_dist_change",
-        "Move towards consensus",
+        "Percentage",
     )
     plot(
         condorcet_proportion,
         "condorcet_proportion",
-        "Proportion of Condorcet Winners Remaining",
+        "Proportion",
     )
     plot(
         unique_profiles,
         "unique",
-        "Number of unique Preferences",
+        "Count",
     )
