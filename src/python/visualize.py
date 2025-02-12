@@ -100,7 +100,7 @@ def plot(data, col, ylab):
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("results/data_replication_final.csv")
+    data = pd.read_csv("results/data_weak.csv")
     cyclic_proportion = compute_proportion(
         data, "cyclic_start", "cyclic_end", "cyclic_proportion"
     )
@@ -114,6 +114,8 @@ if __name__ == "__main__":
         data, "condorcet_start", "condorcet_end", "condorcet_proportion"
     )
     unique_profiles = compute_average(data, "unique_end", "unique")
+    sp_proximity = compute_average(data, "proximity_to_sp_end", "sp_proximity")
+    sp_proximity = sp_proximity.loc[sp_proximity["bias"] > 0.5]
     plot(
         cyclic_proportion,
         "cyclic_proportion",
@@ -138,4 +140,9 @@ if __name__ == "__main__":
         unique_profiles,
         "unique",
         "Count",
+    )
+    plot(
+        sp_proximity,
+        "sp_proximity",
+        "proximity to Single-peakedness",
     )

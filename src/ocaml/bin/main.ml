@@ -39,10 +39,10 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
         | KS ->
             print_endline "Testing KS";
             (ksDistance, ksBetween)
-        | CS ->
+        | DP ->
             print_endline "Testing DP";
             (csDistance, csBetween)
-        | DP ->
+        | CS ->
             print_endline "Testing CS";
             (dpDistance p, dpBetween)
       in
@@ -80,7 +80,7 @@ let main () =
   let nAlternatives = 3 in
   let nDeliberationSteps = 5 in
   (* Open CSV file *)
-  let oc = open_out "results/data___.csv" in
+  let oc = open_out "results/data_weak.csv" in
   let titles, evals = get_all_evals () in
 
   (* Prepare header row *)

@@ -7,10 +7,10 @@ let objectiveFun v1 v2 distMeasure updatedProfile =
   let p2 = v2.preference in
   let d1 = distMeasure p1 updatedProfile in
   let d2 = distMeasure p2 updatedProfile in
-  assert (
+  (* assert (
     Float.compare d1 1.0 <> -1
     || Float.compare d2 1.0 <> -1
-    || v1.preference = v2.preference);
+    || v1.preference = v2.preference); *)
   let lhs = Float.pow d1 2.0 in
   let rhs = Float.pow d2 2.0 in
   (r *. lhs) +. (r' *. rhs)

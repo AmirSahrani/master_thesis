@@ -59,10 +59,10 @@ module Dot = Graph.Graphviz.Dot (struct
     [ `Shape `Box; `Label (string_of_list_pref v string_of_int) ]
 
   let vertex_name v =
-    String.concat ">"
+    String.concat "≻"
       (List.map
          (fun inner ->
-           "( " ^ String.concat ", " (List.map string_of_int inner) ^ " )")
+           " " ^ String.concat ", " (List.map string_of_int inner) ^ " ")
          v)
   (* Convert vertex to string *)
 
@@ -124,7 +124,7 @@ let buildGraph p set_between =
           acc all_nodes)
       g all_nodes
   in
-  (* Dot.output_graph (open_out "figures/dpGraph.dot") g; *)
+  Dot.output_graph (open_out "figures/dpGraph.dot") g;
   g
 
 let shortest_path graph source target =

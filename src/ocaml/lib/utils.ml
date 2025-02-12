@@ -14,6 +14,8 @@ let rec permutations lst =
              List.map (fun perm -> x :: perm) (permutations rest))
            lst)
 
+let int_of_bool b = match b with true -> 1 | false -> 0
+
 let all_profiles_weak _ =
   [
     [ [ 1; 2; 3 ] ];
@@ -31,7 +33,8 @@ let all_profiles_weak _ =
     [ [ 3 ]; [ 1 ]; [ 2 ] ];
   ]
 
-let all_profiles p = permutations p
+(* let all_profiles p = permutations p *)
+let all_profiles = all_profiles_weak
 
 let rec shuffle = function
   | [] -> []
