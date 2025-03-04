@@ -1,0 +1,555 @@
+Q1;How poorly or well would you say the system of democracy in the US works these days?
+Q2A;[Reduce the number of refuges allowed to resettle the US.] 
+Q2B;[Increase personnel to process asylum seekers' claims faster.] 
+Q2C;[Provide aid to reduce poverty and violence in Central America.] 
+Q2D;[Increase the number of visas for skilled workers to move to the US.] 
+Q2E;[Increase the number of visas for low-skilled workers to move to the US for industries that need them, like agriculture and service.] 
+Q2F;[Require employers to use the E-verify computer system to confirm workers' eligibility.] 
+Q2G;[First-time violators of immigration laws should only be expelled, not subject to criminal punishment.] 
+Q2H;[Continue DACA, the Deferred Action for Childhood Arrivals program, which protects people who were brought to the US as children when their parents entered the country illegally.] 
+Q2I;[Undocumented immigrants should be forced to return to their home countries before applying to legally come to the US to live and work permanently.] 
+Q3A;[The US should commit to the 2014 Paris Agreement to combat climate change.] 
+Q3B;[The US should go beyond the Paris Agreement and aim for more significant cutbacks on greenhouse gas emissions.] 
+Q3C;[The US should use taxes or other market incentives to achieve emissions reductions.] 
+Q3D;[A Green New Deal to commit to major investments in infrastructure and renewable energy.] 
+Q3E;[The US should expand oil and gas production.] 
+Q3F;[Allow expansion of oil and gas production on federal lands previously dedicated to wildlife preservation.] 
+Q3G;[The U.S. government should facilitate fracking throughout the US.] 
+Q3H;[The US should mandate zero carbon emissions for cars, trucks, and buses.] 
+Q4A;[Capital gains -- income earned when an investment that has increased in value is sold -- should be taxed the same as ordinary wage income.] 
+Q4B;[The US should impose a wealth tax on the richest taxpayers, requiring them to pay a small portion of their wealth on an annual basis.] 
+Q4C;[The US should repeal the estate tax, which currently taxes deceased individuals worth at least $11 million and deceased couples worth at least $22 million.] 
+Q4D;[When taxpayers earn more than $2 million per year, they should pay a higher tax rate on additional income.] 
+Q4E;[Expand the Earned Income Tax Credit, which provides a benefit to low-income workers, to more middle-class workers.] 
+Q4F;[Lower the corporate tax rate from 21% to 15%.] 
+Q4G;[Increase federal minimum wage from $7.25/hr. to $15/hr.] 
+Q4H;[The government should cover the cost of college tuition at public universities for all students who could not otherwise afford it.] 
+Q4I;[The government should fund a bond for each child born that will accumulate in value until the child turns 18 to then become usable for higher education or other essentials for a start in life.] 
+Q4J;[The government should give cash grants of $1,000/month to all adults at least eighteen-years-old.] 
+Q5A;[The Affordable Care Act should be repealed.] 
+Q5B;[Repeal the Affordable Care Act and replace with grants to state Governments to create their own systems.] 
+Q5C;[The federal subsidies in the Affordable Care Act that help the poor should be increased.] 
+Q5D;[The federal subsidies in the Affordable Care Act that help the middle class should be expanded to include more people.] 
+Q5E;[People should have reasonable access to health insurance without discrimination against pre-existing conditions.] 
+Q5F;[Everybody should be able to buy a public plan like Medicare, the current plan for seniors over 65.] 
+Q5G;[People aged fifty-five and older should have the option of purchasing Medicare, instead of a private insurance plan.] 
+Q5H;[People should be automatically enrolled in a more generous version of Medicare.] 
+Q5I;[Allow Medicare to negotiate drug prices.] 
+Q5J;[The US government should make changes to the patent system to allow generic drugs to come on the market more quickly.] 
+Q6A;[The US should rejoin the Trans-Pacific Partnership, a trading agreement between 12 countries excluding China.] 
+Q6B;[The U.S. should increase tariffs on Chinese goods.] 
+Q6C;[The US should tighten sanctions on Russia.] 
+Q6D;[The US should reaffirm its commitment to defend any NATO ally attacked by a hostile force.] 
+Q6E;[The US should enhance its military presence in the Asia Pacific to prevent aggression by China.] 
+Q6F;[The US should recommit to the Iran Nuclear Agreement.] 
+Q6G;[Presidents should be required to obtain explicit congressional approval for sending US troops into combat situations.] 
+Q6H;[The U.S. should intervene abroad when it is necessary to prevent genocide.] 
+Q6I;[The U.S. should increase military spending by up to five percent per year for the next few years to meet rising global challenges and ensure readiness.] 
+Q6J;[The US should use diplomacy and financial support to promote democracy and human rights throughout the world.] 
+DOV_TOPIC1;FIRST TOPIC SHOWN
+DOV_TOPIC2;SECOND TOPIC SHOWN
+DOV_TOPIC3;THIRD TOPIC SHOWN
+DOV_TOPIC4;FOURTH TOPIC SHOWN
+DOV_TOPIC5;FIFTH TOPIC SHOWN
+Q7A;[Requiring employers to determine the legal status of people they hire will deter people from coming here illegally.] How strongly do you disagree or agree with each of the following?
+Q7B;[Many businesses in agriculture and the service industries depend on labor from immigrants.] How strongly do you disagree or agree with each of the following?
+Q7C;[Trade agreements can increase the market for US goods.] How strongly do you disagree or agree with each of the following?
+Q7D;[Effectively fighting climate change will hurt economic growth.] How strongly do you disagree or agree with each of the following?
+Q7E;[Cooperation between the countries of the world is necessary to fight climate change.] How strongly do you disagree or agree with each of the following?
+Q7F;[Imposing a wealth tax on the richest taxpayers will lead to many of them leaving the US.] How strongly do you disagree or agree with each of the following?
+Q7G;[Providing free college tuition to students who could not afford it will create a better economy for the US.] How strongly do you disagree or agree with each of the following?
+Q7H;[Providing healthcare that is like Medicare for everyone will require increasing the debt to impossible levels.] How strongly do you disagree or agree with each of the following?
+Q7I;[Healthcare should cost the same for everyone, regardless of whether someone has a preexisting condition.] How strongly do you disagree or agree with each of the following?
+D1;Do you consider yourself a Democrat, a Republican, an independent or none of these?
+D2D;Do you consider yourself a strong or moderate Democrat?
+D2R;Do you consider yourself a strong or moderate Republican?
+D2I;Do you lean more toward the Democrats or the Republicans?
+LIBCONV;When it comes to politics, do you usually think of yourself as…
+Q9_1;How would you rate the Democrats in general from 0 to 100 degrees?
+Q9_2;How would you rate the Republicans in general from 0 to 100 degrees?
+Q10DORDER1;ORDER DEMOCRATIC CANDIDATES SHOWN FIRST
+Q10DORDER2;ORDER DEMOCRATIC CANDIDATES SHOWN SECOND
+Q10DORDER3;ORDER DEMOCRATIC CANDIDATES SHOWN THIRD
+Q10DORDER4;ORDER DEMOCRATIC CANDIDATES SHOWN FOURTH
+Q10DORDER5;ORDER DEMOCRATIC CANDIDATES SHOWN FIFTH
+Q10DORDER6;ORDER DEMOCRATIC CANDIDATES SHOWN SIXTH
+Q10DORDER7;ORDER DEMOCRATIC CANDIDATES SHOWN SEVENTH
+Q10DORDER8;ORDER DEMOCRATIC CANDIDATES SHOWN EIGHTH
+Q10DORDER9;ORDER DEMOCRATIC CANDIDATES SHOWN NINETH
+Q10DORDER10;ORDER DEMOCRATIC CANDIDATES SHOWN TENTH
+Q10DORDER11;ORDER DEMOCRATIC CANDIDATES SHOWN ELEVENTH
+Q10DORDER12;ORDER DEMOCRATIC CANDIDATES SHOWN TWELVETH
+Q10DORDER13;ORDER DEMOCRATIC CANDIDATES SHOWN THIRTHEENTH
+Q10DORDER14;ORDER DEMOCRATIC CANDIDATES SHOWN FOURTHEENTH
+Q10DORDER15;ORDER DEMOCRATIC CANDIDATES SHOWN FIFTEENTH
+Q10DORDER16;ORDER DEMOCRATIC CANDIDATES SHOWN SIXTEENTH
+Q10DORDER17;ORDER DEMOCRATIC CANDIDATES SHOWN SEVENTHEENTH
+Q10DORDER18;ORDER DEMOCRATIC CANDIDATES SHOWN EIGHTEENTH
+Q10DORDER19;ORDER DEMOCRATIC CANDIDATES SHOWN NINETEENTH
+Q10DORDER20;ORDER DEMOCRATIC CANDIDATES SHOWN TWENTYTH
+Q10DORDER21;ORDER DEMOCRATIC CANDIDATES SHOWN TWENTY FIRST
+Q10DORDER22;ORDER DEMOCRATIC CANDIDATES SHOWN TWENTY SECOND
+Q10DORDER23;ORDER DEMOCRATIC CANDIDATES SHOWN TWENTY THIRD
+Q10DORDER24;ORDER DEMOCRATIC CANDIDATES SHOWN TWENTY FOURTH
+Q10RDORDER1;ORDER REPUBLICAN CANDIDATES SHOWN FIRST
+Q10RDORDER2;ORDER REPUBLICAN CANDIDATES SHOWN SECOND
+Q10_1;[Joe Biden] How strongly would you oppose or favor each of these candidates?
+Q10_2;[Bernie Sanders] How strongly would you oppose or favor each of these candidates?
+Q10_3;[Kirsten Gillibrand] How strongly would you oppose or favor each of these candidates?
+Q10_4;[Julian Castro] How strongly would you oppose or favor each of these candidates?
+Q10_5;[Kamala Harris] How strongly would you oppose or favor each of these candidates?
+Q10_6;[John Delaney] How strongly would you oppose or favor each of these candidates?
+Q10_7;[Pete Buttigieg] How strongly would you oppose or favor each of these candidates?
+Q10_8;[Jay Inslee] How strongly would you oppose or favor each of these candidates?
+Q10_9;[Tulsi Gabbard] How strongly would you oppose or favor each of these candidates?
+Q10_10;[Elizabeth Warren] How strongly would you oppose or favor each of these candidates?
+Q10_11;[Andrew Yang] How strongly would you oppose or favor each of these candidates?
+Q10_12;[Cory Booker] How strongly would you oppose or favor each of these candidates?
+Q10_13;[Beto O’Rourke] How strongly would you oppose or favor each of these candidates?
+Q10_14;[Tom Steyer] How strongly would you oppose or favor each of these candidates?
+Q10_15;[Steve Bullock] How strongly would you oppose or favor each of these candidates?
+Q10_16;[Seth Moulton] How strongly would you oppose or favor each of these candidates?
+Q10_17;[Marianne Williamson] How strongly would you oppose or favor each of these candidates?
+Q10_18;[Tim Ryan] How strongly would you oppose or favor each of these candidates?
+Q10_19;[Wayne Mesam] How strongly would you oppose or favor each of these candidates?
+Q10_20;[John Hickenlooper] How strongly would you oppose or favor each of these candidates?
+Q10_21;[Michael Bennet] How strongly would you oppose or favor each of these candidates?
+Q10_22;[Amy Klobuchar] How strongly would you oppose or favor each of these candidates?
+Q10_23;[Bill de Blasio] How strongly would you oppose or favor each of these candidates?
+Q10_24;[Mike Gravel] How strongly would you oppose or favor each of these candidates?
+Q10_25;[Bill Weld] How strongly would you oppose or favor each of these candidates?
+Q10_26;[President Donald Trump] How strongly would you oppose or favor each of these candidates?
+Q11A_1;[Immigration] How strongly would you oppose or favor Joe Biden's position on the following issues?
+Q11B_1;[Environment] How strongly would you oppose or favor Joe Biden's position on the following issues?
+Q11C_1;[Economy and Taxes] How strongly would you oppose or favor Joe Biden's position on the following issues?
+Q11D_1;[Healthcare] How strongly would you oppose or favor Joe Biden's position on the following issues?
+Q11E_1;[Foreign Policy] How strongly would you oppose or favor Joe Biden's position on the following issues?
+Q11A_2;[Immigration] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+Q11B_2;[Environment] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+Q11C_2;[Economy and Taxes] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+Q11D_2;[Healthcare] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+Q11E_2;[Foreign Policy] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+Q11A_3;[Immigration] How strongly would you oppose or favor Kirsten Gillibrand's position on the following issues?
+Q11B_3;[Environment] How strongly would you oppose or favor Kirsten Gillibrand's position on the following issues?
+Q11C_3;[Economy] How strongly would you oppose or favor Kirsten Gillibrand's position on the following issues?
+Q11D_3;[Healthcare] How strongly would you oppose or favor Kirsten Gillibrand's position on the following issues?
+Q11E_3;[Foreign Policy] How strongly would you oppose or favor Kirsten Gillibrand's position on the following issues?
+Q11A_4;[Immigration] How strongly would you oppose or favor Julian Castro's position on the following issues?
+Q11B_4;[Environment] How strongly would you oppose or favor Julian Castro's position on the following issues?
+Q11C_4;[Economy and Taxes] How strongly would you oppose or favor Julian Castro's position on the following issues?
+Q11D_4;[Healthcare] How strongly would you oppose or favor Julian Castro's position on the following issues?
+Q11E_4;[Foreign Policy] How strongly would you oppose or favor Julian Castro's position on the following issues?
+Q11A_5;[Immigration] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+Q11B_5;[Environment] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+Q11C_5;[Economy and Taxes] How strongly would you oppose or favor Kamals Harris's position on the following issues?
+Q11D_5;[Healthcare] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+Q11E_5;[Foreign Policy] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+Q11A_6;[Immigration] How strongly would you oppose or favor John Delaney's position on the following issues?
+Q11B_6;[Environment] How strongly would you oppose or favor John Delaney's position on the following issues?
+Q11C_6;[Economy and Taxes] How strongly would you oppose or favor John Delaney's position on the following issues?
+Q11D_6;[Healthcare] How strongly would you oppose or favor John Delaney's position on the following issues?
+Q11E_6;[Foreign Policy] How strongly would you oppose or favor John Delaney's position on the following issues?
+Q11A_7;[Immigration] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+Q11B_7;[Environment] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+Q11C_7;[Economy and Taxes] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+Q11D_7;[Healthcare] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+Q11E_7;[Foreign Policy] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+Q11A_8;[Immigration] How strongly would you oppose or favor Jay Inslee's position on the following issues?
+Q11B_8;[Environment] How strongly would you oppose or favor Jay Inslee's position on the following issues?
+Q11C_8;[Economy] How strongly would you oppose or favor Jay Inslee's position on the following issues?
+Q11D_8;[Healthcare] How strongly would you oppose or favor Jay Inslee's position on the following issues?
+Q11E_8;[Foreign Policy] How strongly would you oppose or favor Jay Inslee's position on the following issues?
+Q11A_9;[Immigration] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+Q11B_9;[Environment] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+Q11C_9;[Economy and Taxes] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+Q11D_9;[Healthcare] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+Q11E_9;[Foreign Policy] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+Q11A_10;[Immigration] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+Q11B_10;[Environment] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+Q11C_10;[Economy and Taxes] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+Q11D_10;[Healthcare] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+Q11E_10;[Foreign Policy] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+Q11A_11;[Immigration] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+Q11B_11;[Environment] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+Q11C_11;[Economy and Taxes] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+Q11D_11;[Healthcare] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+Q11E_11;[Foreign Policy] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+Q11A_12;[Immigration] How strongly would you oppose or favor Cory Booker's position on the following issues?
+Q11B_12;[Environment] How strongly would you oppose or favor Cory Booker's position on the following issues?
+Q11C_12;[Economy and Taxes] How strongly would you oppose or favor Cory Booker's position on the following issues?
+Q11D_12;[Healthcare] How strongly would you oppose or favor Cory Booker's position on the following issues?
+Q11E_12;[Foreign Policy] How strongly would you oppose or favor Cory Booker's position on the following issues?
+Q11A_13;[Immigration] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+Q11B_13;[Environment] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+Q11C_13;[Economy and Taxes] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+Q11D_13;[Healthcare] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+Q11E_13;[Foreign Policy] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+Q11A_14;[Immigration] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+Q11B_14;[Environment] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+Q11C_14;[Economy and Taxes] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+Q11D_14;[Healthcare] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+Q11E_14;[Foreign Policy] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+Q11A_15;[Immigration] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+Q11B_15;[Environment] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+Q11C_15;[Economy and Taxes] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+Q11D_15;[Healthcare] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+Q11E_15;[Foreign Policy] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+Q11A_16;[Immigration] How strongly would you oppose or favor Seth Moulton's position on the following issues?
+Q11B_16;[Environment] How strongly would you oppose or favor Seth Moulton's position on the following issues?
+Q11C_16;[Economy] How strongly would you oppose or favor Seth Moulton's position on the following issues?
+Q11D_16;[Healthcare] How strongly would you oppose or favor Seth Moulton's position on the following issues?
+Q11E_16;[Foreign Policy] How strongly would you oppose or favor Seth Moulton's position on the following issues?
+Q11A_17;[Immigration] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+Q11B_17;[Environment] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+Q11C_17;[Economy and Taxes] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+Q11D_17;[Healthcare] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+Q11E_17;[Foreign Policy] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+Q11A_18;[Immigration] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+Q11B_18;[Environment] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+Q11C_18;[Economy and Taxes] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+Q11D_18;[Healthcare] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+Q11E_18;[Foreign Policy] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+Q11A_19;[Immigration] How strongly would you oppose or favor Wayne Mesam's position on the following issues?
+Q11B_19;[Environment] How strongly would you oppose or favor Wayne Mesam's position on the following issues?
+Q11C_19;[Economy] How strongly would you oppose or favor Wayne Mesam's position on the following issues?
+Q11D_19;[Healthcare] How strongly would you oppose or favor Wayne Mesam's position on the following issues?
+Q11E_19;[Foreign Policy] How strongly would you oppose or favor Wayne Mesam's position on the following issues?
+Q11A_20;[Immigration] How strongly would you oppose or favor John Hickenlooper's position on the following issues?
+Q11B_20;[Environment] How strongly would you oppose or favor John Hickenlooper's position on the following issues?
+Q11C_20;[Economy] How strongly would you oppose or favor John Hickenlooper's position on the following issues?
+Q11D_20;[Healthcare] How strongly would you oppose or favor John Hickenlooper's position on the following issues?
+Q11E_20;[Foreign Policy] How strongly would you oppose or favor John Hickenlooper's position on the following issues?
+Q11A_21;[Immigration] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+Q11B_21;[Environment] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+Q11C_21;[Economy and Taxes] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+Q11D_21;[Healthcare] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+Q11E_21;[Foreign Policy] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+Q11A_22;[Immigration] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+Q11B_22;[Environment] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+Q11C_22;[Economy and Taxes] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+Q11D_22;[Healthcare] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+Q11E_22;[Foreign Policy] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+Q11A_23;[Immigration] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+Q11B_23;[Environment] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+Q11C_23;[Economy and Taxes] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+Q11D_23;[Healthcare] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+Q11E_23;[Foreign Policy] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+Q11A_24;[Immigration] How strongly would you oppose or favor Mike Gravel's position on the following issues?
+Q11B_24;[Environment] How strongly would you oppose or favor Mike Gravel's position on the following issues?
+Q11C_24;[Economy] How strongly would you oppose or favor Mike Gravel's position on the following issues?
+Q11D_24;[Healthcare] How strongly would you oppose or favor Mike Gravel's position on the following issues?
+Q11E_24;[Foreign Policy] How strongly would you oppose or favor Mike Gravel's position on the following issues?
+Q11A_25;[Immigration] How strongly would you oppose or favor Bill Weld's position on the following issues?
+Q11B_25;[Environment] How strongly would you oppose or favor Bill Weld's position on the following issues?
+Q11C_25;[Economy and Taxes] How strongly would you oppose or favor Bill Weld's position on the following issues?
+Q11D_25;[Healthcare] How strongly would you oppose or favor Bill Weld's position on the following issues?
+Q11E_25;[Foreign Policy] How strongly would you oppose or favor Bill Weld's position on the following issues?
+Q11A_26;[Immigration] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+Q11B_26;[Environment] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+Q11C_26;[Economy and Taxes] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+Q11D_26;[Healthcare] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+Q11E_26;[Foreign Policy] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+Q12A;[Seeing to it that everyone has equal opportunities] How important or unimportant would you say each of the following is to you?
+Q12B;[Leaving people and companies free to compete economically] How important or unimportant would you say each of the following is to you?
+Q12C;[Making one's own choices] How important or unimportant would you say each of the following is to you?
+Q12D;[Not having to worry about being fired] How important or unimportant would you say each of the following is to you?
+Q12E;[Making sure that nobody suffers from lack of food or shelter] How important or unimportant would you say each of the following is to you?
+Q12F;[Earning as much money as possible] How important or unimportant would you say each of the following is to you?
+Q12R;[Having everyone pay their fair share of taxes] How important or unimportant would you say each of the following is to you?
+Q13;[More equal society - Get as rich as they can] Where would you place yourself on this scale?
+Q14;[More help for the poor - Taxes should be kept low] Where would you place yourself on this scale?
+Q15A;[Public officials care a lot about what people like me think.] How strongly would you disagree or agree with the following statements?
+Q15B;[Most public policy issues are so complicated that a person like me can't really understand what's going on.] How strongly would you disagree or agree with the following statements?
+Q15C;[People like me don't have any say about what the government does.] How strongly would you disagree or agree with the following statements?
+Q15D;[I have opinions about politics that are worth listening to.] How strongly would you disagree or agree with the following statements?
+Q16A;[They just don't know enough] How strongly would you agree or disagree with each of the following statements about those people?
+Q16B;[They believe some things that aren't true] How strongly would you agree or disagree with each of the following statements about those people?
+Q16C;[They are not thinking clearly] How strongly would you agree or disagree with each of the following statements about those people?
+Q16D;[They have good reasons, there just are better ones on the other side] How strongly would you agree or disagree with each of the following statements about those people?
+Q16E;[They are looking out for their own interests] How strongly would you agree or disagree with each of the following statements about those people?
+PK1;Which political party holds the majority in the Senate?
+PK2;Which political party holds the majority in the House?
+PK3;About how many undocumented immigrants are in the US?
+PK4;Which of the following countries is NOT part of the Paris Agreement on the environment?
+PK5;The Affordable Care Act allows which of the following?
+PK6;What percentage is the highest tax rate for capital gains taxes?
+PK7;Which of the following organizations dealing with trade has the most countries?
+T2Q1;How poorly or well would you say the system of democracy in the US works these days?
+T2Q2A;[Reduce the number of refuges allowed to resettle the US.] 
+T2Q2B;[Increase personnel to process asylum seekers’ claims faster.] 
+T2Q2C;[Provide aid to reduce poverty and violence in Central America.] 
+T2Q2D;[Increase the number of visas for skilled workers to move to the US.] 
+T2Q2E;[Increase the number of visas for low-skilled workers to move to the US for industries that need them, like agriculture and service.] 
+T2Q2F;[Require employers to use the E-verify computer system to confirm workers’ eligibility.] 
+T2Q2G;[First-time violators of immigration laws should only be expelled, not subject to criminal punishment.] 
+T2Q2H;[Continue DACA, the Deferred Action for Childhood Arrivals program, which protects people who were brought to the US as children when their parents entered the country illegally.] 
+T2Q2I;[Undocumented immigrants should be forced to return to their home countries before applying to legally come to the US to live and work permanently.] 
+T2Q3A;[The US should commit to the 2014 Paris Agreement to combat climate change.] 
+T2Q3B;[The US should go beyond the Paris Agreement and aim for more significant cutbacks on greenhouse gas emissions.] 
+T2Q3C;[The US should use taxes or other market incentives to achieve emissions reductions.] 
+T2Q3D;[A Green New Deal to commit to major investments in infrastructure and renewable energy.] 
+T2Q3E;[The US should expand oil and gas production.] 
+T2Q3F;[Allow expansion of oil and gas production on federal lands previously dedicated to wildlife preservation.] 
+T2Q3G;[The U.S. government should facilitate fracking throughout the US.] 
+T2Q3H;[The US should mandate zero carbon emissions for cars, trucks, and buses.] 
+T2Q4A;[Capital gains -- income earned when an investment that has increased in value is sold -- should be taxed the same as ordinary wage income.] 
+T2Q4B;[The US should impose a wealth tax on the richest taxpayers, requiring them to pay a small portion of their wealth on an annual basis.] 
+T2Q4C;[The US should repeal the estate tax, which currently taxes deceased individuals worth at least $11 million and deceased couples worth at least $22 million.] 
+T2Q4D;[When taxpayers earn more than $2 million per year, they should pay a higher tax rate on additional income.] 
+T2Q4E;[Expand the Earned Income Tax Credit, which provides a benefit to low-income workers, to more middle-class workers.] 
+T2Q4F;[Lower the corporate tax rate from 21% to 15%.] 
+T2Q4G;[Increase federal minimum wage from $7.25/hr. to $15/hr.] 
+T2Q4H;[The government should cover the cost of college tuition at public universities for all students who could not otherwise afford it.] 
+T2Q4I;[The government should fund a bond for each child born that will accumulate in value until the child turns 18 to then become usable for higher education or other essentials for a start in life.] 
+T2Q4J;[The government should give cash grants of $1,000/month to all adults at least eighteen-years-old.] 
+T2Q5A;[The Affordable Care Act should be repealed.] 
+T2Q5B;[Repeal the Affordable Care Act and replace with grants to state Governments to create their own systems.] 
+T2Q5C;[The federal subsidies in the Affordable Care Act that help the poor should be increased.] 
+T2Q5D;[The federal subsidies in the Affordable Care Act that help the middle class should be expanded to include more people.] 
+T2Q5E;[People should have reasonable access to health insurance without discrimination against pre-existing conditions.] 
+T2Q5F;[Everybody should be able to buy a public plan like Medicare, the current plan for seniors over 65.] 
+T2Q5G;[People aged fifty-five and older should have the option of purchasing Medicare, instead of a private insurance plan.] 
+T2Q5H;[People should be automatically enrolled in a more generous version of Medicare.] 
+T2Q5I;[Allow Medicare to negotiate drug prices.] 
+T2Q5J;[The US government should make changes to the patent system to allow generic drugs to come on the market more quickly.] 
+T2Q6A;[The US should rejoin the Trans-Pacific Partnership, a trading agreement between 12 countries excluding China.] 
+T2Q6B;[The U.S. should increase tariffs on Chinese goods.] 
+T2Q6C;[The US should tighten sanctions on Russia.] 
+T2Q6D;[The US should reaffirm its commitment to defend any NATO ally attacked by a hostile force.] 
+T2Q6E;[The US should enhance its military presence in the Asia Pacific to prevent aggression by China.] 
+T2Q6F;[The US should recommit to the Iran Nuclear Agreement.] 
+T2Q6G;[Presidents should be required to obtain explicit congressional approval for sending US troops into combat situations.] 
+T2Q6H;[The U.S. should intervene abroad when it is necessary to prevent genocide.] 
+T2Q6I;[The U.S. should increase military spending by up to five percent per year for the next few years to meet rising global challenges and ensure readiness.] 
+T2Q6J;[The US should use diplomacy and financial support to promote democracy and human rights throughout the world.] 
+T2DOV_TOPIC1;FIRST TOPIC SHOWN
+T2DOV_TOPIC2;SECOND TOPIC SHOWN
+T2DOV_TOPIC3;THIRD TOPIC SHOWN
+T2DOV_TOPIC4;FOURTH TOPIC SHOWN
+T2DOV_TOPIC5;FIFTH TOPIC SHOWN
+T2Q7A;[Requiring employers to determine the legal status of people they hire will deter people from coming here illegally.] How strongly do you disagree or agree with each of the following?
+T2Q7B;[Many businesses in agriculture and the service industries depend on labor from immigrants.] How strongly do you disagree or agree with each of the following?
+T2Q7C;[Trade agreements can increase the market for US goods.] How strongly do you disagree or agree with each of the following?
+T2Q7D;[Effectively fighting climate change will hurt economic growth.] How strongly do you disagree or agree with each of the following?
+T2Q7E;[Cooperation between the countries of the world is necessary to fight climate change.] How strongly do you disagree or agree with each of the following?
+T2Q7F;[Imposing a wealth tax on the richest taxpayers will lead to many of them leaving the US.] How strongly do you disagree or agree with each of the following?
+T2Q7G;[Providing free college tuition to students who could not afford it will create a better economy for the US.] How strongly do you disagree or agree with each of the following?
+T2Q7H;[Providing healthcare that is like Medicare for everyone will require increasing the debt to impossible levels.] How strongly do you disagree or agree with each of the following?
+T2Q7I;[Healthcare should cost the same for everyone, regardless of whether someone has a preexisting condition.] How strongly do you disagree or agree with each of the following?
+T2D1;Do you consider yourself a Democrat, a Republican, an independent or none of these?
+T2D2D;Do you consider yourself a strong or moderate Democrat?
+T2D2R;Do you consider yourself a strong or moderate Republican?
+T2D2I;Do you lean more toward the Democrats or the Republicans?
+T2LIBCONV;When it comes to politics, do you usually think of yourself as…
+T2Q9_1;How would you rate the Democrats in general from 0 to 100 degrees?
+T2Q9_2;How would you rate the Republicans in general from 0 to 100 degrees?
+T2Q10DORDER1;ORDER DEMOCRATIC CANDIDATES SHOWN FIRST
+T2Q10DORDER2;ORDER DEMOCRATIC CANDIDATES SHOWN SECOND
+T2Q10DORDER3;ORDER DEMOCRATIC CANDIDATES SHOWN THIRD
+T2Q10DORDER4;ORDER DEMOCRATIC CANDIDATES SHOWN FOURTH
+T2Q10DORDER5;ORDER DEMOCRATIC CANDIDATES SHOWN FIFTH
+T2Q10DORDER6;ORDER DEMOCRATIC CANDIDATES SHOWN SIXTH
+T2Q10DORDER7;ORDER DEMOCRATIC CANDIDATES SHOWN SEVENTH
+T2Q10DORDER8;ORDER DEMOCRATIC CANDIDATES SHOWN EIGHTH
+T2Q10DORDER9;ORDER DEMOCRATIC CANDIDATES SHOWN NINETH
+T2Q10DORDER10;ORDER DEMOCRATIC CANDIDATES SHOWN TENTH
+T2Q10DORDER11;ORDER DEMOCRATIC CANDIDATES SHOWN ELEVENTH
+T2Q10DORDER12;ORDER DEMOCRATIC CANDIDATES SHOWN TWELTH
+T2Q10DORDER13;ORDER DEMOCRATIC CANDIDATES SHOWN THIRTEENTH
+T2Q10DORDER14;ORDER DEMOCRATIC CANDIDATES SHOWN FOURTEENTH
+T2Q10DORDER15;ORDER DEMOCRATIC CANDIDATES SHOWN FIFTEENTH
+T2Q10DORDER16;ORDER DEMOCRATIC CANDIDATES SHOWN SIXTEENTH
+T2Q10DORDER17;ORDER DEMOCRATIC CANDIDATES SHOWN SEVENTEENTH
+T2Q10DORDER18;ORDER DEMOCRATIC CANDIDATES SHOWN EIGHTEENTH
+T2Q10RDORDER1;ORDER REPUBLICAN CANDIDATES SHOWN FIRST
+T2Q10RDORDER2;ORDER REPUBLICAN CANDIDATES SHOWN SECOND
+T2Q10RDORDER3;ORDER REPUBLICAN CANDIDATES SHOWN THIRD
+T2Q10RDORDER4;ORDER REPUBLICAN CANDIDATES SHOWN FOURTH
+T2Q10_1;[Joe Biden] How strongly would you oppose or favor each of these candidates?
+T2Q10_2;[Bernie Sanders] How strongly would you oppose or favor each of these candidates?
+T2Q10_4;[Julian Castro] How strongly would you oppose or favor each of these candidates?
+T2Q10_5;[Kamala Harris] How strongly would you oppose or favor each of these candidates?
+T2Q10_6;[John Delaney] How strongly would you oppose or favor each of these candidates?
+T2Q10_7;[Pete Buttigieg] How strongly would you oppose or favor each of these candidates?
+T2Q10_9;[Tulsi Gabbard] How strongly would you oppose or favor each of these candidates?
+T2Q10_10;[Elizabeth Warren] How strongly would you oppose or favor each of these candidates?
+T2Q10_11;[Andrew Yang] How strongly would you oppose or favor each of these candidates?
+T2Q10_12;[Cory Booker] How strongly would you oppose or favor each of these candidates?
+T2Q10_13;[Beto O’Rourke] How strongly would you oppose or favor each of these candidates?
+T2Q10_14;[Tom Steyer] How strongly would you oppose or favor each of these candidates?
+T2Q10_15;[Steve Bullock] How strongly would you oppose or favor each of these candidates?
+T2Q10_17;[Marianne Williamson] How strongly would you oppose or favor each of these candidates?
+T2Q10_18;[Tim Ryan] How strongly would you oppose or favor each of these candidates?
+T2Q10_21;[Michael Bennet] How strongly would you oppose or favor each of these candidates?
+T2Q10_22;[Amy Klobuchar] How strongly would you oppose or favor each of these candidates?
+T2Q10_23;[Bill de Blasio] How strongly would you oppose or favor each of these candidates?
+T2Q10_25;[Bill Weld] How strongly would you oppose or favor each of these candidates?
+T2Q10_26;[President Donald Trump] How strongly would you oppose or favor each of these candidates?
+T2Q10_27;[Mark Sanford] How strongly would you oppose or favor each of these candidates?
+T2Q10_28;[Joe Walsh] How strongly would you oppose or favor each of these candidates?
+T2Q11A_1;[Immigration] How strongly would you oppose or favor Joe Biden's position on the following issues?
+T2Q11B_1;[Environment] How strongly would you oppose or favor Joe Biden's position on the following issues?
+T2Q11C_1;[Economy and Taxes] How strongly would you oppose or favor Joe Biden's position on the following issues?
+T2Q11D_1;[Healthcare] How strongly would you oppose or favor Joe Biden's position on the following issues?
+T2Q11E_1;[Foreign Policy] How strongly would you oppose or favor Joe Biden's position on the following issues?
+T2Q11A_2;[Immigration] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+T2Q11B_2;[Environment] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+T2Q11C_2;[Economy and Taxes] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+T2Q11D_2;[Healthcare] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+T2Q11E_2;[Foreign Policy] How strongly would you oppose or favor Bernie Sanders's position on the following issues?
+T2Q11A_4;[Immigration] How strongly would you oppose or favor Julian Castro's position on the following issues?
+T2Q11B_4;[Environment] How strongly would you oppose or favor Julian Castro's position on the following issues?
+T2Q11C_4;[Economy and Taxes] How strongly would you oppose or favor Julian Castro's position on the following issues?
+T2Q11D_4;[Healthcare] How strongly would you oppose or favor Julian Castro's position on the following issues?
+T2Q11E_4;[Foreign Policy] How strongly would you oppose or favor Julian Castro's position on the following issues?
+T2Q11A_5;[Immigration] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+T2Q11B_5;[Environment] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+T2Q11C_5;[Economy and Taxes] How strongly would you oppose or favor Kamals Harris's position on the following issues?
+T2Q11D_5;[Healthcare] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+T2Q11E_5;[Foreign Policy] How strongly would you oppose or favor Kamala Harris's position on the following issues?
+T2Q11A_6;[Immigration] How strongly would you oppose or favor John Delaney's position on the following issues?
+T2Q11B_6;[Environment] How strongly would you oppose or favor John Delaney's position on the following issues?
+T2Q11C_6;[Economy and Taxes] How strongly would you oppose or favor John Delaney's position on the following issues?
+T2Q11D_6;[Healthcare] How strongly would you oppose or favor John Delaney's position on the following issues?
+T2Q11E_6;[Foreign Policy] How strongly would you oppose or favor John Delaney's position on the following issues?
+T2Q11A_7;[Immigration] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+T2Q11B_7;[Environment] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+T2Q11C_7;[Economy and Taxes] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+T2Q11D_7;[Healthcare] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+T2Q11E_7;[Foreign Policy] How strongly would you oppose or favor Pete Buttigieg's position on the following issues?
+T2Q11A_9;[Immigration] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+T2Q11B_9;[Environment] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+T2Q11C_9;[Economy and Taxes] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+T2Q11D_9;[Healthcare] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+T2Q11E_9;[Foreign Policy] How strongly would you oppose or favor Tulsi Gabbard's position on the following issues?
+T2Q11A_10;[Immigration] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+T2Q11B_10;[Environment] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+T2Q11C_10;[Economy and Taxes] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+T2Q11D_10;[Healthcare] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+T2Q11E_10;[Foreign Policy] How strongly would you oppose or favor Elizabeth Warren's position on the following issues?
+T2Q11A_11;[Immigration] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+T2Q11B_11;[Environment] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+T2Q11C_11;[Economy and Taxes] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+T2Q11D_11;[Healthcare] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+T2Q11E_11;[Foreign Policy] How strongly would you oppose or favor Andrew Yang's position on the following issues?
+T2Q11A_12;[Immigration] How strongly would you oppose or favor Cory Booker's position on the following issues?
+T2Q11B_12;[Environment] How strongly would you oppose or favor Cory Booker's position on the following issues?
+T2Q11C_12;[Economy and Taxes] How strongly would you oppose or favor Cory Booker's position on the following issues?
+T2Q11D_12;[Healthcare] How strongly would you oppose or favor Cory Booker's position on the following issues?
+T2Q11E_12;[Foreign Policy] How strongly would you oppose or favor Cory Booker's position on the following issues?
+T2Q11A_13;[Immigration] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+T2Q11B_13;[Environment] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+T2Q11C_13;[Economy and Taxes] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+T2Q11D_13;[Healthcare] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+T2Q11E_13;[Foreign Policy] How strongly would you oppose or favor Beto O'Rourke's position on the following issues?
+T2Q11A_14;[Immigration] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+T2Q11B_14;[Environment] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+T2Q11C_14;[Economy and Taxes] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+T2Q11D_14;[Healthcare] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+T2Q11E_14;[Foreign Policy] How strongly would you oppose or favor Tom Steyer's position on the following issues?
+T2Q11A_15;[Immigration] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+T2Q11B_15;[Environment] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+T2Q11C_15;[Economy and Taxes] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+T2Q11D_15;[Healthcare] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+T2Q11E_15;[Foreign Policy] How strongly would you oppose or favor Steve Bullock's position on the following issues?
+T2Q11A_17;[Immigration] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+T2Q11B_17;[Environment] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+T2Q11C_17;[Economy and Taxes] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+T2Q11D_17;[Healthcare] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+T2Q11E_17;[Foreign Policy] How strongly would you oppose or favor Marianne Williamson's position on the following issues?
+T2Q11A_18;[Immigration] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+T2Q11B_18;[Environment] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+T2Q11C_18;[Economy and Taxes] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+T2Q11D_18;[Healthcare] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+T2Q11E_18;[Foreign Policy] How strongly would you oppose or favor Tim Ryan's position on the following issues?
+T2Q11A_21;[Immigration] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+T2Q11B_21;[Environment] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+T2Q11C_21;[Economy and Taxes] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+T2Q11D_21;[Healthcare] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+T2Q11E_21;[Foreign Policy] How strongly would you oppose or favor Michael Bennet's position on the following issues?
+T2Q11A_22;[Immigration] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+T2Q11B_22;[Environment] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+T2Q11C_22;[Economy and Taxes] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+T2Q11D_22;[Healthcare] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+T2Q11E_22;[Foreign Policy] How strongly would you oppose or favor Amy Klobuchar's position on the following issues?
+T2Q11A_23;[Immigration] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+T2Q11B_23;[Environment] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+T2Q11C_23;[Economy and Taxes] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+T2Q11D_23;[Healthcare] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+T2Q11E_23;[Foreign Policy] How strongly would you oppose or favor Bill de Blasio's position on the following issues?
+T2Q11A_25;[Immigration] How strongly would you oppose or favor Bill Weld's position on the following issues?
+T2Q11B_25;[Environment] How strongly would you oppose or favor Bill Weld's position on the following issues?
+T2Q11C_25;[Economy and Taxes] How strongly would you oppose or favor Bill Weld's position on the following issues?
+T2Q11D_25;[Healthcare] How strongly would you oppose or favor Bill Weld's position on the following issues?
+T2Q11E_25;[Foreign Policy] How strongly would you oppose or favor Bill Weld's position on the following issues?
+T2Q11A_26;[Immigration] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+T2Q11B_26;[Environment] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+T2Q11C_26;[Economy and Taxes] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+T2Q11D_26;[Healthcare] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+T2Q11E_26;[Foreign Policy] How strongly would you oppose or favor President Donald Trump's position on the following issues?
+T2Q11A_27;[Immigration] How strongly would you oppose or favor Mark Sanford's position on the following issues?
+T2Q11B_27;[Environment] How strongly would you oppose or favor Mark Sanford's position on the following issues?
+T2Q11C_27;[Economy and Taxes] How strongly would you oppose or favor Mark Sanford's position on the following issues?
+T2Q11D_27;[Healthcare] How strongly would you oppose or favor Mark Sanford's position on the following issues?
+T2Q11E_27;[Foreign Policy] How strongly would you oppose or favor Mark Sanford's position on the following issues?
+T2Q11A_28;[Immigration] How strongly would you oppose or favor Joe Walsh's position on the following issues?
+T2Q11B_28;[Environment] How strongly would you oppose or favor Joe Walsh's position on the following issues?
+T2Q11C_28;[Economy and Taxes] How strongly would you oppose or favor Joe Walsh's position on the following issues?
+T2Q11D_28;[Healthcare] How strongly would you oppose or favor Joe Walsh's position on the following issues?
+T2Q11E_28;[Foreign Policy] How strongly would you oppose or favor Joe Walsh's position on the following issues?
+T2Q12A;[Seeing to it that everyone has equal opportunities] How important or unimportant would you say each of the following is to you?
+T2Q12B;[Leaving people and companies free to compete economically] How important or unimportant would you say each of the following is to you?
+T2Q12C;[Making one’s own choices] How important or unimportant would you say each of the following is to you?
+T2Q12D;[Not having to worry about being fired] How important or unimportant would you say each of the following is to you?
+T2Q12E;[Making sure that nobody suffers from lack of food or shelter] How important or unimportant would you say each of the following is to you?
+T2Q12F;[Earning as much money as possible] How important or unimportant would you say each of the following is to you?
+T2Q12R;[Having everyone pay their fair share of taxes] How important or unimportant would you say each of the following is to you?
+T2Q13;[More equal society - Get as rich as they can] Where would you place yourself on this scale?
+T2Q14;[More help for the poor - Taxes should be kept low] Where would you place yourself on this scale?
+T2Q17A;[Free to choose… - Required to have health insurance] Where would you place yourself on this scale?
+T2Q17B;[Forced to leave - Allowed to stay] Where would you place yourself on this scale?
+T2Q17C;[Win at all costs - Focus on the issues and are truthful] Where would you place yourself on this scale?
+T2Q17D;[Not successful at all - Very successful] How successful do you think the US is in achieving that?
+T2Q18A;[Freedom] How would you rate the US on how successful we are at implementing each of the following values?
+T2Q18B;[Justice] How would you rate the US on how successful we are at implementing each of the following values?
+T2Q18C;[Equality] How would you rate the US on how successful we are at implementing each of the following values?
+T2Q18D;[Democracy] How would you rate the US on how successful we are at implementing each of the following values?
+T2Q15A;[Public officials care a lot about what people like me think.] How strongly would you disagree or agree with the following statements?
+T2Q15B;[Most public policy issues are so complicated that a person like me can’t really understand what’s going on.] How strongly would you disagree or agree with the following statements?
+T2Q15C;[People like me don't have any say about what the government does.] How strongly would you disagree or agree with the following statements?
+T2Q15D;[I have opinions about politics that are worth listening to.] How strongly would you disagree or agree with the following statements?
+T2Q16A;[They just don’t know enough] How strongly would you agree or disagree with each of the following statements about those people?
+T2Q16B;[They believe some things that aren’t true] How strongly would you agree or disagree with each of the following statements about those people?
+T2Q16C;[They are not thinking clearly] How strongly would you agree or disagree with each of the following statements about those people?
+T2Q16D;[They have good reasons, there just are better ones on the other side] How strongly would you agree or disagree with each of the following statements about those people?
+T2Q16E;[They are looking out for their own interests] How strongly would you agree or disagree with each of the following statements about those people?
+T2PK1;Which political party holds the majority in the Senate?
+T2PK2;Which political party holds the majority in the House?
+T2PK3;About how many undocumented immigrants are in the US?
+T2PK4;Which of the following countries is NOT part of the Paris Agreement on the environment?
+T2PK6;What percentage is the highest tax rate for capital gains taxes?
+T2PK5;The Affordable Care Act allows which of the following?
+T2PK7;Which of the following organizations dealing with trade has the most countries?
+SURV_MODE;Survey interview mode (online or phone)
+T2SURV_MODE;Survey interview mode (online or PAPI)
+SURV_LANG;Survey Interview Language
+T2SURV_LANG;Survey Interview Language
+PARTYID3;3-level political party identification
+T2PARTYID3;3-level political party identification
+LGBT;Respondent sexual orientation
+GENDER;Respondent gender
+AGE4;Age - 4 Categories
+AGE7;Age - 7 Categories
+RACETHNICITY;Combined Race/Ethnicity
+EDUC;Education (Highest Degree Received)
+EDUC4;4-level education
+MARITAL;Marital Status
+EMPLOY;Current Employment Status
+INCOME;Household Income
+STATE;State
+REGION4;4-level region
+REGION9;9-level region
+METRO;Metropolitan area flag
+HOUSING;Home Ownership
+HOME_TYPE;Type of building of panelists' residence
+PHONESERVICE;Telephone service for the household

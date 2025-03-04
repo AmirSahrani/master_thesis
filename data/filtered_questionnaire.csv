@@ -1,0 +1,68 @@
+code,question
+Q1,How poorly or well would you say the system of democracy in the US works these days?
+Q2A,[Reduce the number of refuges allowed to resettle the US.] 
+Q2B,[Increase personnel to process asylum seekers' claims faster.] 
+Q2C,[Provide aid to reduce poverty and violence in Central America.] 
+Q2D,[Increase the number of visas for skilled workers to move to the US.] 
+Q2E,"[Increase the number of visas for low-skilled workers to move to the US for industries that need them, like agriculture and service.] "
+Q2F,[Require employers to use the E-verify computer system to confirm workers' eligibility.] 
+Q2G,"[First-time violators of immigration laws should only be expelled, not subject to criminal punishment.] "
+Q2H,"[Continue DACA, the Deferred Action for Childhood Arrivals program, which protects people who were brought to the US as children when their parents entered the country illegally.] "
+Q2I,[Undocumented immigrants should be forced to return to their home countries before applying to legally come to the US to live and work permanently.] 
+Q3A,[The US should commit to the 2014 Paris Agreement to combat climate change.] 
+Q3B,[The US should go beyond the Paris Agreement and aim for more significant cutbacks on greenhouse gas emissions.] 
+Q3C,[The US should use taxes or other market incentives to achieve emissions reductions.] 
+Q3D,[A Green New Deal to commit to major investments in infrastructure and renewable energy.] 
+Q3E,[The US should expand oil and gas production.] 
+Q3F,[Allow expansion of oil and gas production on federal lands previously dedicated to wildlife preservation.] 
+Q3G,[The U.S. government should facilitate fracking throughout the US.] 
+Q3H,"[The US should mandate zero carbon emissions for cars, trucks, and buses.] "
+Q4A,[Capital gains -- income earned when an investment that has increased in value is sold -- should be taxed the same as ordinary wage income.] 
+Q4B,"[The US should impose a wealth tax on the richest taxpayers, requiring them to pay a small portion of their wealth on an annual basis.] "
+Q4C,"[The US should repeal the estate tax, which currently taxes deceased individuals worth at least $11 million and deceased couples worth at least $22 million.] "
+Q4D,"[When taxpayers earn more than $2 million per year, they should pay a higher tax rate on additional income.] "
+Q4E,"[Expand the Earned Income Tax Credit, which provides a benefit to low-income workers, to more middle-class workers.] "
+Q4F,[Lower the corporate tax rate from 21% to 15%.] 
+Q4G,[Increase federal minimum wage from $7.25/hr. to $15/hr.] 
+Q4H,[The government should cover the cost of college tuition at public universities for all students who could not otherwise afford it.] 
+Q4I,[The government should fund a bond for each child born that will accumulate in value until the child turns 18 to then become usable for higher education or other essentials for a start in life.] 
+Q4J,"[The government should give cash grants of $1,000/month to all adults at least eighteen-years-old.] "
+Q5A,[The Affordable Care Act should be repealed.] 
+Q5B,[Repeal the Affordable Care Act and replace with grants to state Governments to create their own systems.] 
+Q5C,[The federal subsidies in the Affordable Care Act that help the poor should be increased.] 
+Q5D,[The federal subsidies in the Affordable Care Act that help the middle class should be expanded to include more people.] 
+Q5E,[People should have reasonable access to health insurance without discrimination against pre-existing conditions.] 
+Q5F,"[Everybody should be able to buy a public plan like Medicare, the current plan for seniors over 65.] "
+Q5G,"[People aged fifty-five and older should have the option of purchasing Medicare, instead of a private insurance plan.] "
+Q5H,[People should be automatically enrolled in a more generous version of Medicare.] 
+Q5I,[Allow Medicare to negotiate drug prices.] 
+Q5J,[The US government should make changes to the patent system to allow generic drugs to come on the market more quickly.] 
+Q6A,"[The US should rejoin the Trans-Pacific Partnership, a trading agreement between 12 countries excluding China.] "
+Q6B,[The U.S. should increase tariffs on Chinese goods.] 
+Q6C,[The US should tighten sanctions on Russia.] 
+Q6D,[The US should reaffirm its commitment to defend any NATO ally attacked by a hostile force.] 
+Q6E,[The US should enhance its military presence in the Asia Pacific to prevent aggression by China.] 
+Q6F,[The US should recommit to the Iran Nuclear Agreement.] 
+Q6G,[Presidents should be required to obtain explicit congressional approval for sending US troops into combat situations.] 
+Q6H,[The U.S. should intervene abroad when it is necessary to prevent genocide.] 
+Q6I,[The U.S. should increase military spending by up to five percent per year for the next few years to meet rising global challenges and ensure readiness.] 
+Q6J,[The US should use diplomacy and financial support to promote democracy and human rights throughout the world.] 
+D1,"Do you consider yourself a Democrat, a Republican, an independent or none of these?"
+D2D,Do you consider yourself a strong or moderate Democrat?
+D2R,Do you consider yourself a strong or moderate Republican?
+D2I,Do you lean more toward the Democrats or the Republicans?
+LIBCONV,"When it comes to politics, do you usually think of yourself as…"
+Q9_1,How would you rate the Democrats in general from 0 to 100 degrees?
+Q9_2,How would you rate the Republicans in general from 0 to 100 degrees?
+PK1,Which political party holds the majority in the Senate?
+PK2,Which political party holds the majority in the House?
+PK3,About how many undocumented immigrants are in the US?
+PK4,Which of the following countries is NOT part of the Paris Agreement on the environment?
+PK5,The Affordable Care Act allows which of the following?
+PK6,What percentage is the highest tax rate for capital gains taxes?
+PK7,Which of the following organizations dealing with trade has the most countries?
+PARTYID3,3-level political party identification
+GENDER,Respondent gender
+AGE4,Age - 4 Categories
+RACETHNICITY,Combined Race/Ethnicity
+EDUC4,4-level education
