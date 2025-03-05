@@ -33,8 +33,8 @@ let all_profiles_weak _ =
     [ [ 3 ]; [ 1 ]; [ 2 ] ];
   ]
 
-(* let all_profiles p = permutations p *)
-let all_profiles = all_profiles_weak
+let all_profiles p = permutations p
+(* let all_profiles = all_profiles_weak *)
 
 let rec shuffle = function
   | [] -> []
@@ -151,8 +151,8 @@ let string_of_list lst convert =
   Printf.sprintf "\"%s\"" (String.concat " > " (List.map convert lst))
 
 let string_of_list_pref lst convert =
-  Printf.sprintf "$ %s $"
-    (String.concat " \\pref "
+  Printf.sprintf "%s"
+    (String.concat " ≻ "
        (List.map
           (fun inner ->
             Printf.sprintf "(%s)" (String.concat ", " (List.map convert inner)))

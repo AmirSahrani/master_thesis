@@ -41,10 +41,10 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
             (ksDistance, ksBetween)
         | DP ->
             print_endline "Testing DP";
-            (csDistance, csBetween)
+            (dpDistance p, dpBetween)
         | CS ->
             print_endline "Testing CS";
-            (dpDistance p, dpBetween)
+            (csDistance, csBetween)
       in
       let distance = distance in
       let distTbl = Hashtbl.create (List.length p * List.length p) in
@@ -75,12 +75,12 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
 let main () =
   let _ = initPython () in
   let biases = arange 0.45 0.99 0.01 in
-  let num_experiments = 1000 in
+  let num_experiments = 100 in
   let nVoters = 51 in
   let nAlternatives = 3 in
-  let nDeliberationSteps = 5 in
+  let nDeliberationSteps = 2 in
   (* Open CSV file *)
-  let oc = open_out "results/data_weak.csv" in
+  let oc = open_out "results/data.csv" in
   let titles, evals = get_all_evals () in
 
   (* Prepare header row *)

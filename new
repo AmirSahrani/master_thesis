@@ -1,0 +1,23 @@
+Can you help me brain storm on my model.
+
+The goal is to write a model that simulated deliberation, the point is to show that deliberation can induce meta-agreement.
+
+My current idea is to have a number of events $e_1 , ..., e_m$, a number of candidates $a, ...., m$ and  and some voters $1, ... ,n$. Event has a probability of occuring under each candidate. and each voter ahs a subjective opnion on this conditional probability. For example, with 3 events, 3 candidates and 2 voters we have 
+
+true:
+	a 	b 	c
+e1	1	0	0
+e2	0	1	0
+e3	0	0	1
+
+v1:
+	a 	b 	c
+e1	0.3	0.2	0.9
+e2	0.2	0.5	0.09
+e3	0.5	0.3	0.01
+
+v2:
+	a 	b 	c
+e1	0.9	0.2	0.9
+e2	0.1	0.5	0.09
+e3	0.0	0.3	0.01

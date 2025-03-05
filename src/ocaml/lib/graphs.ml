@@ -59,11 +59,12 @@ module Dot = Graph.Graphviz.Dot (struct
     [ `Shape `Box; `Label (string_of_list_pref v string_of_int) ]
 
   let vertex_name v =
-    String.concat "≻"
-      (List.map
-         (fun inner ->
-           " " ^ String.concat ", " (List.map string_of_int inner) ^ " ")
-         v)
+    "\""
+    ^ String.concat "_pref_"
+        (List.map
+           (fun inner -> String.concat ", " (List.map string_of_int inner))
+           v)
+    ^ "\""
   (* Convert vertex to string *)
 
   let default_vertex_attributes _ = []
@@ -124,6 +125,7 @@ let buildGraph p set_between =
           acc all_nodes)
       g all_nodes
   in
+  print_string "Saving Graph.\n";
   Dot.output_graph (open_out "figures/dpGraph.dot") g;
   g
 

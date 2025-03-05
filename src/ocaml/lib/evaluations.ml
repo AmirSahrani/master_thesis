@@ -225,6 +225,11 @@ let distance_to_consensus profile distance =
       (fun min_found curr -> if curr < min_found then curr else min_found)
       (List.hd dist_to_profiles) dist_to_profiles
 
+let opposing profile dist =
+  match unique_preferences profile with
+  | p1 :: p2 :: _ -> dist p1 p2 = 6.
+  | _ -> false
+
 let get_all_evals () =
   ( [
       "cyclic_start";
@@ -239,6 +244,7 @@ let get_all_evals () =
       "intransative_end";
       "consensus_dist_end";
       "proximity_to_sp_end";
+      "opposing";
     ],
     [
       (fun prof _ -> string_of_bool @@ is_cyclic prof);
@@ -247,5 +253,6 @@ let get_all_evals () =
       (fun prof _ -> string_of_bool @@ not @@ is_transitive prof);
       (fun prof distance ->
         string_of_float @@ distance_to_consensus prof distance);
+      (fun prof distance -> string_of_bool @@ opposing prof distance);
       (fun prof _ -> string_of_float @@ fraction_strongly_single_peaked prof);
     ] )
