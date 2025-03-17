@@ -98,7 +98,7 @@ def plot(data, col, ylab):
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("results/data.csv")
+    data = pd.read_csv("results/data_consensus.csv")
     cyclic_proportion = compute_proportion(
         data, "cyclic_start", "cyclic_end", "cyclic_proportion"
     )

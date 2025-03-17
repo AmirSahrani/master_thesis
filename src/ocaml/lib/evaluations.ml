@@ -10,9 +10,9 @@ TODO
 *)
 
 let is_single_peaked profile =
-  (* 
-     Algorithm to determine is single peaked, runs in O(nm) adapted from the presentation by Elkind, who formulated it based on the algortihm by Doignon and Falmagne (1994), adding ideas from Escoffier et al. (2008)
-     *)
+  (*
+      Algorithm to determine is single peaked, runs in O(nm) adapted from the presentation by Elkind, who formulated it based on the algortihm by Doignon and Falmagne (1994), adding ideas from Escoffier et al. (2008)
+  *)
   let rec stage_1 left right a' =
     if a' = [] || right <> [||] then (left, right, a')
     else
@@ -74,7 +74,7 @@ let is_single_peaked profile =
     part_2 left right a'
 
 (* Split the societal order into the part left of candidate and the part right of candidate.
-   The candidate must occur in the list; otherwise, we return None. 
+   The candidate must occur in the list; otherwise, we return None.
    (The left part is built up in the order encountered, so it will be in the same order as in [order].) *)
 let rec split candidate order =
   match order with
@@ -89,10 +89,10 @@ let rec split candidate order =
 (* Given the two boundaries (lists of candidates that are next in line on the left and right)
    and the remaining voter ranking (pref), check that each next candidate is exactly the
    candidate at one of the two ends.
-   
+
    Here, left_bound is the list of candidates to the left of the peak in *inward order*.
-   That is, if societal order is [a; b; c; d; e] and the peak is c, then the left side 
-   (the candidates to the left of c) is [a; b]. But the candidate immediately adjacent to c 
+   That is, if societal order is [a; b; c; d; e] and the peak is c, then the left side
+   (the candidates to the left of c) is [a; b]. But the candidate immediately adjacent to c
    on the left is b. So we want left_bound to be [b; a] (i.e. “closer” candidates first). *)
 let rec check_single_peaked remaining_pref left_bound right_bound =
   match remaining_pref with
@@ -116,9 +116,9 @@ let is_single_peaked_wrt order pref =
         | None -> false (* peak not in societal order *)
         | Some (left, right) ->
             (* The left list produced by [split] is in the order encountered,
-             which is the same as [order] from left to right.
-             However, the candidate immediately adjacent to the peak on the left
-             is the *last* element of that list. So we reverse it to obtain the left boundary. *)
+               which is the same as [order] from left to right.
+               However, the candidate immediately adjacent to the peak on the left
+               is the *last* element of that list. So we reverse it to obtain the left boundary. *)
             let left_bound = match left with [] -> [] | _ -> List.rev left in
             check_single_peaked cs left_bound right)
 
@@ -210,20 +210,18 @@ let is_transitive profile =
 let n_unique_preferences profile = List.length @@ unique_preferences profile
 
 let distance_to_consensus profile distance =
-  if n_unique_preferences profile = 1 then 1.
-  else
-    let dist_to_profiles =
-      List.map
-        (fun cand_pref ->
-          List.fold_left
-            (fun dist pref -> dist +. distance cand_pref pref)
-            0.
-            (all_profiles_weak (List.hd profile)))
-        profile
-    in
-    List.fold_left
-      (fun min_found curr -> if curr < min_found then curr else min_found)
-      (List.hd dist_to_profiles) dist_to_profiles
+  let dist_to_profiles =
+    List.map
+      (fun cand_pref ->
+        List.fold_left
+          (fun dist pref -> dist +. distance cand_pref pref)
+          0.
+          (all_profiles_weak (List.hd profile)))
+      profile
+  in
+  List.fold_left
+    (fun min_found curr -> if curr < min_found then curr else min_found)
+    (List.hd dist_to_profiles) dist_to_profiles
 
 let opposing profile dist =
   match unique_preferences profile with

@@ -80,7 +80,7 @@ let main () =
   let nAlternatives = 3 in
   let nDeliberationSteps = 2 in
   (* Open CSV file *)
-  let oc = open_out "results/data.csv" in
+  let oc = open_out "results/data_consensus.csv" in
   let titles, evals = get_all_evals () in
 
   (* Prepare header row *)
