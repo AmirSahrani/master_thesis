@@ -112,7 +112,7 @@ if __name__ == "__main__":
         data, "condorcet_start", "condorcet_end", "condorcet_proportion"
     )
     unique_profiles = compute_average(data, "unique_end", "unique")
-    opposing_profiles = compute_average(data, "opposing", "opposing_avg")
+    # opposing_profiles = compute_average(data, "opposing", "opposing_avg")
     sp_proximity = compute_average(data, "proximity_to_sp_end", "sp_proximity")
     sp_proximity = sp_proximity.loc[sp_proximity["bias"] > 0.5]
     plot(
@@ -138,13 +138,13 @@ if __name__ == "__main__":
     plot(
         unique_profiles,
         "unique",
-        "Number of Profiles",
+        r"\#Unique Preferences",
     )
-    plot(
-        opposing_profiles,
-        "opposing_avg",
-        "Count",
-    )
+    # plot(
+    #     opposing_profiles,
+    #     "opposing_avg",
+    #     "Count",
+    # )
     plot(
         sp_proximity,
         "sp_proximity",
