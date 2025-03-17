@@ -6,18 +6,13 @@ import matplotlib.pyplot as plt
 
 plt.rcParams.update(
     {
-        "font.size": 23,
-        "axes.labelsize": 23,
-        "axes.titlesize": 23,
-        "xtick.labelsize": 23,
-        "ytick.labelsize": 23,
-        "legend.fontsize": 16,
+        "font.size": 20,
         "axes.linewidth": 1,
         "grid.linewidth": 1,
         "grid.alpha": 0.3,
         "image.cmap": "viridis",
         "text.usetex": True,
-        "font.family": "Computer Modern",
+        "font.family": "Charter",
     }
 )
 
@@ -72,6 +67,7 @@ def compute_percentage_change(data, col_start, col_end, new_col):
 
 
 def plot(data, col, ylab):
+    plt.figure(figsize=(6, 4))
     spaces = ["KS", "DP", "CS"]
     marker = ["o", "s", "^"]
     colors = ["#A93C93", "#008B72", "#613F99"]
@@ -89,7 +85,9 @@ def plot(data, col, ylab):
             color=color,
             linestyle="-",
         )
-    plt.xticks(rotation=45)
+    x_ticks = np.arange(x.min(), x.max(), 0.05)
+    x_labels = [f"{x:.2f}" for x in x_ticks]
+    plt.xticks(ticks=x_ticks, rotation=45, labels=x_labels)
     plt.xlabel("Bias")
     plt.ylabel(ylab)
     plt.legend()
@@ -130,7 +128,7 @@ if __name__ == "__main__":
     plot(
         consensus_change,
         "consensus_dist_change",
-        "Percentage",
+        "Move to Consensus",
     )
     plot(
         condorcet_proportion,
@@ -140,7 +138,7 @@ if __name__ == "__main__":
     plot(
         unique_profiles,
         "unique",
-        "Count",
+        "Number of Profiles",
     )
     plot(
         opposing_profiles,
@@ -150,5 +148,5 @@ if __name__ == "__main__":
     plot(
         sp_proximity,
         "sp_proximity",
-        "proximity to Single-peakedness",
+        "PtS",
     )
