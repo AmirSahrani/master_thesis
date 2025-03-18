@@ -8,6 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     import polars as pl
+    import sklearn as sk
     import numpy as np
     import matplotlib.pyplot as plt
     from enum import Enum
@@ -31,7 +32,7 @@ def _():
             "font.family": "Computer Modern",
         }
     )
-    return Enum, mo, np, pl, plt, textwrap
+    return Enum, mo, np, pl, plt, sk, textwrap
 
 
 @app.cell
@@ -42,7 +43,6 @@ def _(Enum):
         REFUSED = "98"
         INVALID = "-1"
         MULTIPLE_REPONSE = "-8"
-
 
     def from_value(value: int):
         if value in {"98", "99", "998", "999"}:
@@ -61,7 +61,10 @@ def _(Enum):
 @app.cell
 def _(pl):
     questionnaire_questions = pl.read_csv(
-        "data/questionnaire.csv", separator=";", has_header=False, new_columns=["code", "question"]
+        "data/questionnaire.csv",
+        separator=";",
+        has_header=False,
+        new_columns=["code", "question"],
     )
 
     question_dict = {}
@@ -123,9 +126,13 @@ def _(data, from_value, pl, sql_context):
         .alias("Timepoint")
     )
 
-    df_long = df_long.with_columns(df_long["Question"].str.replace("^T2", "").alias("Question"))
     df_long = df_long.with_columns(
-        df_long["Response"].map_elements(from_value, return_dtype=int).alias("ResponseType")
+        df_long["Question"].str.replace("^T2", "").alias("Question")
+    )
+    df_long = df_long.with_columns(
+        df_long["Response"]
+        .map_elements(from_value, return_dtype=int)
+        .alias("ResponseType")
     )
 
     sql_context.register("data_long", df_long)
@@ -150,10 +157,9 @@ def _(np, pl, plt, question_dict, sql_context, textwrap):
     def gen_response_query(cols, q, response_type, time):
         return f"""
             SELECT {" ".join(cols)}
-            FROM data_long 
+            FROM data_long
             WHERE Question = '{q}' AND ResponseType = {response_type} AND Timepoint = '{time}' AND CONDITION = 1
         """
-
 
     questions_query = """
         SELECT DISTINCT Question from data_long
@@ -162,7 +168,8 @@ def _(np, pl, plt, question_dict, sql_context, textwrap):
     questions = sql_context.execute(questions_query).collect()
 
     num_questions = len(questions)
-    num_figures = (num_questions + 9) // 10  # Ceiling division to get number of figures
+    # Ceiling division to get number of figures
+    num_figures = (num_questions + 9) // 10
 
     for fig_num in range(num_figures):
         # Create a new figure with increased size for better readability
@@ -173,7 +180,9 @@ def _(np, pl, plt, question_dict, sql_context, textwrap):
         end_idx = min((fig_num + 1) * 10, num_questions)
 
         # Create 2x5 subplot grid
-        for subplot_idx, question in enumerate(questions["Question"][start_idx:end_idx], 1):
+        for subplot_idx, question in enumerate(
+            questions["Question"][start_idx:end_idx], 1
+        ):
             plt.subplot(2, 5, subplot_idx)
 
             q = gen_response_query(["Response"], question, 0, "Pre")
@@ -194,17 +203,19 @@ def _(np, pl, plt, question_dict, sql_context, textwrap):
 
             # Create histogram
             # Create histogram
-            counts, bin_edges = np.histogram(
-                np.concatenate([q_data, q2_data]), bins=10
-            )
+            counts, bin_edges = np.histogram(np.concatenate([q_data, q2_data]), bins=10)
 
             # Plot histogram
-            plt.hist([q_data, q2_data], bins=bin_edges, label=["Pre", "Post"], alpha=0.7)
+            plt.hist(
+                [q_data, q2_data],
+                bins=bin_edges,
+                label=["Pre", "Post"],
+                alpha=0.7,
+                density=True,
+            )
 
             # Set x-ticks to the bin edges
-            plt.xticks(
-                bin_edges.astype(int), rotation=45
-            ) 
+            plt.xticks(bin_edges.astype(int), rotation=45)
             wrapped_title = textwrap.fill(full_title, width=40)
             plt.legend()
 
@@ -212,7 +223,6 @@ def _(np, pl, plt, question_dict, sql_context, textwrap):
             plt.title(wrapped_title, ha="center")
             plt.tight_layout()
         plt.savefig(f"figures/{question}.png")
-
 
     # Show all figures
     plt.show()
@@ -267,31 +277,31 @@ def _(sql_context):
         if cond != "":
             return f"""
                 SELECT *
-                FROM data_long 
+                FROM data_long
                 WHERE ID in ({", ".join([str(id) for id in ids])}) AND {cond}
             """
         else:
             return f"""
                 SELECT *
-                FROM data_long 
+                FROM data_long
                 WHERE ID in ({", ".join([str(id) for id in ids])})
             """
-    
+
     def gen_group_voter_query(group, cond):
         if cond != "":
             return f"""
                 SELECT *
-                FROM data_long 
+                FROM data_long
                 WHERE GROUP = '{group}' AND {cond}
             """
         else:
             return f"""
                 SELECT *
-                FROM data_long 
+                FROM data_long
                 WHERE GROUP = '{group}'
             """
 
-    def get_voters(ids=None, group=None, cond = ""):
+    def get_voters(ids=None, group=None, cond=""):
         assert ids is not None or group is not None
         if ids is not None:
             q = gen_voter_query(ids, cond)
@@ -299,7 +309,7 @@ def _(sql_context):
         else:
             q = gen_group_voter_query(group, cond)
             return sql_context.execute(q).collect()
-        
+
     def get_voter_preferences(ids=None, group=None, cond=""):
         """
         Retrieves voter data in a wide format.
@@ -327,12 +337,7 @@ def _(sql_context):
 
         return df_wide
 
-
-    print(get_voter_preferences(group=6, cond="Timepoint = 'Pre'"))
-
-
-    
-
+    print(get_voter_preferences(group=6, cond="Timepoint = 'Pre'").columns)
     return (
         gen_group_voter_query,
         gen_voter_query,
@@ -359,15 +364,18 @@ def _(from_value, get_voter_preferences, np, pl, questions):
     def voter_preference_over(states, voter):
         assert states[0].shape == voter.shape
         opinion_weights = [1 if from_value(op) == 0 else 1 for op in voter]
-        return sorted(states.keys(), key=lambda k: sum(opinion_weights* abs(voter - states[k])**2))
-    
+        return sorted(
+            states.keys(),
+            key=lambda k: sum(opinion_weights * abs(voter - states[k]) ** 2),
+        )
 
     poll_questions = [q for q in questions["Question"] if "Q" in q]
     world_states = generate_states(10, poll_questions)
     voters = get_voter_preferences(group=6, cond="Timepoint = 'Pre'")[poll_questions]
     voters = voters.cast(pl.Int64)
-    voter_preferences = np.apply_along_axis(lambda v: voter_preference_over(world_states, v), 1, voters.to_numpy())
-    print(voter_preferences)
+    voter_preferences = np.apply_along_axis(
+        lambda v: voter_preference_over(world_states, v), 1, voters.to_numpy()
+    )
     return (
         generate_states,
         poll_questions,
@@ -379,9 +387,20 @@ def _(from_value, get_voter_preferences, np, pl, questions):
 
 
 @app.cell
-def _(world_states):
-    print(world_states[8])
-    return
+def _(get_voters):
+    first_thousand = get_voters(ids=[*range(1000)])
+    print([x  for x in first_thousand["Question"].unique()if "PK" in x])
+    PK_correct_answers = {
+        "PK1": 1,
+        "PK2": 1,
+        "PK3": 1,
+        "PK4": 1,
+        "PK6": 1,
+        "PK7": 1,
+        "PK8": 1,
+        "PK9": 1,
+    }
+    return PK_correct_answers, first_thousand
 
 
 if __name__ == "__main__":
