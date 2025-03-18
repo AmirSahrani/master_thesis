@@ -37,6 +37,15 @@ def _():
 
 @app.cell
 def _(Enum):
+    PK_correct_answers = {
+        "PK1": 2, # Which political Party holds a majority in the sensate
+        "PK2": 1, # Which political Party holds a majority in the house
+        "PK3": 1, #About how many undocumented immigrants are in teh US
+        "PK4": 4, # Which of the follwoing countries is not part of the paris agreement
+        "PK6": 2, # What percentage is the highest tax rate for capital gains taxes
+        "PK7": 2, # Which of the following organizations dealing with trade has the most countries
+    }
+
     class Response(Enum):
         VALID = "0"
         NO_OPINION = "77"
@@ -55,7 +64,7 @@ def _(Enum):
             return -8
         else:
             return 0
-    return Response, from_value
+    return PK_correct_answers, Response, from_value
 
 
 @app.cell
@@ -387,20 +396,32 @@ def _(from_value, get_voter_preferences, np, pl, questions):
 
 
 @app.cell
-def _(get_voters):
+def _(PK_correct_answers, get_voters, sql_context):
     first_thousand = get_voters(ids=[*range(1000)])
     print([x  for x in first_thousand["Question"].unique()if "PK" in x])
-    PK_correct_answers = {
-        "PK1": 1,
-        "PK2": 1,
-        "PK3": 1,
-        "PK4": 1,
-        "PK6": 1,
-        "PK7": 1,
-        "PK8": 1,
-        "PK9": 1,
-    }
-    return PK_correct_answers, first_thousand
+
+    query_add_column = """
+        ALTER  data_long
+        ADD COLUMN pk_correct DECIMAL(0,1)
+    """
+
+    sql_context.execute(query_add_column)
+    # Assuming PK_correct_answers is a dictionary with {pk: answer}
+    for pk, answer in PK_correct_answers.items():
+        query_update_column = f"""
+            UPDATE data_long AS t
+            JOIN (
+                SELECT voter_id, AVG(Question) AS avg_question
+                FROM your_table_name
+                WHERE pk = {pk}
+                GROUP BY voter_id
+            ) AS avg_table
+            ON t.voter_id = avg_table.voter_id
+            SET t.pk_correct = avg_table.avg_question
+            WHERE t.pk = {pk};
+        """
+        sql_context.execute(query_update_column)
+    return answer, first_thousand, pk, query_add_column, query_update_column
 
 
 if __name__ == "__main__":
