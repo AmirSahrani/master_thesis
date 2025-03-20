@@ -3,6 +3,19 @@ type profile = preference list
 type voter = { preference : preference; bias : float; announced : int }
 type spaces = KS | CS | DP
 
+let experiments = function
+  | "rad" -> `Rad
+  | "degroot" -> `DeGroot
+  | "abm" -> `ABM
+  | "Testing" -> `Testing
+  | _ -> failwith "Provide valid experiment type"
+
+module IntSet = Set.Make (struct
+  type t = int
+
+  let compare = compare
+end)
+
 let rec permutations lst =
   match lst with
   | [] -> [ [] ]

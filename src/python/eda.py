@@ -8,6 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     import polars as pl
+    import sqlite3
     import sklearn as sk
     import numpy as np
     import matplotlib.pyplot as plt
@@ -32,18 +33,28 @@ def _():
             "font.family": "Computer Modern",
         }
     )
-    return Enum, mo, np, pl, plt, sk, textwrap
+    return Enum, mo, np, pl, plt, sk, sqlite3, textwrap
 
 
 @app.cell
 def _(Enum):
     PK_correct_answers = {
-        "PK1": 2, # Which political Party holds a majority in the sensate
-        "PK2": 1, # Which political Party holds a majority in the house
-        "PK3": 1, #About how many undocumented immigrants are in teh US
-        "PK4": 4, # Which of the follwoing countries is not part of the paris agreement
-        "PK6": 2, # What percentage is the highest tax rate for capital gains taxes
-        "PK7": 2, # Which of the following organizations dealing with trade has the most countries
+        "code": [
+    "PK1",
+    "PK2",
+    "PK3",
+    "PK4",
+    "PK6",
+    "PK7",       
+        ], 
+        "answer": [
+         2, # Which political Party holds a majority in the sensate
+         1, # Which political Party holds a majority in the house
+         1, #About how many undocumented immigrants are in teh US
+         4, # Which of the follwoing countries is not part of the paris agreement
+         2, # What percentage is the highest tax rate for capital gains taxes
+         2, # Which of the following organizations dealing with trade has the most countries
+            ]
     }
 
     class Response(Enum):
@@ -55,20 +66,20 @@ def _(Enum):
 
     def from_value(value: int):
         if value in {"98", "99", "998", "999"}:
-            return 98
+            return None
         if value in {"77", "777"}:
-            return 77
+            return 11
         elif value == " ":
-            return -1
+            return None
         elif value == "-8":
-            return -8
+            return None
         else:
-            return 0
+            return int(value)
     return PK_correct_answers, Response, from_value
 
 
 @app.cell
-def _(pl):
+def _(PK_correct_answers, pl):
     questionnaire_questions = pl.read_csv(
         "data/questionnaire.csv",
         separator=";",
@@ -76,6 +87,9 @@ def _(pl):
         new_columns=["code", "question"],
     )
 
+    questions = questionnaire_questions.filter( pl.col("code").str.contains("Q") &  ~pl.col("code").str.contains("T2"))
+    pk = questionnaire_questions.filter(pl.col("code").str.contains("PK") & (~ pl.col("code").str.contains("T2")))
+    pk = pk.join(pl.from_dict(PK_correct_answers), on="code")
     question_dict = {}
     for [q_code, text] in questionnaire_questions.iter_rows():
         question_dict[q_code] = text.replace("]", "").replace("[", "")
@@ -84,69 +98,179 @@ def _(pl):
     data = data.with_columns(pl.int_range(data.shape[0]).alias("ID"))
     sql_context = pl.SQLContext()
 
-    print(questionnaire_questions)
+    print(questions)
+    print(pk)
     print(data)
     print(data.columns)
     return (
         data,
+        pk,
         q_code,
         question_dict,
         questionnaire_questions,
+        questions,
         sql_context,
         text,
     )
 
 
 @app.cell
-def _(data, from_value, pl, sql_context):
-    df_long = data.unpivot(
-        index=[
-            "ID",
-            "WEIGHT_CONTROL",
-            "WEIGHT_DELEGATE",
-            "POST",
-            "GROUP",
-            "CONDITION",
-            "GENDER",
-            "AGE",
-            "AGE4",
-            "RACETHNICITY",
-            "EDUC4",
-        ],  # Identify individuals
-        on=[
-            col
-            for col in data.columns
-            if col.startswith("Q")
-            or col.startswith("T2Q")
-            or (col.startswith("PK") and not col.endswith("TIME"))
-            or (col.startswith("T2PK") and not col.endswith("TIME"))
-            or "PARTYID3" in col
-            or col.startswith("D")
-            or col.startswith("T2D")
-            or "LIBCONV" in col
-        ],  # Select all question columns
-        variable_name="Question",
-        value_name="Response",
-    )
-    df_long = df_long.with_columns(
-        pl.when(df_long["Question"].str.starts_with("T2"))
-        .then(pl.lit("Post"))
-        .otherwise(pl.lit("Pre"))
-        .alias("Timepoint")
+def _(pk, questions):
+    connection_string = "sqlite:///data/a1r.db"
+
+    questions.write_database(table_name="questionnaire", connection=connection_string, if_table_exists="replace")
+    pk.write_database(table_name="political_knowledge", connection=connection_string, if_table_exists="replace")
+    return (connection_string,)
+
+
+@app.cell
+def _(connection_string, data, from_value, pk, pl):
+    responses_pre = data.select(col for col in data.columns 
+            if col.startswith("Q") or col == "ID"
+            )
+
+    responses_pre = responses_pre.with_columns([
+        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col) 
+        for col in responses_pre.columns 
+        if col != "ID"
+    ])
+
+    responses_post = data.select(col for col in data.columns 
+            if col.startswith("T2Q") or col == "ID"
+                               )
+
+
+    responses_post = responses_post.with_columns([
+        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col) 
+        for col in responses_post.columns 
+        if col != "ID"
+    ])
+
+    responses_post =responses_post.rename({q: q.replace("T2", "") for q in responses_post.columns})
+
+    PK_past = data.select(col for col in data.columns 
+            if (col.startswith("PK") and "TIME" not in col) or col == "ID"
+            )
+
+    PK_past= PK_past.with_columns([
+        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col) 
+        for col in PK_past.columns 
+        if col != "ID"
+    ])
+
+    columns_to_process = [col for col in PK_past.columns if col != "ID"]
+
+    PK_correct = PK_past.with_columns([
+        pl.col(col).map_elements(
+            lambda x: x == (pk.filter(pl.col("code") == col)
+                            .get_column("answer")[0]), return_dtype=pl.Boolean)
+        .alias(col + "_correct") 
+        for col in columns_to_process
+    ])
+
+    pk_correct_questions_labels = [col for col in PK_correct.columns if "correct" in col]
+    PK_correct = PK_correct.with_columns(
+        pl.mean_horizontal(pk_correct_questions_labels).alias("score")
     )
 
-    df_long = df_long.with_columns(
-        df_long["Question"].str.replace("^T2", "").alias("Question")
-    )
-    df_long = df_long.with_columns(
-        df_long["Response"]
-        .map_elements(from_value, return_dtype=int)
-        .alias("ResponseType")
+
+    print(responses_post)
+
+    responses_pre.write_database(table_name="response_pre", connection=connection_string, if_table_exists="replace")
+    responses_post.write_database(table_name="response_post", connection=connection_string, if_table_exists="replace")
+    PK_correct.write_database(table_name="response_PK", connection=connection_string, if_table_exists="replace")
+    return (
+        PK_correct,
+        PK_past,
+        columns_to_process,
+        pk_correct_questions_labels,
+        responses_post,
+        responses_pre,
     )
 
-    sql_context.register("data_long", df_long)
-    print(df_long)
-    return (df_long,)
+
+@app.cell
+def _(connection_string, data):
+    # voter information
+
+    print(data.columns)
+    info_columns = [
+        'GROUP', 'CONDITION', 'GENDER', 'AGE',  'RACETHNICITY', 'EDUC4', 'ID', 'LIBCONV', 'D1', 'D2D', 'D2R', 'D2I', 'T2D1'
+    ]
+
+
+
+    voter_info = data.select(info_columns)
+    voter_info.write_database(table_name="voter_info", connection=connection_string, if_table_exists="replace")
+
+    voter_info.head(100)
+    return info_columns, voter_info
+
+
+@app.cell
+def _(sqlite3):
+    cursor = sqlite3.connect("data/a1r.db").cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = cursor.fetchall()
+    for table in tables:
+        table_name = table[0]
+        print(f"\nSchema for table: {table_name}")
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = cursor.fetchall()
+        for column in columns:
+            print(column)
+    return column, columns, cursor, table, table_name, tables
+
+
+@app.cell(hide_code=True)
+def _():
+    # I    index=[
+    #         "ID",
+    #         "WEIGHT_CONTROL",
+    #         "WEIGHT_DELEGATE",
+    #         "POST",
+    #         "GROUP",
+    #         "CONDITION",
+    #         "GENDER",
+    #         "AGE",
+    #         "AGE4",
+    #         "RACETHNICITY",
+    #         "EDUC4",
+    #     ],  # Identify individuals
+    #     on=[
+    #         col
+    #         for col in data.columns
+    #         if col.startswith("Q")
+    #         or col.startswith("T2Q")
+    #         or (col.startswith("PK") and not col.endswith("TIME"))
+    #         or (col.startswith("T2PK") and not col.endswith("TIME"))
+    #         or "PARTYID3" in col
+    #         or col.startswith("D")
+    #         or col.startswith("T2D")
+    #         or "LIBCONV" in col
+    #     ],  # Select all question columns
+    #     variable_name="Question",
+    #     value_name="Response",
+    # )
+    # df_long = df_long.with_columns(
+    #     pl.when(df_long["Question"].str.starts_with("T2"))
+    #     .then(pl.lit("Post"))
+    #     .otherwise(pl.lit("Pre"))
+    #     .alias("Timepoint")
+    # )
+
+    # df_long = df_long.with_columns(
+    #     df_long["Question"].str.replace("^T2", "").alias("Question")
+    # )
+    # df_long = df_long.with_columns(
+    #     df_long["Response"]
+    #     .map_elements(from_value, return_dtype=int)
+    #     .alias("ResponseType")
+    # )
+
+    # sql_context.register("data_long", df_long)
+    # print(df_long)
+    return
 
 
 @app.cell(hide_code=True)
@@ -162,7 +286,7 @@ def _(mo):
 
 
 @app.cell
-def _(np, pl, plt, question_dict, sql_context, textwrap):
+def _():
     def gen_response_query(cols, q, response_type, time):
         return f"""
             SELECT {" ".join(cols)}
@@ -170,91 +294,72 @@ def _(np, pl, plt, question_dict, sql_context, textwrap):
             WHERE Question = '{q}' AND ResponseType = {response_type} AND Timepoint = '{time}' AND CONDITION = 1
         """
 
-    questions_query = """
-        SELECT DISTINCT Question from data_long
-    """
+    # questions_query = """
+    #     SELECT DISTINCT Question from data_long
+    # """
 
-    questions = sql_context.execute(questions_query).collect()
+    # questions = sql_context.execute(questions_query).collect()
 
-    num_questions = len(questions)
-    # Ceiling division to get number of figures
-    num_figures = (num_questions + 9) // 10
+    # num_questions = len(questions)
+    # # Ceiling division to get number of figures
+    # num_figures = (num_questions + 9) // 10
 
-    for fig_num in range(num_figures):
-        # Create a new figure with increased size for better readability
-        plt.figure(figsize=(35, 14))
+    # for fig_num in range(num_figures):
+    #     # Create a new figure with increased size for better readability
+    #     plt.figure(figsize=(35, 14))
 
-        # Calculate the range of questions for this figure
-        start_idx = fig_num * 10
-        end_idx = min((fig_num + 1) * 10, num_questions)
+    #     # Calculate the range of questions for this figure
+    #     start_idx = fig_num * 10
+    #     end_idx = min((fig_num + 1) * 10, num_questions)
 
-        # Create 2x5 subplot grid
-        for subplot_idx, question in enumerate(
-            questions["Question"][start_idx:end_idx], 1
-        ):
-            plt.subplot(2, 5, subplot_idx)
+    #     # Create 2x5 subplot grid
+    #     for subplot_idx, question in enumerate(
+    #         questions["Question"][start_idx:end_idx], 1
+    #     ):
+    #         plt.subplot(2, 5, subplot_idx)
 
-            q = gen_response_query(["Response"], question, 0, "Pre")
-            q2 = gen_response_query(["Response"], question, 0, "Post")
-            q_data = sql_context.execute(q).collect().cast(pl.Int64)
-            q2_data = sql_context.execute(q2).collect().cast(pl.Int64)
+    #         q = gen_response_query(["Response"], question, 0, "Pre")
+    #         q2 = gen_response_query(["Response"], question, 0, "Post")
+    #         q_data = sql_context.execute(q).collect().cast(pl.Int64)
+    #         q2_data = sql_context.execute(q2).collect().cast(pl.Int64)
 
-            full_title = question_dict.get(question, question)
-            if question.startswith("PK"):
-                full_title = "PK: " + full_title
-            elif any([x in question for x in ["PARTYID", "D"]]):
-                full_title = "Affliation: " + full_title
-            full_title = full_title.replace("$", r"\$")
+    #         full_title = question_dict.get(question, question)
+    #         if question.startswith("PK"):
+    #             full_title = "PK: " + full_title
+    #         elif any([x in question for x in ["PARTYID", "D"]]):
+    #             full_title = "Affliation: " + full_title
+    #         full_title = full_title.replace("$", r"\$")
 
-            # Create histogram
-            q_data = q_data.to_numpy().squeeze()
-            q2_data = q2_data.to_numpy().squeeze()
+    #         # Create histogram
+    #         q_data = q_data.to_numpy().squeeze()
+    #         q2_data = q2_data.to_numpy().squeeze()
 
-            # Create histogram
-            # Create histogram
-            counts, bin_edges = np.histogram(np.concatenate([q_data, q2_data]), bins=10)
+    #         # Create histogram
+    #         # Create histogram
+    #         counts, bin_edges = np.histogram(np.concatenate([q_data, q2_data]), bins=10)
 
-            # Plot histogram
-            plt.hist(
-                [q_data, q2_data],
-                bins=bin_edges,
-                label=["Pre", "Post"],
-                alpha=0.7,
-                density=True,
-            )
+    #         # Plot histogram
+    #         plt.hist(
+    #             [q_data, q2_data],
+    #             bins=bin_edges,
+    #             label=["Pre", "Post"],
+    #             alpha=0.7,
+    #             density=True,
+    #         )
 
-            # Set x-ticks to the bin edges
-            plt.xticks(bin_edges.astype(int), rotation=45)
-            wrapped_title = textwrap.fill(full_title, width=40)
-            plt.legend()
+    #         # Set x-ticks to the bin edges
+    #         plt.xticks(bin_edges.astype(int), rotation=45)
+    #         wrapped_title = textwrap.fill(full_title, width=40)
+    #         plt.legend()
 
-            # Add wrapped title
-            plt.title(wrapped_title, ha="center")
-            plt.tight_layout()
-        plt.savefig(f"figures/{question}.png")
+    #         # Add wrapped title
+    #         plt.title(wrapped_title, ha="center")
+    #         plt.tight_layout()
+    #     plt.savefig(f"figures/{question}.png")
 
-    # Show all figures
-    plt.show()
-    return (
-        bin_edges,
-        counts,
-        end_idx,
-        fig_num,
-        full_title,
-        gen_response_query,
-        num_figures,
-        num_questions,
-        q,
-        q2,
-        q2_data,
-        q_data,
-        question,
-        questions,
-        questions_query,
-        start_idx,
-        subplot_idx,
-        wrapped_title,
-    )
+    # # Show all figures
+    # plt.show()
+    return (gen_response_query,)
 
 
 @app.cell(hide_code=True)
@@ -280,81 +385,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(sql_context):
-    def gen_voter_query(ids, cond):
-        if cond != "":
-            return f"""
-                SELECT *
-                FROM data_long
-                WHERE ID in ({", ".join([str(id) for id in ids])}) AND {cond}
-            """
-        else:
-            return f"""
-                SELECT *
-                FROM data_long
-                WHERE ID in ({", ".join([str(id) for id in ids])})
-            """
-
-    def gen_group_voter_query(group, cond):
-        if cond != "":
-            return f"""
-                SELECT *
-                FROM data_long
-                WHERE GROUP = '{group}' AND {cond}
-            """
-        else:
-            return f"""
-                SELECT *
-                FROM data_long
-                WHERE GROUP = '{group}'
-            """
-
-    def get_voters(ids=None, group=None, cond=""):
-        assert ids is not None or group is not None
-        if ids is not None:
-            q = gen_voter_query(ids, cond)
-            return sql_context.execute(q).collect()
-        else:
-            q = gen_group_voter_query(group, cond)
-            return sql_context.execute(q).collect()
-
-    def get_voter_preferences(ids=None, group=None, cond=""):
-        """
-        Retrieves voter data in a wide format.
-        """
-        voter_data = get_voters(ids=ids, group=group, cond=cond)
-
-        # Pivot back to wide format
-        df_wide = voter_data.pivot(
-            values="Response",
-            index=[
-                "ID",
-                "WEIGHT_CONTROL",
-                "WEIGHT_DELEGATE",
-                "POST",
-                "GROUP",
-                "CONDITION",
-                "GENDER",
-                "AGE",
-                "AGE4",
-                "RACETHNICITY",
-                "EDUC4",
-            ],  # Keep identifying columns as index
-            on="Question",  # Spread responses back into separate columns
-        )
-
-        return df_wide
-
-    print(get_voter_preferences(group=6, cond="Timepoint = 'Pre'").columns)
-    return (
-        gen_group_voter_query,
-        gen_voter_query,
-        get_voter_preferences,
-        get_voters,
-    )
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md("""We can now select individual voters, we will now setup a proceedure that generates "states of the world", meaning that we generate a set of possible outcomes, which the individuals will have preferences over, depending on the absolute distance from their current possition.""")
@@ -362,66 +392,124 @@ def _(mo):
 
 
 @app.cell
-def _(from_value, get_voter_preferences, np, pl, questions):
-    def generate_states(n_states, variables):
-        states = {}
-        for state in range(n_states):
-            state_opinion = np.random.randint(0, 11, len(variables))
-            states[state] = state_opinion
-        return states
+def _(pl, sk, sqlite3):
+    conn = sqlite3.connect("data/a1r.db")
+    pre_deliberation_responses = pl.read_database(query=
+                     """
+                     SELECT * 
+                     FROM response_pre
+                     """,
+                     connection=conn).drop_nulls()
 
-    def voter_preference_over(states, voter):
-        assert states[0].shape == voter.shape
-        opinion_weights = [1 if from_value(op) == 0 else 1 for op in voter]
-        return sorted(
-            states.keys(),
-            key=lambda k: sum(opinion_weights * abs(voter - states[k]) ** 2),
-        )
+    pre_affiliation= pl.read_database(query=
+                     """
+                     SELECT ID, D1, T2D1 
+                     FROM voter_info
+                     """,
+                     connection=conn).drop_nulls()
 
-    poll_questions = [q for q in questions["Question"] if "Q" in q]
-    world_states = generate_states(10, poll_questions)
-    voters = get_voter_preferences(group=6, cond="Timepoint = 'Pre'")[poll_questions]
-    voters = voters.cast(pl.Int64)
-    voter_preferences = np.apply_along_axis(
-        lambda v: voter_preference_over(world_states, v), 1, voters.to_numpy()
-    )
+    post_deliberation_responses = pl.read_database(query=
+                     """
+                     SELECT * 
+                     FROM response_post
+                     """,
+                     connection=conn).drop_nulls()
+
+    pre_deliberation_responses_affiliation = pre_deliberation_responses.join(pre_affiliation, how="inner", on= "ID")
+
+    drop_columns = ["ID", "Q9_1", "Q9_2"]
+    gmm_pre = sk.svm.SVC(probability=True)
+    gmm_post = sk.svm.SVC(probability=True)
+    fitted_gmm_pre = gmm_pre.fit(pre_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation["D1"])
+    fitted_gmm_post = gmm_post.fit(post_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation.select(
+        pl.col(["T2D1"])
+        .filter(
+            pl.col("ID").is_in(post_deliberation_responses["ID"])
+        )).to_series()
+                                  )
+
+
+    predictions_pre = fitted_gmm_pre.predict(pre_deliberation_responses.drop(drop_columns))
+    predictions_post = fitted_gmm_post.predict(post_deliberation_responses.drop(drop_columns))
     return (
-        generate_states,
-        poll_questions,
-        voter_preference_over,
-        voter_preferences,
-        voters,
-        world_states,
+        conn,
+        drop_columns,
+        fitted_gmm_post,
+        fitted_gmm_pre,
+        gmm_post,
+        gmm_pre,
+        post_deliberation_responses,
+        pre_affiliation,
+        pre_deliberation_responses,
+        pre_deliberation_responses_affiliation,
+        predictions_post,
+        predictions_pre,
     )
 
 
 @app.cell
-def _(PK_correct_answers, get_voters, sql_context):
-    first_thousand = get_voters(ids=[*range(1000)])
-    print([x  for x in first_thousand["Question"].unique()if "PK" in x])
+def _(
+    drop_columns,
+    fitted_gmm_post,
+    fitted_gmm_pre,
+    pl,
+    post_deliberation_responses,
+    pre_deliberation_responses,
+    pre_deliberation_responses_affiliation,
+):
+    print(fitted_gmm_pre.score(pre_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation["D1"]))
 
-    query_add_column = """
-        ALTER  data_long
-        ADD COLUMN pk_correct DECIMAL(0,1)
-    """
+    print(fitted_gmm_post.score(post_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation.select(
+        pl.col(["T2D1"])
+        .filter(
+            pl.col("ID").is_in(post_deliberation_responses["ID"])
+        )).to_series()))
+    return
 
-    sql_context.execute(query_add_column)
-    # Assuming PK_correct_answers is a dictionary with {pk: answer}
-    for pk, answer in PK_correct_answers.items():
-        query_update_column = f"""
-            UPDATE data_long AS t
-            JOIN (
-                SELECT voter_id, AVG(Question) AS avg_question
-                FROM your_table_name
-                WHERE pk = {pk}
-                GROUP BY voter_id
-            ) AS avg_table
-            ON t.voter_id = avg_table.voter_id
-            SET t.pk_correct = avg_table.avg_question
-            WHERE t.pk = {pk};
-        """
-        sql_context.execute(query_update_column)
-    return answer, first_thousand, pk, query_add_column, query_update_column
+
+@app.cell
+def _(
+    drop_columns,
+    plt,
+    post_deliberation_responses,
+    pre_deliberation_responses,
+    pre_deliberation_responses_affiliation,
+    predictions_post,
+    predictions_pre,
+    sk,
+):
+    pca = sk.manifold.MDS(2)
+    pca_data_pre = pca.fit_transform(pre_deliberation_responses.drop(drop_columns))
+    pca_data_post = pca.fit_transform(post_deliberation_responses.drop(drop_columns))
+
+    markers = {1: "X", 2:"o", 3:"^", 4:"s"}
+    colors = {1: "blue", 2:"red", 3:"green", 4:"pink"}
+
+    marker_affiliations = [markers.get(x, "2") for x in pre_deliberation_responses_affiliation["D1"]]
+    pre_colors = [colors.get(int(x), "gray") for x in predictions_pre]
+    post_colors = [colors.get(int(x), "gray") for x in predictions_post]
+
+    for (c,m), (x, y) in zip(zip(pre_colors, marker_affiliations), pca_data_pre):
+         plt.scatter(x, y, marker=m, color=c)
+    plt.show()
+
+    for (c,m), (x, y) in zip(zip(post_colors, marker_affiliations), pca_data_post):
+         plt.scatter(x, y, marker=m, color=c)
+    plt.show()
+    return (
+        c,
+        colors,
+        m,
+        marker_affiliations,
+        markers,
+        pca,
+        pca_data_post,
+        pca_data_pre,
+        post_colors,
+        pre_colors,
+        x,
+        y,
+    )
 
 
 if __name__ == "__main__":

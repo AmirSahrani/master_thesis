@@ -6,7 +6,7 @@ open Deliberation_model
 
 (* Convert is_single_peaked output to boolean *)
 let is_single_peaked_bool profile =
-  match Dimensions.is_single_peaked profile with
+  match Deliberation_model.Evaluations.is_single_peaked profile with
   | None -> false
   | Some _ -> true
 
