@@ -111,5 +111,15 @@ let deGroot_experiment () =
       GenericGraph.empty edges
   in
   let out_file = "graphs/soc-academia_sampled.edges" in
-  let out_graph = forest_fire_sample graph 4000 0.7 0.2 in
-  write_adjacency_matrix out_graph out_file
+  let out_graph = forest_fire_sample graph 500 0.2 0.2 in
+  write_adjacency_matrix out_graph out_file;
+  let trust_matrix = out_graph |> adjacency_matrix_from |> normalize_matrix in
+  let trust_matrix = add_self_bias trust_matrix 3.0 in
+  trust_matrix |> Owl_pretty.dsnda_to_string |> print_endline;
+
+  let final_opinion = deGroot trust_matrix 10. in
+  Owl.Mat.save_txt ~sep:"," ~append:false ~out:"graphs/trust_matrix"
+    final_opinion;
+  Owl.Mat.sum_rows final_opinion |> Owl_pretty.dsnda_to_string |> print_endline
+
+(* write_adjacency_matrix out_graph out_file *)

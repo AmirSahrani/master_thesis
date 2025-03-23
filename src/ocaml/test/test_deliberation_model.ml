@@ -130,6 +130,41 @@ let test_transitive () =
   check bool "Correctly determines if transative profile is transative" true
     result_transative
 
+let test_degroot () =
+  let open Owl.Mat in
+  let trust_conv =
+    Owl.Mat.of_arrays
+      [| [| 0.; 0.5; 0.5 |]; [| 1.; 0.; 0. |]; [| 0.; 1.; 0. |] |]
+  in
+  let trust_non_conv =
+    Owl.Mat.of_arrays
+      [| [| 0.; 0.5; 0.5 |]; [| 1.; 0.; 0. |]; [| 1.; 0.; 0. |] |]
+  in
+  let trust_convergence =
+    Owl.Mat.of_arrays
+      [| [| 0.4; 0.4; 0.2 |]; [| 0.4; 0.4; 0.2 |]; [| 0.4; 0.4; 0.2 |] |]
+  in
+  let trust_even =
+    Owl.Mat.of_arrays
+      [| [| 1.; 0.; 0. |]; [| 0.; 0.5; 0.5 |]; [| 0.; 0.5; 0.5 |] |]
+  in
+  let odd_pow = Deliberation_model.Model.deGroot trust_non_conv 103. in
+  let even_pow = Deliberation_model.Model.deGroot trust_non_conv 102. in
+
+  let odd_conv_pow = Deliberation_model.Model.deGroot trust_conv 103. in
+  let even_conv_pow = Deliberation_model.Model.deGroot trust_conv 102. in
+
+  (* odd_conv_pow |> Owl_pretty.dsnda_to_string |> print_endline; *)
+  check bool "Odd power results in non convergent trust matrix" true
+    (odd_pow =~ trust_non_conv);
+  check bool "Evenpower results in non convergent trust matrix" true
+    (even_pow =~ trust_even);
+  check bool
+    " Even and odd converge to correct matrix results in convergent trust \
+     matrix "
+    true
+    (even_conv_pow =~ trust_convergence && odd_conv_pow =~ trust_convergence)
+
 (* Define the test suite *)
 let () =
   run "Deliberation model Testing"
@@ -151,4 +186,5 @@ let () =
             test_deliberation_ks;
         ] );
       ("Transtive", [ test_case "Check transitivity" `Quick test_transitive ]);
+      ("DeGroot", [ test_case "Check two cases" `Quick test_degroot ]);
     ]

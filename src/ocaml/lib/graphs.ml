@@ -92,6 +92,24 @@ let write_adjacency_matrix graph filename =
   in
   String.concat "\n" edges |> output_string oc
 
+let adjacency_matrix_from graph =
+  let node_count = GenericGraph.nb_vertex graph in
+  let adjacency_matrix = Owl.Mat.zeros node_count node_count in
+  let rename_table = Hashtbl.create node_count in
+  List.iteri
+    (fun i node -> Hashtbl.add rename_table node i)
+    (GenericGraph.fold_vertex (fun node lst -> node :: lst) graph []);
+  GenericGraph.iter_vertex
+    (fun source ->
+      List.iter
+        (fun target ->
+          let source_label = Hashtbl.find rename_table source in
+          let target_label = Hashtbl.find rename_table target in
+          Owl.Mat.set adjacency_matrix source_label target_label 1.)
+        (GenericGraph.succ graph source))
+    graph;
+  adjacency_matrix
+
 module Dot = Graph.Graphviz.Dot (struct
   include ProfileGraph (* Use the graph module from above *)
 
@@ -182,14 +200,13 @@ let shortest_path graph source target =
     | _, distance -> distance
 
 let forest_fire_sample graph target_num p_forward p_backward =
-  (* 
-     Sample from a graph using a spreading "fire". 
-     Initiallize by picking random node. This node can burn each of its edges,
-     if a edge gets burned, the neighbor on the other side of the edge "catches" fire, and can burn its own links. 
+  (*
+      Sample from a graph using a spreading "fire".
+      Initiallize by picking random node. This node can burn each of its edges,
+      if a edge gets burned, the neighbor on the other side of the edge "catches" fire, and can burn its own links.
 
-     !Note burning an edge, is how an edge gets sampled. Thus the final graph is a graph of all the burned edges between nodes.
-
-   *)
+      !Note burning an edge, is how an edge gets sampled. Thus the final graph is a graph of all the burned edges between nodes.
+  *)
   let initial_node = Random.int (GenericGraph.nb_vertex graph) in
   let visited = IntSet.empty in
   let visited = IntSet.add initial_node visited in
@@ -199,7 +216,10 @@ let forest_fire_sample graph target_num p_forward p_backward =
   let rec spread source_node graph' v =
     if GenericGraph.nb_vertex graph' >= target_num then (graph', visited)
     else
-      let node = Queue.take queue in
+      let node =
+        if Queue.is_empty queue then Random.int (GenericGraph.nb_vertex graph)
+        else Queue.take queue
+      in
       let updated_graph =
         if source_node <> node then
           GenericGraph.add_vertex graph' node |> fun g ->

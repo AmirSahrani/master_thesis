@@ -1,4 +1,5 @@
 open Utils
+(* open Graphs *)
 
 let objectiveFun v1 v2 distMeasure updatedProfile =
   let r = v1.bias in
@@ -8,9 +9,9 @@ let objectiveFun v1 v2 distMeasure updatedProfile =
   let d1 = distMeasure p1 updatedProfile in
   let d2 = distMeasure p2 updatedProfile in
   (* assert (
-    Float.compare d1 1.0 <> -1
-    || Float.compare d2 1.0 <> -1
-    || v1.preference = v2.preference); *)
+     Float.compare d1 1.0 <> -1
+     || Float.compare d2 1.0 <> -1
+     || v1.preference = v2.preference); *)
   let lhs = Float.pow d1 2.0 in
   let rhs = Float.pow d2 2.0 in
   (r *. lhs) +. (r' *. rhs)
@@ -77,3 +78,17 @@ let deliberate ?(should_shuffle = true) voters rounds distance between =
       aux (round vs (r + 1)) (r + 1)
   in
   aux voters 0
+
+let normalize_matrix adjacency_matrix =
+  let row_sums = Owl.Mat.sum_rows adjacency_matrix in
+  let row_sums_fix =
+    Owl.Mat.map (fun sum -> if sum <> 0. then sum else 1.) row_sums
+  in
+  Owl.Mat.div adjacency_matrix row_sums_fix
+
+let add_self_bias adjacency_matrix factor =
+  Owl.Mat.add_diag adjacency_matrix factor |> normalize_matrix
+
+let deGroot adjacency_matrix t =
+  let open Owl.Mat in
+  adjacency_matrix **@ t
