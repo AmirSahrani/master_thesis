@@ -110,16 +110,16 @@ let deGroot_experiment () =
       (fun g (l, r) -> GenericGraph.add_edge g l r)
       GenericGraph.empty edges
   in
-  let out_file = "graphs/soc-academia_sampled.edges" in
-  let out_graph = forest_fire_sample graph 500 0.2 0.2 in
+  let out_file = "graphs/soc-academia_test.edges" in
+  let out_file_weighted = "graphs/soc-academia_sampled_weighted.edges" in
+  let out_graph = ties_sampling graph 50 in
+  (* let db = open_db "data/a1r.db" in
+  let opinions = () in *)
   write_adjacency_matrix out_graph out_file;
-  let trust_matrix = out_graph |> adjacency_matrix_from |> normalize_matrix in
-  let trust_matrix = add_self_bias trust_matrix 3.0 in
-  trust_matrix |> Owl_pretty.dsnda_to_string |> print_endline;
-
-  let final_opinion = deGroot trust_matrix 10. in
-  Owl.Mat.save_txt ~sep:"," ~append:false ~out:"graphs/trust_matrix"
-    final_opinion;
-  Owl.Mat.sum_rows final_opinion |> Owl_pretty.dsnda_to_string |> print_endline
-
-(* write_adjacency_matrix out_graph out_file *)
+  let trust_matrix = out_graph |> adjacency_matrix_from in
+  let trust_matrix =
+    add_self_bias trust_matrix 3.0 |> randomize_matrix |> normalize_matrix
+  in
+  let final_trust, _ = deGroot trust_matrix 10. in
+  (* print_mat final_trust; *)
+  save_matrix_adjacency final_trust out_file_weighted

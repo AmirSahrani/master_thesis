@@ -90,6 +90,8 @@ let unique lst =
 let print_list lst convert =
   Printf.printf "[ %s ]" (String.concat " ; " (List.map convert lst))
 
+let print_mat mat = mat |> Owl_pretty.dsnda_to_string |> print_endline
+
 let maj profile =
   let combinations = pairs (List.flatten @@ List.nth profile 0) in
   let tbl = Hashtbl.create (List.length combinations) in

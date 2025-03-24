@@ -1,10 +1,10 @@
-open Sqlite3
+(* open Sqlite3
 
 let open_db filename =
   let db = Sqlite3.db_open filename in
   db
 
-let get_voters_db db =
+let get_voters_opinions db id's condition =
   let query = "SELECT * FROM voters" in
   let callback (_ : string -> string option -> unit) row =
     match row with
@@ -15,4 +15,4 @@ let get_voters_db db =
     | `End -> Printf.printf "End of result set.\n"
   in
   (* Execute the query *)
-  Sqlite3.exec db "voters" ~cb:callback
+  Sqlite3.exec db "voters" ~cb:callback *)

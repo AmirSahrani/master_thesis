@@ -80,7 +80,7 @@ let deliberate ?(should_shuffle = true) voters rounds distance between =
   aux voters 0
 
 let normalize_matrix adjacency_matrix =
-  let row_sums = Owl.Mat.sum_rows adjacency_matrix in
+  let row_sums = Owl.Mat.sum_cols adjacency_matrix in
   let row_sums_fix =
     Owl.Mat.map (fun sum -> if sum <> 0. then sum else 1.) row_sums
   in
@@ -89,6 +89,16 @@ let normalize_matrix adjacency_matrix =
 let add_self_bias adjacency_matrix factor =
   Owl.Mat.add_diag adjacency_matrix factor |> normalize_matrix
 
-let deGroot adjacency_matrix t =
+let randomize_matrix adjcency_matrix =
   let open Owl.Mat in
-  adjacency_matrix **@ t
+  let rows, col = Owl.Mat.shape adjcency_matrix in
+  let random_mat = Owl.Mat.uniform ~a:1. ~b:10. rows col in
+  let out_mat = random_mat * adjcency_matrix in
+  print_mat out_mat;
+  out_mat
+
+let deGroot trust_matrix t =
+  let open Owl.Mat in
+  let evolved_trust_matrix = trust_matrix **@ t in
+  assert (sum_cols evolved_trust_matrix =~ ones (row_num trust_matrix) 1);
+  (evolved_trust_matrix, evolved_trust_matrix)

@@ -148,11 +148,11 @@ let test_degroot () =
     Owl.Mat.of_arrays
       [| [| 1.; 0.; 0. |]; [| 0.; 0.5; 0.5 |]; [| 0.; 0.5; 0.5 |] |]
   in
-  let odd_pow = Deliberation_model.Model.deGroot trust_non_conv 103. in
-  let even_pow = Deliberation_model.Model.deGroot trust_non_conv 102. in
+  let odd_pow, _ = Deliberation_model.Model.deGroot trust_non_conv 103. in
+  let even_pow, _ = Deliberation_model.Model.deGroot trust_non_conv 102. in
 
-  let odd_conv_pow = Deliberation_model.Model.deGroot trust_conv 103. in
-  let even_conv_pow = Deliberation_model.Model.deGroot trust_conv 102. in
+  let odd_conv_pow, _ = Deliberation_model.Model.deGroot trust_conv 103. in
+  let even_conv_pow, _ = Deliberation_model.Model.deGroot trust_conv 102. in
 
   (* odd_conv_pow |> Owl_pretty.dsnda_to_string |> print_endline; *)
   check bool "Odd power results in non convergent trust matrix" true

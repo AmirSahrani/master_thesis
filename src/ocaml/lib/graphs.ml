@@ -90,7 +90,27 @@ let write_adjacency_matrix graph filename =
         (string_of_int src ^ " " ^ string_of_int dst) :: acc)
       graph []
   in
-  String.concat "\n" edges |> output_string oc
+  String.concat "\n" edges |> output_string oc;
+  close_out oc
+
+let save_matrix_adjacency matrix filename =
+  let open Owl in
+  let oc = open_out filename in
+  let rows, cols = Mat.shape matrix in
+  (* Write header row - useful for Gephi *)
+  Printf.fprintf oc "Source,Target,Weight\n";
+
+  (* Iterate through the matrix *)
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      let weight = Mat.get matrix i j in
+      if weight <> 0. then (* Only write non-zero entries *)
+        Printf.fprintf oc "%d,%d,%f\n" i j weight
+    done
+  done;
+
+  close_out oc;
+  Printf.printf "Matrix saved to %s\n" filename
 
 let adjacency_matrix_from graph =
   let node_count = GenericGraph.nb_vertex graph in
@@ -199,7 +219,7 @@ let shortest_path graph source target =
     match Dijkstra.shortest_path graph source target with
     | _, distance -> distance
 
-let forest_fire_sample graph target_num p_forward p_backward =
+(* let forest_fire_sample graph target_num p_forward p_backward =
   (*
       Sample from a graph using a spreading "fire".
       Initiallize by picking random node. This node can burn each of its edges,
@@ -212,7 +232,7 @@ let forest_fire_sample graph target_num p_forward p_backward =
   let visited = IntSet.empty in
   let visited = IntSet.add initial_node visited in
   let queue = Queue.create () in
-  let _ = Queue.add initial:_node queue in
+  let _ = Queue.add initial_node queue in
 
   let rec spread ambassador source_node graph' v =
     if GenericGraph.nb_vertex graph' >= target_num then (graph', visited)
@@ -228,15 +248,15 @@ let forest_fire_sample graph target_num p_forward p_backward =
         else graph'
       in
       let visited = IntSet.add node v in
+      let x = Owl_stats_dist.binomial_sf 1 p_forward  
+      
 
       let spread_neighbors =
-        GenericGraph.succ graph node
-    
-        GenericGraph.succ graph ambassador
+        GenericGraph.succ graph node GenericGraph.succ graph ambassador
         |> List.filter (fun _ -> Random.float 1. < p_forward)
       in
       let spread_neighbors_backwards =
-        GenericGraph.pred graph ambassador 
+        GenericGraph.pred graph ambassador
         |> List.filter (fun _ -> Random.float 1. < p_backward)
       in
       let all_spread_neighbors =
@@ -246,8 +266,38 @@ let forest_fire_sample graph target_num p_forward p_backward =
         (fun new_neighbor -> Queue.add new_neighbor queue)
         all_spread_neighbors;
 
-      let ambassador_node' = Random.int (GenericGraph.nb_vertex graph) in
+      (* let ambassador_node' = Random.int (GenericGraph.nb_vertex graph) in *)
       spread source_node updated_graph visited
   in
   let sampled_graph, _ = spread initial_node GenericGraph.empty visited in
-  sampled_graph
+  sampled_graph *)
+
+let ties_sampling graph n =
+  let rec sampling_edges nodes =
+    if List.length nodes = n then nodes
+    else
+      let sampled_edge = Random.int (GenericGraph.nb_edges graph) in
+      let _, sampled_nodes =
+        GenericGraph.fold_edges
+          (fun v1 v2 (i, lst) ->
+            if i = sampled_edge && v1 <> v2 then (i + 1, (v1, v2) :: lst)
+            else (i + 1, lst))
+          graph (0, [])
+      in
+      match sampled_nodes with
+      | [ (v1, v2) ] -> sampling_edges (v1 :: v2 :: nodes)
+      | _ -> sampling_edges nodes
+  in
+  let sampled_nodes = sampling_edges [] in
+  let induced_graph =
+    List.fold_left
+      (fun g' v1 ->
+        List.fold_left
+          (fun g'' v2 ->
+            if GenericGraph.mem_edge graph v1 v2 then
+              GenericGraph.add_edge g'' v1 v2
+            else g'')
+          g' sampled_nodes)
+      GenericGraph.empty sampled_nodes
+  in
+  induced_graph
