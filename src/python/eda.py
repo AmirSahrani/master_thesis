@@ -8,8 +8,7 @@ app = marimo.App(width="full")
 def _():
     import marimo as mo
     import polars as pl
-    import sqlite3
-    import sklearn as sk
+    import sqlite3 import sklearn as sk
     import numpy as np
     import matplotlib.pyplot as plt
     from enum import Enum
@@ -40,21 +39,21 @@ def _():
 def _(Enum):
     PK_correct_answers = {
         "code": [
-    "PK1",
-    "PK2",
-    "PK3",
-    "PK4",
-    "PK6",
-    "PK7",       
-        ], 
+            "PK1",
+            "PK2",
+            "PK3",
+            "PK4",
+            "PK6",
+            "PK7",
+        ],
         "answer": [
-         2, # Which political Party holds a majority in the sensate
-         1, # Which political Party holds a majority in the house
-         1, #About how many undocumented immigrants are in teh US
-         4, # Which of the follwoing countries is not part of the paris agreement
-         2, # What percentage is the highest tax rate for capital gains taxes
-         2, # Which of the following organizations dealing with trade has the most countries
-            ]
+            2,  # Which political Party holds a majority in the sensate
+            1,  # Which political Party holds a majority in the house
+            1,  # About how many undocumented immigrants are in teh US
+            4,  # Which of the follwoing countries is not part of the paris agreement
+            2,  # What percentage is the highest tax rate for capital gains taxes
+            2,  # Which of the following organizations dealing with trade has the most countries
+        ]
     }
 
     class Response(Enum):
@@ -87,8 +86,10 @@ def _(PK_correct_answers, pl):
         new_columns=["code", "question"],
     )
 
-    questions = questionnaire_questions.filter( pl.col("code").str.contains("Q") &  ~pl.col("code").str.contains("T2"))
-    pk = questionnaire_questions.filter(pl.col("code").str.contains("PK") & (~ pl.col("code").str.contains("T2")))
+    questions = questionnaire_questions.filter(
+        pl.col("code").str.contains("Q") & ~pl.col("code").str.contains("T2"))
+    pk = questionnaire_questions.filter(pl.col("code").str.contains(
+        "PK") & (~ pl.col("code").str.contains("T2")))
     pk = pk.join(pl.from_dict(PK_correct_answers), on="code")
     question_dict = {}
     for [q_code, text] in questionnaire_questions.iter_rows():
@@ -118,43 +119,45 @@ def _(PK_correct_answers, pl):
 def _(pk, questions):
     connection_string = "sqlite:///data/a1r.db"
 
-    questions.write_database(table_name="questionnaire", connection=connection_string, if_table_exists="replace")
-    pk.write_database(table_name="political_knowledge", connection=connection_string, if_table_exists="replace")
+    questions.write_database(table_name="questionnaire",
+                             connection=connection_string, if_table_exists="replace")
+    pk.write_database(table_name="political_knowledge",
+                      connection=connection_string, if_table_exists="replace")
     return (connection_string,)
 
 
 @app.cell
 def _(connection_string, data, from_value, pk, pl):
-    responses_pre = data.select(col for col in data.columns 
-            if col.startswith("Q") or col == "ID"
-            )
+    responses_pre = data.select(col for col in data.columns
+                                if col.startswith("Q") or col == "ID"
+                                )
 
     responses_pre = responses_pre.with_columns([
-        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col) 
-        for col in responses_pre.columns 
+        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col)
+        for col in responses_pre.columns
         if col != "ID"
     ])
 
-    responses_post = data.select(col for col in data.columns 
-            if col.startswith("T2Q") or col == "ID"
-                               )
-
+    responses_post = data.select(col for col in data.columns
+                                 if col.startswith("T2Q") or col == "ID"
+                                 )
 
     responses_post = responses_post.with_columns([
-        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col) 
-        for col in responses_post.columns 
+        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col)
+        for col in responses_post.columns
         if col != "ID"
     ])
 
-    responses_post =responses_post.rename({q: q.replace("T2", "") for q in responses_post.columns})
+    responses_post = responses_post.rename(
+        {q: q.replace("T2", "") for q in responses_post.columns})
 
-    PK_past = data.select(col for col in data.columns 
-            if (col.startswith("PK") and "TIME" not in col) or col == "ID"
-            )
+    PK_past = data.select(col for col in data.columns
+                          if (col.startswith("PK") and "TIME" not in col) or col == "ID"
+                          )
 
-    PK_past= PK_past.with_columns([
-        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col) 
-        for col in PK_past.columns 
+    PK_past = PK_past.with_columns([
+        pl.col(col).map_elements(from_value, return_dtype=pl.Int16).alias(col)
+        for col in PK_past.columns
         if col != "ID"
     ])
 
@@ -164,21 +167,24 @@ def _(connection_string, data, from_value, pk, pl):
         pl.col(col).map_elements(
             lambda x: x == (pk.filter(pl.col("code") == col)
                             .get_column("answer")[0]), return_dtype=pl.Boolean)
-        .alias(col + "_correct") 
+        .alias(col + "_correct")
         for col in columns_to_process
     ])
 
-    pk_correct_questions_labels = [col for col in PK_correct.columns if "correct" in col]
+    pk_correct_questions_labels = [
+        col for col in PK_correct.columns if "correct" in col]
     PK_correct = PK_correct.with_columns(
         pl.mean_horizontal(pk_correct_questions_labels).alias("score")
     )
 
-
     print(responses_post)
 
-    responses_pre.write_database(table_name="response_pre", connection=connection_string, if_table_exists="replace")
-    responses_post.write_database(table_name="response_post", connection=connection_string, if_table_exists="replace")
-    PK_correct.write_database(table_name="response_PK", connection=connection_string, if_table_exists="replace")
+    responses_pre.write_database(
+        table_name="response_pre", connection=connection_string, if_table_exists="replace")
+    responses_post.write_database(
+        table_name="response_post", connection=connection_string, if_table_exists="replace")
+    PK_correct.write_database(
+        table_name="response_PK", connection=connection_string, if_table_exists="replace")
     return (
         PK_correct,
         PK_past,
@@ -198,10 +204,9 @@ def _(connection_string, data):
         'GROUP', 'CONDITION', 'GENDER', 'AGE',  'RACETHNICITY', 'EDUC4', 'ID', 'LIBCONV', 'D1', 'D2D', 'D2R', 'D2I', 'T2D1'
     ]
 
-
-
     voter_info = data.select(info_columns)
-    voter_info.write_database(table_name="voter_info", connection=connection_string, if_table_exists="replace")
+    voter_info.write_database(
+        table_name="voter_info", connection=connection_string, if_table_exists="replace")
 
     voter_info.head(100)
     return info_columns, voter_info
@@ -394,43 +399,43 @@ def _(mo):
 @app.cell
 def _(pl, sk, sqlite3):
     conn = sqlite3.connect("data/a1r.db")
-    pre_deliberation_responses = pl.read_database(query=
-                     """
+    pre_deliberation_responses = pl.read_database(query="""
                      SELECT * 
                      FROM response_pre
                      """,
-                     connection=conn).drop_nulls()
+                                                  connection=conn).drop_nulls()
 
-    pre_affiliation= pl.read_database(query=
-                     """
+    pre_affiliation = pl.read_database(query="""
                      SELECT ID, D1, T2D1 
                      FROM voter_info
                      """,
-                     connection=conn).drop_nulls()
+                                       connection=conn).drop_nulls()
 
-    post_deliberation_responses = pl.read_database(query=
-                     """
+    post_deliberation_responses = pl.read_database(query="""
                      SELECT * 
                      FROM response_post
                      """,
-                     connection=conn).drop_nulls()
+                                                   connection=conn).drop_nulls()
 
-    pre_deliberation_responses_affiliation = pre_deliberation_responses.join(pre_affiliation, how="inner", on= "ID")
+    pre_deliberation_responses_affiliation = pre_deliberation_responses.join(
+        pre_affiliation, how="inner", on="ID")
 
     drop_columns = ["ID", "Q9_1", "Q9_2"]
     gmm_pre = sk.svm.SVC(probability=True)
     gmm_post = sk.svm.SVC(probability=True)
-    fitted_gmm_pre = gmm_pre.fit(pre_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation["D1"])
+    fitted_gmm_pre = gmm_pre.fit(pre_deliberation_responses.drop(
+        drop_columns), pre_deliberation_responses_affiliation["D1"])
     fitted_gmm_post = gmm_post.fit(post_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation.select(
         pl.col(["T2D1"])
         .filter(
             pl.col("ID").is_in(post_deliberation_responses["ID"])
         )).to_series()
-                                  )
+    )
 
-
-    predictions_pre = fitted_gmm_pre.predict(pre_deliberation_responses.drop(drop_columns))
-    predictions_post = fitted_gmm_post.predict(post_deliberation_responses.drop(drop_columns))
+    predictions_pre = fitted_gmm_pre.predict(
+        pre_deliberation_responses.drop(drop_columns))
+    predictions_post = fitted_gmm_post.predict(
+        post_deliberation_responses.drop(drop_columns))
     return (
         conn,
         drop_columns,
@@ -457,7 +462,8 @@ def _(
     pre_deliberation_responses,
     pre_deliberation_responses_affiliation,
 ):
-    print(fitted_gmm_pre.score(pre_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation["D1"]))
+    print(fitted_gmm_pre.score(pre_deliberation_responses.drop(
+        drop_columns), pre_deliberation_responses_affiliation["D1"]))
 
     print(fitted_gmm_post.score(post_deliberation_responses.drop(drop_columns), pre_deliberation_responses_affiliation.select(
         pl.col(["T2D1"])
@@ -479,22 +485,25 @@ def _(
     sk,
 ):
     pca = sk.manifold.MDS(2)
-    pca_data_pre = pca.fit_transform(pre_deliberation_responses.drop(drop_columns))
-    pca_data_post = pca.fit_transform(post_deliberation_responses.drop(drop_columns))
+    pca_data_pre = pca.fit_transform(
+        pre_deliberation_responses.drop(drop_columns))
+    pca_data_post = pca.fit_transform(
+        post_deliberation_responses.drop(drop_columns))
 
-    markers = {1: "X", 2:"o", 3:"^", 4:"s"}
-    colors = {1: "blue", 2:"red", 3:"green", 4:"pink"}
+    markers = {1: "X", 2: "o", 3: "^", 4: "s"}
+    colors = {1: "blue", 2: "red", 3: "green", 4: "pink"}
 
-    marker_affiliations = [markers.get(x, "2") for x in pre_deliberation_responses_affiliation["D1"]]
+    marker_affiliations = [markers.get(
+        x, "2") for x in pre_deliberation_responses_affiliation["D1"]]
     pre_colors = [colors.get(int(x), "gray") for x in predictions_pre]
     post_colors = [colors.get(int(x), "gray") for x in predictions_post]
 
-    for (c,m), (x, y) in zip(zip(pre_colors, marker_affiliations), pca_data_pre):
-         plt.scatter(x, y, marker=m, color=c)
+    for (c, m), (x, y) in zip(zip(pre_colors, marker_affiliations), pca_data_pre):
+        plt.scatter(x, y, marker=m, color=c)
     plt.show()
 
-    for (c,m), (x, y) in zip(zip(post_colors, marker_affiliations), pca_data_post):
-         plt.scatter(x, y, marker=m, color=c)
+    for (c, m), (x, y) in zip(zip(post_colors, marker_affiliations), pca_data_post):
+        plt.scatter(x, y, marker=m, color=c)
     plt.show()
     return (
         c,
