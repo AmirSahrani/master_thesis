@@ -208,12 +208,13 @@ let forest_fire_sample graph target_num p_forward p_backward =
       !Note burning an edge, is how an edge gets sampled. Thus the final graph is a graph of all the burned edges between nodes.
   *)
   let initial_node = Random.int (GenericGraph.nb_vertex graph) in
+  let ambassador_node = Random.int (GenericGraph.nb_vertex graph) in
   let visited = IntSet.empty in
   let visited = IntSet.add initial_node visited in
   let queue = Queue.create () in
-  let _ = Queue.add initial_node queue in
+  let _ = Queue.add initial:_node queue in
 
-  let rec spread source_node graph' v =
+  let rec spread ambassador source_node graph' v =
     if GenericGraph.nb_vertex graph' >= target_num then (graph', visited)
     else
       let node =
@@ -230,10 +231,12 @@ let forest_fire_sample graph target_num p_forward p_backward =
 
       let spread_neighbors =
         GenericGraph.succ graph node
+    
+        GenericGraph.succ graph ambassador
         |> List.filter (fun _ -> Random.float 1. < p_forward)
       in
       let spread_neighbors_backwards =
-        GenericGraph.pred graph node
+        GenericGraph.pred graph ambassador 
         |> List.filter (fun _ -> Random.float 1. < p_backward)
       in
       let all_spread_neighbors =
@@ -242,7 +245,9 @@ let forest_fire_sample graph target_num p_forward p_backward =
       List.iter
         (fun new_neighbor -> Queue.add new_neighbor queue)
         all_spread_neighbors;
-      spread node updated_graph visited
+
+      let ambassador_node' = Random.int (GenericGraph.nb_vertex graph) in
+      spread source_node updated_graph visited
   in
   let sampled_graph, _ = spread initial_node GenericGraph.empty visited in
   sampled_graph
