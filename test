@@ -1,0 +1,20 @@
+Running the following experiment: test
+SELECT Q6J, Q6I, Q6H, Q6G, Q6F, Q6E, Q6D, Q6C, Q6B, Q6A, Q5J, Q5I, Q5H, Q5G, Q5F, Q5E, Q5D, Q5C, Q5B, Q5A, Q4J, Q4I, Q4H, Q4G, Q4F, Q4E, Q4D, Q4C, Q4B, Q4A, Q3H, Q3G, Q3F, Q3E, Q3D, Q3C, Q3B, Q3A, Q2I, Q2H, Q2G, Q2F, Q2E, Q2D, Q2C, Q2B, Q2A, Q1 
+FROM response_pre 
+INNER JOIN voter_info ON response_pre.ID = voter_info.ID 
+WHERE voter_info.CONDITION = 1 AND response_pre.Q6j is not Null ;
+Number of rows of data: 2741
+
+       C0  C1  C2  C3  C4     C43 C44 C45 C46 C47 
+   R0   0   0  10  10   0 ...   5   0  10   0   5 
+   R1   5   7   7   4   5 ...   3   2   5   9   2 
+   R2   8   5   7   9   9 ...   9   8   8   2   6 
+   R3   8   5   8   8  77 ...   5   2   9   3   5 
+   R4   7   5   5   5   5 ...   5   5   5   5   5 
+      ... ... ... ... ... ... ... ... ... ... ... 
+R2736  10   2  10   5   9 ...   7   4  10   4   5 
+R2737  10  77  10  10  10 ...  10  10  10   0   2 
+R2738  10   3  10  10   5 ...   6  10  10   4   6 
+R2739   9   6   7   6   9 ...  10   6   7   2   6 
+R2740   5   6   8   5   0 ...   8   2   9   8   8 
+

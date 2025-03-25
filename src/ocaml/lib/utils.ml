@@ -7,7 +7,7 @@ let experiments = function
   | "rad" -> `Rad
   | "degroot" -> `DeGroot
   | "abm" -> `ABM
-  | "Testing" -> `Testing
+  | "test" -> `Testing
   | _ -> failwith "Provide valid experiment type"
 
 module IntSet = Set.Make (struct

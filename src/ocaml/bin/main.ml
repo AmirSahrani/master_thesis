@@ -9,7 +9,7 @@ let main () =
   | `Rad -> rad_roy_bias_experiment ()
   | `DeGroot -> deGroot_experiment ()
   | `ABM -> ()
-  | `Testing -> ()
+  | `Testing -> test ()
 
 let () =
   Printexc.record_backtrace true;

@@ -1,6 +1,7 @@
 open Model
 open Utils
 open Evaluations
+open Query
 open Distances
 open Graphs
 open Initpy
@@ -123,3 +124,19 @@ let deGroot_experiment () =
   let final_trust, _ = deGroot trust_matrix 10. in
   (* print_mat final_trust; *)
   save_matrix_adjacency final_trust out_file_weighted
+
+let test () =
+  let db = open_db "data/a1r.db" in
+  let columns = questions in
+  let table = tables `Response_pre in
+  let join = inner_join (tables `Voter_info) table (voter_info `ID) in
+  let where =
+    join_where
+      [
+        condition_sub (tables `Voter_info) (voter_info `Condition) (comp `Equal)
+          "1";
+      ]
+  in
+  let opinions = get_voters_opinions db columns table join where in
+  let opinion_matrix = Owl.Mat.of_arrays opinions in
+  print_mat opinion_matrix
