@@ -1,10 +1,10 @@
 open Sqlite3
 
 let questions =
-  "Q6J, Q6I, Q6H, Q6G, Q6F, Q6E, Q6D, Q6C, Q6B, Q6A, Q5J, Q5I, Q5H, Q5G, Q5F, \
-   Q5E, Q5D, Q5C, Q5B, Q5A, Q4J, Q4I, Q4H, Q4G, Q4F, Q4E, Q4D, Q4C, Q4B, Q4A, \
-   Q3H, Q3G, Q3F, Q3E, Q3D, Q3C, Q3B, Q3A, Q2I, Q2H, Q2G, Q2F, Q2E, Q2D, Q2C, \
-   Q2B, Q2A, Q1"
+  "response_PK.ID, response_pk.score , Q6J, Q6I, Q6H, Q6G, Q6F, Q6E, Q6D, Q6C, \
+   Q6B, Q6A, Q5J, Q5I, Q5H, Q5G, Q5F, Q5E, Q5D, Q5C, Q5B, Q5A, Q4J, Q4I, Q4H, \
+   Q4G, Q4F, Q4E, Q4D, Q4C, Q4B, Q4A, Q3H, Q3G, Q3F, Q3E, Q3D, Q3C, Q3B, Q3A, \
+   Q2I, Q2H, Q2G, Q2F, Q2E, Q2D, Q2C, Q2B, Q2A, Q1"
 
 let knowledge_questions = "PK1, PK2, PK3, PK4, PK5, PK6, PK7"
 let knowledge_score = "score"
@@ -29,6 +29,7 @@ let comp = function
   | `IsNot -> "is not"
   | `GE -> ">="
   | `LE -> "<="
+  | `In -> "in"
 
 let voter_info = function
   | `ID -> "ID"
@@ -44,12 +45,15 @@ let tables = function
   | `Political_knowledge -> "political_knowledge"
   | `Questionnaire -> "questionnaire"
 
-let query_of columns table join condition =
+let query_of columns table joins condition =
+  let join = String.concat "\n" joins in
   Printf.sprintf "SELECT %s \nFROM %s \n%s \n%s;" columns table join condition
 
 let open_db filename =
   let db = Sqlite3.db_open filename in
   db
+
+let close_db db = Sqlite3.db_close db
 
 let extract_query_data db query =
   let results = ref [] in
@@ -64,8 +68,8 @@ let extract_query_data db query =
       Printf.printf "Error executing query: %s\n" (Sqlite3.Rc.to_string error);
       []
 
-let get_voters_opinions db columns table join condition =
-  let query = query_of columns table join condition in
+let get_voters_opinions db columns table joins condition =
+  let query = query_of columns table joins condition in
   print_endline query;
   let response = extract_query_data db query in
   Printf.printf "Number of rows of data: %d\n" (List.length response);

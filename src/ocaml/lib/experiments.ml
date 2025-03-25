@@ -104,39 +104,74 @@ let rad_roy_bias_experiment () =
   (* Finalize Python *)
   Py.finalize ()
 
+let load_data () =
+  let db = open_db "data/a1r.db" in
+  let table_pre = tables `Response_pre in
+  let table_post = tables `Response_post in
+  let voter_info_tbl = tables `Voter_info in
+
+  let join_table table = inner_join voter_info_tbl table (voter_info `ID) in
+  let join_pre, join_post = (join_table table_pre, join_table table_post) in
+  let join_pk_pre =
+    inner_join (tables `Response_pk) table_pre (voter_info `ID)
+  in
+  let join_pk_post =
+    inner_join (tables `Response_pk) table_post (voter_info `ID)
+  in
+
+  let where_condition cond_value =
+    join_where
+      [
+        condition_sub voter_info_tbl (voter_info `Condition) (comp `Equal)
+          cond_value;
+      ]
+  in
+
+  let get_data table join where =
+    get_voters_opinions db questions table join where |> Owl.Mat.of_arrays
+  in
+
+  let conditions = [ ("0", "delib"); ("1", "control") ] in
+  List.map
+    (fun (cond_val, _) ->
+      let where = where_condition cond_val in
+      ( get_data table_pre [ join_pre; join_pk_pre ] where,
+        get_data table_post [ join_post; join_pk_post ] where ))
+    conditions
+
 let deGroot_experiment () =
-  let edges = read_adjacency_matrix "graphs/soc-academia.edges" in
+  (* let edges = read_adjacency_matrix "graphs/soc-academia.edges" in
+     let graph =
+       List.fold_left
+         (fun g (l, r) -> GenericGraph.add_edge g l r)
+         GenericGraph.empty edges
+     in
+     let out_file = "graphs/soc-academia_test.edges" in
+     let out_file_weighted = "graphs/soc-academia_sampled_weighted.edges" in *)
+  let data = load_data () in
+
+  List.iter
+    (fun (mat1, mat2) ->
+      print_mat mat1;
+      print_mat mat2)
+    data;
+  let edges = read_adjacency_matrix "graphs/soc-academia_test.edges" in
   let graph =
     List.fold_left
       (fun g (l, r) -> GenericGraph.add_edge g l r)
       GenericGraph.empty edges
   in
-  let out_file = "graphs/soc-academia_test.edges" in
-  let out_file_weighted = "graphs/soc-academia_sampled_weighted.edges" in
   let out_graph = ties_sampling graph 50 in
   (* let db = open_db "data/a1r.db" in
-  let opinions = () in *)
-  write_adjacency_matrix out_graph out_file;
+     let opinions = () in *)
+  (* write_adjacency_matrix out_graph out_file; *)
   let trust_matrix = out_graph |> adjacency_matrix_from in
   let trust_matrix =
     add_self_bias trust_matrix 3.0 |> randomize_matrix |> normalize_matrix
   in
-  let final_trust, _ = deGroot trust_matrix 10. in
-  (* print_mat final_trust; *)
-  save_matrix_adjacency final_trust out_file_weighted
+  let _, _ = deGroot trust_matrix 10. in
+  ()
+(* print_mat final_trust; *)
+(* save_matrix_adjacency final_trust out_file_weighted *)
 
-let test () =
-  let db = open_db "data/a1r.db" in
-  let columns = questions in
-  let table = tables `Response_pre in
-  let join = inner_join (tables `Voter_info) table (voter_info `ID) in
-  let where =
-    join_where
-      [
-        condition_sub (tables `Voter_info) (voter_info `Condition) (comp `Equal)
-          "1";
-      ]
-  in
-  let opinions = get_voters_opinions db columns table join where in
-  let opinion_matrix = Owl.Mat.of_arrays opinions in
-  print_mat opinion_matrix
+let test () = ()
