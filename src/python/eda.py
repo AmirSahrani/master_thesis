@@ -474,8 +474,8 @@ def _(pl, sk, sqlite3):
     )
 
     drop_columns = ["ID", "Q9_1", "Q9_2"]
-    gmm_pre = sk.svm.SVC(probability=True)
-    gmm_post = sk.svm.SVC(probability=True)
+    gmm_pre = sk.mixture.GaussianMixture(n_components=2)
+    gmm_post = sk.mixture.GaussianMixture(n_components=2)
     fitted_gmm_pre = gmm_pre.fit(
         pre_deliberation_responses.drop(drop_columns),
         pre_deliberation_responses_affiliation["D1"],
@@ -552,7 +552,7 @@ def _(
     predictions_pre,
     sk,
 ):
-    pca = sk.manifold.MDS(2)
+    pca = sk.manifold.TSNE(2)
     pca_data_pre = pca.fit_transform(pre_deliberation_responses.drop(drop_columns))
     pca_data_post = pca.fit_transform(post_deliberation_responses.drop(drop_columns))
 

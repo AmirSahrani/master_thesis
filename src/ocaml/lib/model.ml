@@ -97,6 +97,8 @@ let randomize_matrix adjcency_matrix =
   print_mat out_mat;
   out_mat
 
+(**
+   [deGroot] takes in a trust matrix and a number of steps, and returns the *)
 let deGroot trust_matrix t =
   let open Owl.Mat in
   let evolved_trust_matrix = trust_matrix **@ t in
