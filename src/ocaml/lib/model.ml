@@ -1,4 +1,7 @@
 open Utils
+open Sklearn.Cluster
+open Sklearn.Manifold
+open Scipy.Spatial
 (* open Graphs *)
 
 let objectiveFun v1 v2 distMeasure updatedProfile =
@@ -97,8 +100,31 @@ let randomize_matrix adjcency_matrix =
   print_mat out_mat;
   out_mat
 
-(**
-   [deGroot] takes in a trust matrix and a number of steps, and returns the *)
+let perform_spectral_clustering adjacency_matrix n_clusters =
+  (* Create the spectral clustering model *)
+  let model = SpectralClustering.create ~n_clusters () in
+
+  (* Fit the model to the adjacency matrix *)
+  let labels = SpectralClustering.fit_predict ~x:adjacency_matrix model in
+
+  labels
+
+let perform_tsne opinion_distance_matrix n_components =
+  (* Create the spectral clustering model *)
+  let model = TSNE.create ~n_components () in
+
+  (* Fit the model to the adjacency matrix *)
+  let transform_matrix = TSNE.fit_transform ~x:opinion_distance_matrix model in
+
+  transform_matrix
+
+let align_procrustes adjacency_matrix opinion_matrix =
+  let norm_adjacency, rotated_opinion, score =
+    procrustes ~data1:adjacency_matrix ~data2:opinion_matrix ()
+  in
+  (norm_adjacency, rotated_opinion, score)
+
+(** [deGroot] takes in a trust matrix and a number of steps, and returns the *)
 let deGroot trust_matrix t =
   let open Owl.Mat in
   let evolved_trust_matrix = trust_matrix **@ t in
