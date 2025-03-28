@@ -301,3 +301,31 @@ let ties_sampling graph n =
       GenericGraph.empty sampled_nodes
   in
   induced_graph
+
+let erdos_Reyni n p =
+  let nodes = List.init n Fun.id in
+  let graph = GenericGraph.empty in
+  List.fold_left
+    (fun g' source ->
+      List.fold_left
+        (fun g'' target ->
+          if Random.float 1. < p then GenericGraph.add_edge g'' source target
+          else g'')
+        g' nodes)
+    graph nodes
+
+let barabasi_Albert n =
+  let nodes = List.init n Fun.id in
+  let graph = GenericGraph.empty in
+  List.fold_left
+    (fun g' source ->
+      List.fold_left
+        (fun g'' target ->
+          if
+            Random.float 1.
+            < (GenericGraph.succ_e g'' target |> List.length |> float_of_int)
+              /. float_of_int (GenericGraph.nb_edges g'' * 2)
+          then GenericGraph.add_edge g'' source target
+          else g'')
+        g' nodes)
+    graph nodes
