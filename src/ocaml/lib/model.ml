@@ -1,7 +1,8 @@
 open Utils
-open Sklearn.Cluster
-open Sklearn.Manifold
-open Scipy.Spatial
+open Initpy
+(* open Sklearn.Cluster
+   open Sklearn.Manifold
+   open Scipy.Spatial *)
 (* open Graphs *)
 
 let objectiveFun v1 v2 distMeasure updatedProfile =
@@ -102,10 +103,12 @@ let randomize_matrix adjcency_matrix =
 
 let perform_spectral_clustering adjacency_matrix n_clusters =
   (* Create the spectral clustering model *)
-  let model = SpectralClustering.create ~n_clusters () in
+  let model = WrappedModels.SpectralClustering.create ~n_clusters () in
 
   (* Fit the model to the adjacency matrix *)
-  let labels = SpectralClustering.fit_predict ~x:adjacency_matrix model in
+  let labels =
+    WrappedModels.SpectralClustering.fit_predict ~x:adjacency_matrix model
+  in
 
   labels
 
@@ -114,7 +117,9 @@ let perform_tsne opinion_distance_matrix n_components =
   let model = TSNE.create ~n_components () in
 
   (* Fit the model to the adjacency matrix *)
-  let transform_matrix = TSNE.fit_transform ~x:opinion_distance_matrix model in
+  let transform_matrix =
+    WrappedModels.TSNE.fit_transform ~x:opinion_distance_matrix model
+  in
 
   transform_matrix
 
