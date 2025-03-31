@@ -1,8 +1,5 @@
 open Utils
-open Initpy
-(* open Sklearn.Cluster
-   open Sklearn.Manifold
-   open Scipy.Spatial *)
+(* open Initpy *)
 (* open Graphs *)
 
 let objectiveFun v1 v2 distMeasure updatedProfile =
@@ -101,38 +98,38 @@ let randomize_matrix adjcency_matrix =
   print_mat out_mat;
   out_mat
 
-let perform_spectral_clustering adjacency_matrix n_clusters =
-  (* Create the spectral clustering model *)
-  (* let model =
-    WrappedModels.SpectralClustering.fit adjacency_matrix n_clusters
-      "nearest_neighbours"
-  in *)
+(* let perform_spectral_clustering adjacency_matrix n_clusters =
+     (* Create the spectral clustering model *)
+     (* let model =
+       WrappedModels.SpectralClustering.fit adjacency_matrix n_clusters
+         "nearest_neighbours"
+     in *)
 
-  (* Fit the model to the adjacency matrix *)
-  let numpy_matrix = np_of adjacency_matrix in
-  let labels =
-    WrappedModels.SpectralClustering.fit_predict ~data:numpy_matrix ~n_clusters
-      ~affinity:"nearest_neighbours" ()
-  in
+     (* Fit the model to the adjacency matrix *)
+     let numpy_matrix = np_of adjacency_matrix in
+     let labels =
+       WrappedModels.SpectralClustering.fit_predict ~data:numpy_matrix ~n_clusters
+         ~affinity:"nearest_neighbours" ()
+     in
 
-  labels
+     labels
 
-let perform_tsne opinion_distance_matrix n_components =
-  (* Create the spectral clustering model *)
-  let model = TSNE.create ~n_components () in
+   let perform_tsne opinion_distance_matrix n_components =
+     (* Create the spectral clustering model *)
+     let model = TSNE.create ~n_components () in
 
-  (* Fit the model to the adjacency matrix *)
-  let transform_matrix =
-    WrappedModels.TSNE.fit_transform ~x:opinion_distance_matrix model
-  in
+     (* Fit the model to the adjacency matrix *)
+     let transform_matrix =
+       WrappedModels.TSNE.fit_transform ~x:opinion_distance_matrix model
+     in
 
-  transform_matrix
+     transform_matrix
 
-let align_procrustes adjacency_matrix opinion_matrix =
-  let norm_adjacency, rotated_opinion, score =
-    procrustes ~data1:adjacency_matrix ~data2:opinion_matrix ()
-  in
-  (norm_adjacency, rotated_opinion, score)
+   let align_procrustes adjacency_matrix opinion_matrix =
+     let norm_adjacency, rotated_opinion, score =
+       procrustes ~data1:adjacency_matrix ~data2:opinion_matrix ()
+     in
+     (norm_adjacency, rotated_opinion, score) *)
 
 (** [deGroot] takes in a trust matrix and a number of steps, and returns the *)
 let deGroot trust_matrix t =

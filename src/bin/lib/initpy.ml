@@ -1,19 +1,22 @@
 let initPython () =
   (* Dynamically determine the project root directory *)
   let project_root = Sys.getcwd () in
-  let venv_path = Filename.concat project_root "../../.venv" in
-  let python_scripts_dir = Filename.concat project_root "src/python" in
+  let venv_path = Filename.concat project_root ".venv" in
+  let python_scripts_dir = Filename.concat project_root "src/scripts" in
+  print_endline project_root;
+  print_endline venv_path;
+  print_endline python_scripts_dir;
 
   (* Set the Python virtual environment variables *)
   Unix.putenv "VIRTUAL_ENV" venv_path;
   Unix.putenv "PATH" (venv_path ^ "/bin:" ^ Sys.getenv "PATH");
 
   (* Initialize the Python interpreter *)
-  let () =
-    Py.initialize ~interpreter:(Filename.concat venv_path "bin/python") ()
-  in
+  Py.initialize ~interpreter:(Filename.concat venv_path "bin/python") ();
 
   (* Add the directory containing your Python script to sys.path *)
+  let _ = Py.Import.import_module "math" in
+  print_endline "s6";
   let sys = Py.Import.import_module "sys" in
 
   match Py.Object.get_attr_string sys "path" with
@@ -27,17 +30,18 @@ let initPython () =
       | None -> failwith "Error: sys.path.append method not found")
   | None -> failwith "Error: sys.path not found"
 
-let owl_matrix_to_numpy (matrix : Owl.Mat.mat) : Py.Object.t =
-  let rows, cols = Owl.Mat.shape matrix in
+let _ = initPython ()
+(* let owl_matrix_to_numpy (matrix : Owl.Mat.mat) : Py.Object.t =
+   let rows, cols = Owl.Mat.shape matrix in
 
-  (* Create a Python list of lists *)
-  let np_array =
-    Py.Array.numpy
-    @@ Float.Array.map
-         (fun i -> Py.Array.numpy @@ Owl.Mat.row matrix (int_of_float i))
-         (Float.Array.init rows (fun x -> float_of_int x))
-  in
-  np_array
+   (* Create a Python list of lists *)
+   let np_array =
+     Py.Array.numpy
+     @@ Float.Array.map
+          (fun i -> Py.Array.numpy @@ Owl.Mat.row matrix (int_of_float i))
+          (Float.Array.init rows (fun x -> float_of_int x))
+   in
+   np_array *)
 
 (** Module wrapper for python script containing sklearn models needed.
     ```voter_stats_models``` contains the following functions: predict function,

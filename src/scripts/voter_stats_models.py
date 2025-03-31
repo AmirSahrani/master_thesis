@@ -1,4 +1,6 @@
 import sklearn
+import math
+print("reading this file")
 
 
 def fit_SpectralClustering(data, n_clusters, affinity, seed=None):

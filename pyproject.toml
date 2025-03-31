@@ -6,8 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "SALib",
-    "pandas",
-    "numpy>2.0",
+    "numpy",
     "scikit-learn",
     "matplotlib",
     "marimo>=0.11.14",

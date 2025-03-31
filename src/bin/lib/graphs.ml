@@ -104,7 +104,8 @@ let save_matrix_adjacency matrix filename =
   for i = 0 to rows - 1 do
     for j = 0 to cols - 1 do
       let weight = Mat.get matrix i j in
-      if weight <> 0. then (* Only write non-zero entries *)
+      if weight <> 0. then
+        (* Only write non-zero entries *)
         Printf.fprintf oc "%d,%d,%f\n" i j weight
     done
   done;
@@ -220,57 +221,57 @@ let shortest_path graph source target =
     | _, distance -> distance
 
 (* let forest_fire_sample graph target_num p_forward p_backward =
-  (*
-      Sample from a graph using a spreading "fire".
-      Initiallize by picking random node. This node can burn each of its edges,
-      if a edge gets burned, the neighbor on the other side of the edge "catches" fire, and can burn its own links.
+   (*
+       Sample from a graph using a spreading "fire".
+       Initiallize by picking random node. This node can burn each of its edges,
+       if a edge gets burned, the neighbor on the other side of the edge "catches" fire, and can burn its own links.
 
-      !Note burning an edge, is how an edge gets sampled. Thus the final graph is a graph of all the burned edges between nodes.
-  *)
-  let initial_node = Random.int (GenericGraph.nb_vertex graph) in
-  let ambassador_node = Random.int (GenericGraph.nb_vertex graph) in
-  let visited = IntSet.empty in
-  let visited = IntSet.add initial_node visited in
-  let queue = Queue.create () in
-  let _ = Queue.add initial_node queue in
+       !Note burning an edge, is how an edge gets sampled. Thus the final graph is a graph of all the burned edges between nodes.
+   *)
+   let initial_node = Random.int (GenericGraph.nb_vertex graph) in
+   let ambassador_node = Random.int (GenericGraph.nb_vertex graph) in
+   let visited = IntSet.empty in
+   let visited = IntSet.add initial_node visited in
+   let queue = Queue.create () in
+   let _ = Queue.add initial_node queue in
 
-  let rec spread ambassador source_node graph' v =
-    if GenericGraph.nb_vertex graph' >= target_num then (graph', visited)
-    else
-      let node =
-        if Queue.is_empty queue then Random.int (GenericGraph.nb_vertex graph)
-        else Queue.take queue
-      in
-      let updated_graph =
-        if source_node <> node then
-          GenericGraph.add_vertex graph' node |> fun g ->
-          GenericGraph.add_edge g source_node node
-        else graph'
-      in
-      let visited = IntSet.add node v in
-      let x = Owl_stats_dist.binomial_sf 1 p_forward  
-      
+   let rec spread ambassador source_node graph' v =
+     if GenericGraph.nb_vertex graph' >= target_num then (graph', visited)
+     else
+       let node =
+         if Queue.is_empty queue then Random.int (GenericGraph.nb_vertex graph)
+         else Queue.take queue
+       in
+       let updated_graph =
+         if source_node <> node then
+           GenericGraph.add_vertex graph' node |> fun g ->
+           GenericGraph.add_edge g source_node node
+         else graph'
+       in
+       let visited = IntSet.add node v in
+       let x = Owl_stats_dist.binomial_sf 1 p_forward
 
-      let spread_neighbors =
-        GenericGraph.succ graph node GenericGraph.succ graph ambassador
-        |> List.filter (fun _ -> Random.float 1. < p_forward)
-      in
-      let spread_neighbors_backwards =
-        GenericGraph.pred graph ambassador
-        |> List.filter (fun _ -> Random.float 1. < p_backward)
-      in
-      let all_spread_neighbors =
-        spread_neighbors @ spread_neighbors_backwards
-      in
-      List.iter
-        (fun new_neighbor -> Queue.add new_neighbor queue)
-        all_spread_neighbors;
 
-      (* let ambassador_node' = Random.int (GenericGraph.nb_vertex graph) in *)
-      spread source_node updated_graph visited
-  in
-  let sampled_graph, _ = spread initial_node GenericGraph.empty visited in
-  sampled_graph *)
+       let spread_neighbors =
+         GenericGraph.succ graph node GenericGraph.succ graph ambassador
+         |> List.filter (fun _ -> Random.float 1. < p_forward)
+       in
+       let spread_neighbors_backwards =
+         GenericGraph.pred graph ambassador
+         |> List.filter (fun _ -> Random.float 1. < p_backward)
+       in
+       let all_spread_neighbors =
+         spread_neighbors @ spread_neighbors_backwards
+       in
+       List.iter
+         (fun new_neighbor -> Queue.add new_neighbor queue)
+         all_spread_neighbors;
+
+       (* let ambassador_node' = Random.int (GenericGraph.nb_vertex graph) in *)
+       spread source_node updated_graph visited
+   in
+   let sampled_graph, _ = spread initial_node GenericGraph.empty visited in
+   sampled_graph *)
 
 let ties_sampling graph n =
   let rec sampling_edges nodes =
@@ -314,18 +315,52 @@ let erdos_Reyni n p =
         g' nodes)
     graph nodes
 
-let barabasi_Albert n =
-  let nodes = List.init n Fun.id in
-  let graph = GenericGraph.empty in
-  List.fold_left
-    (fun g' source ->
-      List.fold_left
-        (fun g'' target ->
-          if
-            Random.float 1.
-            < (GenericGraph.succ_e g'' target |> List.length |> float_of_int)
-              /. float_of_int (GenericGraph.nb_edges g'' * 2)
-          then GenericGraph.add_edge g'' source target
-          else g'')
-        g' nodes)
-    graph nodes
+let barabasi_albert n m =
+  (* Ensure valid parameters *)
+  if m < 1 || n <= m then invalid_arg "m must be at least 1 and n > m";
+
+  (* Initialize with a complete graph of m nodes *)
+  let g = ref GenericGraph.empty in
+  for i = 0 to m - 1 do
+    for j = 0 to i - 1 do
+      g := GenericGraph.add_edge !g i j;
+      g := GenericGraph.add_edge !g j i
+    done
+  done;
+
+  (* Preferential attachment step *)
+  let degree_list = ref (List.init m (fun i -> (i, 2))) in
+
+  for new_node = m to n - 1 do
+    let total_degree =
+      List.fold_left (fun acc (_, d) -> acc + d) 0 !degree_list
+    in
+    let rec choose_targets targets remaining =
+      if remaining = 0 then targets
+      else
+        let r = Random.int total_degree in
+        let rec find_target acc = function
+          | [] -> failwith "Should not happen"
+          | (node, d) :: rest ->
+              if acc + d > r then node else find_target (acc + d) rest
+        in
+        let target = find_target 0 !degree_list in
+        if List.mem target targets then choose_targets targets remaining
+        else choose_targets (target :: targets) (remaining - 1)
+    in
+    let targets = choose_targets [] m in
+    List.iter
+      (fun target ->
+        g := GenericGraph.add_edge !g new_node target;
+        g := GenericGraph.add_edge !g target new_node)
+      targets;
+
+    degree_list :=
+      (new_node, 2 * m)
+      :: List.map
+           (fun (node, d) ->
+             if List.mem node targets then (node, d + 2) else (node, d))
+           !degree_list
+  done;
+
+  !g

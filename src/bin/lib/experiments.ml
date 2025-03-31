@@ -186,6 +186,6 @@ let deGroot_experiment () =
 (* save_matrix_adjacency final_trust out_file_weighted *)
 
 let test () =
-  let out_file = "graphs/barabasi_Albert.edges" in
-  let ab_Graph = barabasi_Albert 500 in
+  let out_file = "graphs/erdos_reyni.edges" in
+  let ab_Graph = erdos_Reyni 1000 0.3 in
   write_adjacency_matrix ab_Graph out_file
