@@ -1,7 +1,7 @@
 let initPython () =
   (* Dynamically determine the project root directory *)
   let project_root = Sys.getcwd () in
-  let venv_path = Filename.concat project_root ".venv" in
+  let venv_path = Filename.concat project_root "../../.venv" in
   let python_scripts_dir = Filename.concat project_root "src/python" in
 
   (* Set the Python virtual environment variables *)
