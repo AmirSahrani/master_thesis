@@ -103,11 +103,16 @@ let randomize_matrix adjcency_matrix =
 
 let perform_spectral_clustering adjacency_matrix n_clusters =
   (* Create the spectral clustering model *)
-  let model = WrappedModels.SpectralClustering.create ~n_clusters () in
+  (* let model =
+    WrappedModels.SpectralClustering.fit adjacency_matrix n_clusters
+      "nearest_neighbours"
+  in *)
 
   (* Fit the model to the adjacency matrix *)
+  let numpy_matrix = np_of adjacency_matrix in
   let labels =
-    WrappedModels.SpectralClustering.fit_predict ~x:adjacency_matrix model
+    WrappedModels.SpectralClustering.fit_predict ~data:numpy_matrix ~n_clusters
+      ~affinity:"nearest_neighbours" ()
   in
 
   labels
