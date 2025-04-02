@@ -187,5 +187,9 @@ let deGroot_experiment () =
 
 let test () =
   let out_file = "graphs/erdos_reyni.edges" in
+  let er_Graph = erdos_Reyni 1000 0.3 in
   let ab_Graph = erdos_Reyni 1000 0.3 in
+  let adjacency_er_matrix = adjacency_matrix_from er_Graph in
+  let adjacency_ab_matrix = adjacency_matrix_from ab_Graph in
+  let _ = align_procrustes adjacency_ab_matrix adjacency_er_matrix in
   write_adjacency_matrix ab_Graph out_file

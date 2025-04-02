@@ -31,6 +31,7 @@ let initPython () =
   | None -> failwith "Error: sys.path not found"
 
 let _ = initPython ()
+
 (* let owl_matrix_to_numpy (matrix : Owl.Mat.mat) : Py.Object.t =
    let rows, cols = Owl.Mat.shape matrix in
 
@@ -42,6 +43,29 @@ let _ = initPython ()
           (Float.Array.init rows (fun x -> float_of_int x))
    in
    np_array *)
+let owl_to_np_NDArray matrix =
+  let arrays = Owl.Mat.to_arrays matrix in
+  (* Convert 2D array to Python-compatible array *)
+  let py_arr =
+    Py.List.of_array_map (Py.List.of_array_map Py.Float.of_float) arrays
+  in
+  (* Convert to NumPy array *)
+  let np = Py.import "numpy" in
+  let out =
+    Py.Object.call
+      (Py.Object.get_attr_string np "array" |> Option.get)
+      (Py.Tuple.of_array [| py_arr |])
+      Py.null
+  in
+  out
+
+(* let np_to_owl matrix =
+  let fArray = Py.Array.numpy_get_array matrix in
+  let out =
+    Owl.Mat.of_arrays
+    @@ Float.Array.map_to_array (Float.Array.map_to_array Fun.id) fArray
+  in
+  out *)
 
 (** Module wrapper for python script containing sklearn models needed.
     ```voter_stats_models``` contains the following functions: predict function,
@@ -50,11 +74,10 @@ let _ = initPython ()
     data into the components of that model procrustes function, given two
     dataset, x1 and x2, it will return x1 and x2' where x2' is rotated to best
     correspond to x1 using the procrustes method fit_TSNE function, given a
-    dataset, a number of components, and optionally a seed, it will fit a model
-    labelling the data according to the number of components
-    fit_SpectralClustering function, given a dataset, a number of clusters, and
-    an affinity method, this will cluster the data into the number of specified
-    clusters. *)
+    dataset, a number of components, it will fit a model labelling the data
+    according to the number of components fit_SpectralClustering function, given
+    a dataset, a number of clusters, and an affinity method, this will cluster
+    the data into the number of specified clusters. *)
 
 module WrappedModels = struct
   let vs = Py.Import.import_module "voter_stats_models"
@@ -66,36 +89,25 @@ module WrappedModels = struct
     Py.Module.get_function vs "transform" [| data; model |]
 
   module SpectralClustering = struct
-    let fit ~data ~n_clusters ~affinity ?seed () =
-      let seed_arg =
-        match seed with Some s -> Py.Int.of_int s | None -> Py.none
-      in
+    let fit ~data ~n_clusters ~affinity () =
       Py.Module.get_function vs "fit_SpectralClustering"
-        [|
-          data; Py.Int.of_int n_clusters; Py.String.of_string affinity; seed_arg;
-        |]
+        [| data; Py.Int.of_int n_clusters; Py.String.of_string affinity |]
 
-    let fit_predict ~data ~n_clusters ~affinity ?seed () =
-      let model = fit ~data ~n_clusters ~affinity ?seed () in
-      predict data model
+    let fit_transform ~data ~n_clusters ~affinity () =
+      let model = fit ~data ~n_clusters ~affinity () in
+      transform data model
   end
 
   module TSNE = struct
-    let create ?(n_components = 2) ?(perplexity = 30.0) ?seed () =
-      let seed_arg =
-        match seed with Some s -> Py.Int.of_int s | None -> Py.none
-      in
-      (n_components, perplexity, seed_arg)
+    let create ?(n_components = 2) ?(perplexity = 30.0) () =
+      (n_components, perplexity)
 
-    let fit ~data ~n_components ?seed () =
-      let seed_arg =
-        match seed with Some s -> Py.Int.of_int s | None -> Py.none
-      in
+    let fit ~data ~n_components () =
       Py.Module.get_function vs "fit_TSNE"
-        [| data; Py.Int.of_int n_components; seed_arg |]
+        [| data; Py.Int.of_int n_components |]
 
-    let fit_transform ~data ~n_components ?seed () =
-      let model = fit ~data ~n_components ?seed () in
+    let fit_transform ~data ~n_components () =
+      let model = fit ~data ~n_components () in
       transform data model
   end
 

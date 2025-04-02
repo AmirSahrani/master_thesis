@@ -1,13 +1,13 @@
 import sklearn
-import math
+import scipy
+
 print("reading this file")
 
 
-def fit_SpectralClustering(data, n_clusters, affinity, seed=None):
-    model = sklearn.cluster.SpectralClustering(
-        n_clusters=n_clusters, affinity=affinity, seed=seed
-    )
-    return model.fit(data)
+def fit_SpectralClustering(data, n_clusters, affinity):
+    print(data)
+    model = sklearn.cluster.SpectralClustering(n_clusters=n_clusters, affinity=affinity)
+    return model.fit(data).labels_
 
 
 def fit_TSNE(data, n_components, seed=None):
@@ -16,7 +16,7 @@ def fit_TSNE(data, n_components, seed=None):
 
 
 def procrustes(data1, data2):
-    (out_data1, out_data2, disparity) = sklearn.spatial.procrustes(data1, data2)
+    (out_data1, out_data2, disparity) = scipy.spatial.procrustes(data1, data2)
     return out_data1, out_data2, disparity
 
 

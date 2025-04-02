@@ -1,5 +1,6 @@
 open Utils
-(* open Initpy *)
+open Initpy
+open Graphs
 (* open Graphs *)
 
 let objectiveFun v1 v2 distMeasure updatedProfile =
@@ -98,38 +99,53 @@ let randomize_matrix adjcency_matrix =
   print_mat out_mat;
   out_mat
 
-(* let perform_spectral_clustering adjacency_matrix n_clusters =
-     (* Create the spectral clustering model *)
-     (* let model =
+let opinion_to_dist matrix norm =
+  let n, _m = Owl.Mat.shape matrix in
+  let dist = Owl.Mat.empty n n in
+  for i = 0 to n - 1 do
+    for j = 0 to i do
+      let row_i = Owl.Mat.row matrix i in
+      let row_j = Owl.Mat.row matrix j in
+      let distance = norm row_i row_j in
+      Owl.Mat.set dist i j distance;
+      Owl.Mat.set dist j i distance
+    done
+  done;
+  dist
+
+let perform_spectral_clustering adjacency_matrix n_clusters =
+  (* Create the spectral clustering model *)
+  (* let model =
        WrappedModels.SpectralClustering.fit adjacency_matrix n_clusters
          "nearest_neighbours"
      in *)
 
-     (* Fit the model to the adjacency matrix *)
-     let numpy_matrix = np_of adjacency_matrix in
-     let labels =
-       WrappedModels.SpectralClustering.fit_predict ~data:numpy_matrix ~n_clusters
-         ~affinity:"nearest_neighbours" ()
-     in
+  (* Fit the model to the adjacency matrix *)
+  let numpy_matrix = owl_to_np_NDArray adjacency_matrix in
+  let labels =
+    WrappedModels.SpectralClustering.fit ~data:numpy_matrix ~n_clusters
+      ~affinity:"" ()
+  in
+  labels
 
-     labels
+let perform_tsne opinion_distance_matrix n_components =
+  (* Create the spectral clustering model *)
 
-   let perform_tsne opinion_distance_matrix n_components =
-     (* Create the spectral clustering model *)
-     let model = TSNE.create ~n_components () in
+  (* Fit the model to the adjacency matrix *)
+  let numpy_matrix = owl_to_np_NDArray opinion_distance_matrix in
+  let transform_matrix =
+    WrappedModels.TSNE.fit_transform ~data:numpy_matrix ~n_components ()
+  in
+  transform_matrix
 
-     (* Fit the model to the adjacency matrix *)
-     let transform_matrix =
-       WrappedModels.TSNE.fit_transform ~x:opinion_distance_matrix model
-     in
-
-     transform_matrix
-
-   let align_procrustes adjacency_matrix opinion_matrix =
-     let norm_adjacency, rotated_opinion, score =
-       procrustes ~data1:adjacency_matrix ~data2:opinion_matrix ()
-     in
-     (norm_adjacency, rotated_opinion, score) *)
+let align_procrustes adjacency_matrix opinion_matrix =
+  let numpy_adjacency_matrix = owl_to_np_NDArray adjacency_matrix in
+  let numpy_opinion_matrix = owl_to_np_NDArray opinion_matrix in
+  let norm_adjacency, rotated_opinion, score =
+    WrappedModels.procrustes ~data1:numpy_adjacency_matrix
+      ~data2:numpy_opinion_matrix ()
+  in
+  (norm_adjacency, rotated_opinion, score)
 
 (** [deGroot] takes in a trust matrix and a number of steps, and returns the *)
 let deGroot trust_matrix t =
