@@ -273,15 +273,32 @@ let shortest_path graph source target =
    let sampled_graph, _ = spread initial_node GenericGraph.empty visited in
    sampled_graph *)
 
+let permute_matrix matrix order =
+  let n = Owl.Mat.row_num matrix in
+  let m = Owl.Mat.col_num matrix in
+  let result = Owl.Mat.empty n m in
+  Array.iteri
+    (fun i idx ->
+      for j = 0 to m - 1 do
+        Owl.Mat.set result i j (Owl.Mat.get matrix idx j)
+      done)
+    order;
+  result
+
 let ties_sampling graph n =
   let rec sampling_edges nodes =
+    Printf.printf "number of nodes sampled: %d\n" (List.length nodes);
     if List.length nodes = n then nodes
     else
       let sampled_edge = Random.int (GenericGraph.nb_edges graph) in
       let _, sampled_nodes =
         GenericGraph.fold_edges
           (fun v1 v2 (i, lst) ->
-            if i = sampled_edge && v1 <> v2 then (i + 1, (v1, v2) :: lst)
+            if
+              i = sampled_edge && v1 <> v2
+              && (not (List.mem v1 nodes))
+              && not (List.mem v2 nodes)
+            then (i + 1, (v1, v2) :: lst)
             else (i + 1, lst))
           graph (0, [])
       in

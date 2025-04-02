@@ -1,7 +1,5 @@
 open Utils
 open Initpy
-open Graphs
-(* open Graphs *)
 
 let objectiveFun v1 v2 distMeasure updatedProfile =
   let r = v1.bias in
@@ -11,8 +9,7 @@ let objectiveFun v1 v2 distMeasure updatedProfile =
   let d1 = distMeasure p1 updatedProfile in
   let d2 = distMeasure p2 updatedProfile in
   (* assert (
-     Float.compare d1 1.0 <> -1
-     || Float.compare d2 1.0 <> -1
+     Float.compare d1 1.0 <> -1 || Float.compare d2 1.0 <> -1
      || v1.preference = v2.preference); *)
   let lhs = Float.pow d1 2.0 in
   let rhs = Float.pow d2 2.0 in
@@ -138,14 +135,14 @@ let perform_tsne opinion_distance_matrix n_components =
   in
   transform_matrix
 
-let align_procrustes adjacency_matrix opinion_matrix =
-  let numpy_adjacency_matrix = owl_to_np_NDArray adjacency_matrix in
-  let numpy_opinion_matrix = owl_to_np_NDArray opinion_matrix in
-  let norm_adjacency, rotated_opinion, score =
-    WrappedModels.procrustes ~data1:numpy_adjacency_matrix
-      ~data2:numpy_opinion_matrix ()
+let align_voter_graph adjacency_matrix opinion_matrix =
+  (* let numpy_adjacency_matrix = owl_to_np_NDArray adjacency_matrix in
+     let numpy_opinion_matrix = owl_to_np_NDArray opinion_matrix in *)
+  let order =
+    WrappedModels.align_voters_to_graph ~data1:adjacency_matrix
+      ~data2:opinion_matrix ()
   in
-  (norm_adjacency, rotated_opinion, score)
+  order
 
 (** [deGroot] takes in a trust matrix and a number of steps, and returns the *)
 let deGroot trust_matrix t =

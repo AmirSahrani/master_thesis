@@ -104,7 +104,7 @@ let rad_roy_bias_experiment () =
   (* Finalize Python *)
   Py.finalize ()
 
-let load_data () =
+let load_data limit_n () =
   let db = open_db "data/a1r.db" in
   let table_pre = tables `Response_pre in
   let table_post = tables `Response_post in
@@ -118,6 +118,7 @@ let load_data () =
   let join_pk_post =
     inner_join (tables `Response_pk) table_post (voter_info `ID)
   in
+  let limit_str = limit limit_n in
 
   let where_condition cond_value =
     join_where
@@ -127,16 +128,16 @@ let load_data () =
       ]
   in
 
-  let get_data table join where =
-    get_voters_opinions db questions table join where |> Owl.Mat.of_arrays
+  let get_data table join where lim =
+    get_voters_opinions db questions table join where lim |> Owl.Mat.of_arrays
   in
 
   let conditions = [ ("0", "delib"); ("1", "control") ] in
   List.map
     (fun (cond_val, _) ->
       let where = where_condition cond_val in
-      ( get_data table_pre [ join_pre; join_pk_pre ] where,
-        get_data table_post [ join_post; join_pk_post ] where ))
+      ( get_data table_pre [ join_pre; join_pk_pre ] where limit_str,
+        get_data table_post [ join_post; join_pk_post ] where limit_str ))
     conditions
 
 (** [deGroot_experiment] samples a graph of academic papers using the TIES ()
@@ -159,7 +160,7 @@ let deGroot_experiment () =
      in
      let out_file = "graphs/soc-academia_test.edges" in
      let out_file_weighted = "graphs/soc-academia_sampled_weighted.edges" in *)
-  let data = load_data () in
+  let data = load_data 1000 () in
 
   List.iter
     (fun (mat1, mat2) ->
@@ -175,7 +176,6 @@ let deGroot_experiment () =
   let out_graph = ties_sampling graph 50 in
   (* let db = open_db "data/a1r.db" in
      let opinions = () in *)
-  (* write_adjacency_matrix out_graph out_file; *)
   let trust_matrix = out_graph |> adjacency_matrix_from in
   let trust_matrix =
     add_self_bias trust_matrix 3.0 |> randomize_matrix |> normalize_matrix
@@ -186,10 +186,30 @@ let deGroot_experiment () =
 (* save_matrix_adjacency final_trust out_file_weighted *)
 
 let test () =
-  let out_file = "graphs/erdos_reyni.edges" in
-  let er_Graph = erdos_Reyni 1000 0.3 in
-  let ab_Graph = erdos_Reyni 1000 0.3 in
-  let adjacency_er_matrix = adjacency_matrix_from er_Graph in
-  let adjacency_ab_matrix = adjacency_matrix_from ab_Graph in
-  let _ = align_procrustes adjacency_ab_matrix adjacency_er_matrix in
-  write_adjacency_matrix ab_Graph out_file
+  let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
+  let graph =
+    List.fold_left
+      (fun g (l, r) -> GenericGraph.add_edge g l r)
+      GenericGraph.empty edges
+  in
+  let np_opinion =
+    match load_data 1000 () with
+    | (pre, _) :: _ ->
+        pre
+        |> (fun op ->
+             opinion_to_dist op (fun o1 o2 -> Owl.Mat.sub o1 o2 |> Owl.Mat.sum'))
+        |> owl_to_np_NDArray
+    | [] -> failwith "Error: load_data() returned an empty list"
+  in
+  let out_graph = adjacency_matrix_from graph in
+  let adjacency_ab_matrix =
+    out_graph
+    |> (fun mat ->
+         print_mat mat;
+         mat)
+    |> owl_to_np_NDArray |> WrappedModels.adjacency_to_distance
+  in
+  let order =
+    align_voter_graph np_opinion adjacency_ab_matrix |> Array.of_list
+  in
+  print_mat @@ permute_matrix out_graph order

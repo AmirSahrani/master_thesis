@@ -20,6 +20,8 @@ let right_join table1 table2 column =
 let condition_sub table column comp value =
   Printf.sprintf "%s.%s %s %s" table column comp value
 
+let limit num = Printf.sprintf "LIMIT %d" num
+
 let join_where conditions =
   if List.length conditions = 0 then ""
   else Printf.sprintf "WHERE %s " (String.concat " AND " conditions)
@@ -45,9 +47,10 @@ let tables = function
   | `Political_knowledge -> "political_knowledge"
   | `Questionnaire -> "questionnaire"
 
-let query_of columns table joins condition =
+let query_of columns table joins condition limit =
   let join = String.concat "\n" joins in
-  Printf.sprintf "SELECT %s \nFROM %s \n%s \n%s;" columns table join condition
+  Printf.sprintf "SELECT %s \nFROM %s \n%s \n%s %s;" columns table join
+    condition limit
 
 let open_db filename =
   let db = Sqlite3.db_open filename in
@@ -68,11 +71,11 @@ let extract_query_data db query =
       Printf.printf "Error executing query: %s\n" (Sqlite3.Rc.to_string error);
       []
 
-let get_voters_opinions db columns table joins condition =
-  let query = query_of columns table joins condition in
-  print_endline query;
+let get_voters_opinions db columns table joins condition limit =
+  let query = query_of columns table joins condition limit in
+  (* print_endline query; *)
   let response = extract_query_data db query in
-  Printf.printf "Number of rows of data: %d\n" (List.length response);
+  (* Printf.printf "Number of rows of data: %d\n" (List.length response); *)
   response
   |> List.filter (fun row -> List.for_all Option.is_some row)
      (* Remove rows containing None *)

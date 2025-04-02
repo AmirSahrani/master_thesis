@@ -1,11 +1,16 @@
 let initPython () =
+  print_endline "\nInitializing python bindings";
   (* Dynamically determine the project root directory *)
   let project_root = Sys.getcwd () in
   let venv_path = Filename.concat project_root ".venv" in
   let python_scripts_dir = Filename.concat project_root "src/scripts" in
+  print_string "Project root directory:\t\t";
   print_endline project_root;
+  print_string "Python interpreter location:\t";
   print_endline venv_path;
+  print_string "Script location:\t\t";
   print_endline python_scripts_dir;
+  print_endline "";
 
   (* Set the Python virtual environment variables *)
   Unix.putenv "VIRTUAL_ENV" venv_path;
@@ -15,8 +20,6 @@ let initPython () =
   Py.initialize ~interpreter:(Filename.concat venv_path "bin/python") ();
 
   (* Add the directory containing your Python script to sys.path *)
-  let _ = Py.Import.import_module "math" in
-  print_endline "s6";
   let sys = Py.Import.import_module "sys" in
 
   match Py.Object.get_attr_string sys "path" with
@@ -60,12 +63,12 @@ let owl_to_np_NDArray matrix =
   out
 
 (* let np_to_owl matrix =
-  let fArray = Py.Array.numpy_get_array matrix in
-  let out =
-    Owl.Mat.of_arrays
-    @@ Float.Array.map_to_array (Float.Array.map_to_array Fun.id) fArray
-  in
-  out *)
+   let fArray = Py.Array.numpy_get_array matrix in
+   let out =
+     Owl.Mat.of_arrays
+     @@ Float.Array.map_to_array (Float.Array.map_to_array Fun.id) fArray
+   in
+   out *)
 
 (** Module wrapper for python script containing sklearn models needed.
     ```voter_stats_models``` contains the following functions: predict function,
@@ -111,10 +114,15 @@ module WrappedModels = struct
       transform data model
   end
 
-  let procrustes ~data1 ~data2 () =
-    let result = Py.Module.get_function vs "procrustes" [| data1; data2 |] in
-    let mtx1 = Py.Tuple.get_item result 0 in
-    let mtx2 = Py.Tuple.get_item result 1 in
-    let disparity = Py.Tuple.get_item result 2 in
-    (mtx1, mtx2, disparity)
+  let align_voters_to_graph ~data1 ~data2 () =
+    let result =
+      Py.Module.get_function vs "map_voters_to_nodes_on_graph"
+        [| data1; data2 |]
+    in
+    let order = Utils.pyList_toInt result |> List.flatten in
+    order
+
+  let adjacency_to_distance data1 =
+    let result = Py.Module.get_function vs "adjance_to_distance" [| data1 |] in
+    result
 end
