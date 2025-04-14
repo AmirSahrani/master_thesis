@@ -287,7 +287,6 @@ let permute_matrix matrix order =
 
 let ties_sampling graph n =
   let rec sampling_edges nodes =
-    Printf.printf "number of nodes sampled: %d\n" (List.length nodes);
     if List.length nodes = n then nodes
     else
       let sampled_edge = Random.int (GenericGraph.nb_edges graph) in

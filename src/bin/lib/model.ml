@@ -1,6 +1,8 @@
 open Utils
 open Initpy
 
+type alternativeGenerators = Random | Voter | SampleVoters
+
 let objectiveFun v1 v2 distMeasure updatedProfile =
   let r = v1.bias in
   let r' = 1.0 -. r in
@@ -85,8 +87,17 @@ let normalize_matrix adjacency_matrix =
   in
   Owl.Mat.div adjacency_matrix row_sums_fix
 
+(** Add bias to a voter, bias is defined in terms of a factor x, where voter
+    having bias x means they weight their opinion x times more than that of the
+    other voters together. In the case that x = 1, the voter values their
+    opinion equally to that of all their neighbors. *)
 let add_self_bias adjacency_matrix factor =
-  Owl.Mat.add_diag adjacency_matrix factor
+  let rows = Owl.Mat.row_num adjacency_matrix in
+  for i = 0 to rows - 1 do
+    Owl.Mat.set adjacency_matrix i i
+      (Owl.Mat.(sum' @@ row adjacency_matrix i) *. factor)
+  done;
+  adjacency_matrix
 
 let randomize_matrix adjcency_matrix _ =
   let open Owl.Mat in
@@ -139,6 +150,39 @@ let opinion_to_dist matrix norm =
   done;
   dist
 
+(** Generate an alternative based on the opinions of the voter, opinions
+    represented in [matrix] of shape n_voters x n_opion_items.
+
+    Options: Random -> Generate a random alternative, highest and lowest support
+    values hard coded at 0 and 9 Voter -> Sample a random voter to be a
+    candidate SampleVoters -> Sample [sample_size] voters, candidate become mean
+    of the opinions *)
+let gen_alterantive methd matrix sample_size =
+  let rows, cols = Owl.Mat.shape matrix in
+  match methd with
+  | Random ->
+      let random_mat = Owl.Mat.uniform ~a:(-0.5) ~b:9.5 1 cols in
+      Owl.Mat.round_ random_mat;
+      random_mat
+  | Voter ->
+      let voter = Random.int rows in
+      Owl.Mat.row matrix voter
+  | SampleVoters ->
+      let voters = Array.init sample_size (fun _ -> Random.int rows) in
+      let opinions = Owl.Mat.rows matrix voters in
+      let cand = Owl.Mat.mean ~axis:0 opinions in
+      Owl.Mat.round_ cand;
+      cand
+
+let opinion_to_pref pref candidates =
+  let distances =
+    List.map (fun cand -> Owl.Mat.(sum' @@ abs (pref - cand))) candidates
+  in
+  candidates
+  |> List.mapi (fun i _ -> (i, List.nth distances i))
+  |> List.sort (fun (_, d1) (_, d2) -> compare d1 d2)
+  |> List.map fst
+
 let perform_spectral_clustering adjacency_matrix n_clusters =
   (* Create the spectral clustering model *)
   (* let model =
@@ -178,4 +222,4 @@ let deGroot trust_matrix t =
   let open Owl.Mat in
   let evolved_trust_matrix = trust_matrix **@ t in
   assert (sum_cols evolved_trust_matrix =~ ones (row_num trust_matrix) 1);
-  (evolved_trust_matrix, evolved_trust_matrix)
+  evolved_trust_matrix

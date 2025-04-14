@@ -104,7 +104,7 @@ let rad_roy_bias_experiment () =
   (* Finalize Python *)
   Py.finalize ()
 
-let load_data limit_n () =
+let load_data limit_n cond =
   let db = open_db "data/a1r.db" in
   let table_pre = tables `Response_pre in
   let table_post = tables `Response_post in
@@ -132,13 +132,9 @@ let load_data limit_n () =
     get_voters_opinions db questions table join where lim |> Owl.Mat.of_arrays
   in
 
-  let conditions = [ ("0", "delib"); ("1", "control") ] in
-  List.map
-    (fun (cond_val, _) ->
-      let where = where_condition cond_val in
-      ( get_data table_pre [ join_pre; join_pk_pre ] where limit_str,
-        get_data table_post [ join_post; join_pk_post ] where limit_str ))
-    conditions
+  let where = where_condition cond in
+  ( get_data table_pre [ join_pre; join_pk_pre ] where limit_str,
+    get_data table_post [ join_post; join_pk_post ] where limit_str )
 
 (** [deGroot_experiment] samples a graph of academic papers using the TIES ()
     algorithm according to the number of data points provided. The graph is then
@@ -160,32 +156,56 @@ let deGroot_experiment () =
      in
      let out_file = "graphs/soc-academia_test.edges" in
      let out_file_weighted = "graphs/soc-academia_sampled_weighted.edges" in *)
-  let data = load_data 1000 () in
-
-  List.iter
-    (fun (mat1, mat2) ->
-      print_mat mat1;
-      print_mat mat2)
-    data;
-  let edges = read_adjacency_matrix "graphs/soc-academia_test.edges" in
+  let num_voters = 10 in
+  let num_candidates = 7 in
+  let _, _ = load_data num_voters "0" in
+  let pre_delib, post_delib = load_data num_voters "1" in
+  let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
   let graph =
     List.fold_left
       (fun g (l, r) -> GenericGraph.add_edge g l r)
       GenericGraph.empty edges
   in
-  let out_graph = ties_sampling graph 50 in
-  (* let db = open_db "data/a1r.db" in
-     let opinions = () in *)
+  let out_graph = ties_sampling graph num_voters in
   let trust_matrix = out_graph |> adjacency_matrix_from in
   let trust_matrix =
-    add_self_bias trust_matrix 3.0 |> randomize_matrix |> normalize_matrix
+    trust_matrix
+    |> (fun m -> credibility_matrix m ())
+    |> (fun m -> add_self_bias m 0.3)
+    |> normalize_matrix
   in
-  let _, _ = deGroot trust_matrix 10. in
+  let candidates =
+    List.init num_candidates (fun _ ->
+        gen_alterantive SampleVoters pre_delib 10)
+  in
+  let trust = deGroot trust_matrix 10. in
+  let final_opinion = Owl.Mat.(trust *@ pre_delib) in
+  let simulated_prefs =
+    List.mapi
+      (fun _ i -> opinion_to_pref (Owl.Mat.row final_opinion i) candidates)
+      (List.init num_voters Fun.id)
+  in
+  let true_prefs =
+    List.mapi
+      (fun _ i -> opinion_to_pref (Owl.Mat.row post_delib i) candidates)
+      (List.init (Owl.Mat.row_num post_delib) Fun.id)
+  in
+  print_endline "Simulated: ";
+  List.iter
+    (fun l ->
+      print_list l string_of_int;
+      print_endline "")
+    simulated_prefs;
+  print_endline "Original: ";
+  List.iter
+    (fun l ->
+      print_list l string_of_int;
+      print_endline "")
+    true_prefs;
   ()
-(* print_mat final_trust; *)
-(* save_matrix_adjacency final_trust out_file_weighted *)
 
-let test () =
+let test () = ()
+(* let test () =
   let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
   let graph =
     List.fold_left
@@ -193,11 +213,11 @@ let test () =
       GenericGraph.empty edges
   in
   let np_opinion =
-    match load_data 1000 () with
+    match load_data 1000 "1" with
     | (pre, _) :: _ ->
         pre
         |> (fun op ->
-             opinion_to_dist op (fun o1 o2 -> Owl.Mat.sub o1 o2 |> Owl.Mat.sum'))
+        opinion_to_dist op (fun o1 o2 -> Owl.Mat.sub o1 o2 |> Owl.Mat.sum'))
         |> owl_to_np_NDArray
     | [] -> failwith "Error: load_data() returned an empty list"
   in
@@ -205,11 +225,11 @@ let test () =
   let adjacency_ab_matrix =
     out_graph
     |> (fun mat ->
-         print_mat mat;
-         mat)
+    print_mat mat;
+    mat)
     |> owl_to_np_NDArray |> WrappedModels.adjacency_to_distance
   in
   let order =
     align_voter_graph np_opinion adjacency_ab_matrix |> Array.of_list
   in
-  print_mat @@ permute_matrix out_graph order
+  print_mat @@ permute_matrix out_graph order *)

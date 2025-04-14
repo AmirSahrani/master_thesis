@@ -45,8 +45,9 @@ def get_neighbor(path, selection):
 
     if selection == 0:
         # Inverse
-        new_path[min(node1, node2):max(node1, node2)] = new_path[min(
-            node1, node2):max(node1, node2)][::-1]
+        new_path[min(node1, node2): max(node1, node2)] = new_path[
+            min(node1, node2): max(node1, node2)
+        ][::-1]
 
     elif selection == 1:
         # Swap
@@ -59,7 +60,8 @@ def get_neighbor(path, selection):
         new_path = np.concatenate((path[:start], path[end:]))
         insertion_point = np.random.randint(0, len(new_path))
         new_path = np.concatenate(
-            (new_path[:insertion_point], subroute, new_path[insertion_point:]))
+            (new_path[:insertion_point], subroute, new_path[insertion_point:])
+        )
 
     else:
         # Handle invalid selection
@@ -67,7 +69,8 @@ def get_neighbor(path, selection):
 
     assert len(new_path) == len(path), "Operation caused an error"
     assert len(np.unique(new_path)) == len(
-        new_path), f"Operation caused an error using slection {selection}\n {new_path}"
+        new_path
+    ), f"Operation caused an error using slection {selection}\n {new_path}"
     return new_path
 
 
@@ -93,7 +96,7 @@ def next_step(order):
 
 
 def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_matrix):
-    '''
+    """
     Map a two distance matrices to each other, the first matrix is assumed to be a
     matrix of distance in opinions, as measured by a questionnaire, the second
     matrix is a matrix of shortest path distances on a graph.
@@ -104,15 +107,17 @@ def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_ma
     @return:
         ordering (List): A list where index i represents agent i and the value
         represents its associated node
-    '''
+    """
     max_distance = np.max(node_distance_matrix)
     normalized_opinions = voter_opinion_distance_matrix / max_distance
     n = normalized_opinions.shape[0]
 
     # Initial distance
     initial_guess = np.arange(0, n, step=1, dtype=np.int64)
-    print(f'Initial distance: {objective(
-        initial_guess, normalized_opinions, node_distance_matrix)}')
+    print(
+        f"Initial distance: {objective(
+            initial_guess, normalized_opinions, node_distance_matrix)}"
+    )
 
     # Use differential evolution with bounds
     # Using values that will be converted to permutation
@@ -123,12 +128,14 @@ def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_ma
         args=(normalized_opinions, node_distance_matrix),
         popsize=15,
         updating="deferred",
-        workers=-1
+        workers=-1,
     )
 
     # Convert final solution to permutation
     final_order = np.argsort(result.x).astype(int)
-    print(f'Final distance: {objective(final_order,
-          normalized_opinions, node_distance_matrix)}')
+    print(
+        f"Final distance: {objective(final_order,
+                                     normalized_opinions, node_distance_matrix)}"
+    )
 
     return final_order.tolist()
