@@ -119,7 +119,6 @@ let load_data limit_n cond =
     inner_join (tables `Response_pk) table_post (voter_info `ID)
   in
   let limit_str = limit limit_n in
-
   let where_condition cond_value =
     join_where
       [
@@ -156,11 +155,13 @@ let deGroot_experiment () =
      in
      let out_file = "graphs/soc-academia_test.edges" in
      let out_file_weighted = "graphs/soc-academia_sampled_weighted.edges" in *)
-  let num_voters = 10 in
+  let num_voters = 10000 in
   let num_candidates = 7 in
   let _, _ = load_data num_voters "0" in
-  let pre_delib, post_delib = load_data num_voters "1" in
-  let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
+  let _, post_delib = load_data num_voters "1" in
+  let num_voters = Owl.Mat.row_num post_delib in
+  let pre_delib, _ = load_data num_voters "1" in
+  let edges = read_adjacency_matrix "graphs/soc-academia.edges" in
   let graph =
     List.fold_left
       (fun g (l, r) -> GenericGraph.add_edge g l r)
@@ -206,30 +207,30 @@ let deGroot_experiment () =
 
 let test () = ()
 (* let test () =
-  let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
-  let graph =
-    List.fold_left
-      (fun g (l, r) -> GenericGraph.add_edge g l r)
-      GenericGraph.empty edges
-  in
-  let np_opinion =
-    match load_data 1000 "1" with
-    | (pre, _) :: _ ->
-        pre
-        |> (fun op ->
-        opinion_to_dist op (fun o1 o2 -> Owl.Mat.sub o1 o2 |> Owl.Mat.sum'))
-        |> owl_to_np_NDArray
-    | [] -> failwith "Error: load_data() returned an empty list"
-  in
-  let out_graph = adjacency_matrix_from graph in
-  let adjacency_ab_matrix =
-    out_graph
-    |> (fun mat ->
-    print_mat mat;
-    mat)
-    |> owl_to_np_NDArray |> WrappedModels.adjacency_to_distance
-  in
-  let order =
-    align_voter_graph np_opinion adjacency_ab_matrix |> Array.of_list
-  in
-  print_mat @@ permute_matrix out_graph order *)
+   let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
+   let graph =
+     List.fold_left
+       (fun g (l, r) -> GenericGraph.add_edge g l r)
+       GenericGraph.empty edges
+   in
+   let np_opinion =
+     match load_data 1000 "1" with
+     | (pre, _) :: _ ->
+         pre
+         |> (fun op ->
+         opinion_to_dist op (fun o1 o2 -> Owl.Mat.sub o1 o2 |> Owl.Mat.sum'))
+         |> owl_to_np_NDArray
+     | [] -> failwith "Error: load_data() returned an empty list"
+   in
+   let out_graph = adjacency_matrix_from graph in
+   let adjacency_ab_matrix =
+     out_graph
+     |> (fun mat ->
+     print_mat mat;
+     mat)
+     |> owl_to_np_NDArray |> WrappedModels.adjacency_to_distance
+   in
+   let order =
+     align_voter_graph np_opinion adjacency_ab_matrix |> Array.of_list
+   in
+   print_mat @@ permute_matrix out_graph order *)

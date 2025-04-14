@@ -73,7 +73,6 @@ let extract_query_data db query =
 
 let get_voters_opinions db columns table joins condition limit =
   let query = query_of columns table joins condition limit in
-  (* print_endline query; *)
   let response = extract_query_data db query in
   (* Printf.printf "Number of rows of data: %d\n" (List.length response); *)
   response
