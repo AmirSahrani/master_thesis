@@ -86,14 +86,43 @@ let normalize_matrix adjacency_matrix =
   Owl.Mat.div adjacency_matrix row_sums_fix
 
 let add_self_bias adjacency_matrix factor =
-  Owl.Mat.add_diag adjacency_matrix factor |> normalize_matrix
+  Owl.Mat.add_diag adjacency_matrix factor
 
-let randomize_matrix adjcency_matrix =
+let randomize_matrix adjcency_matrix _ =
   let open Owl.Mat in
   let rows, col = Owl.Mat.shape adjcency_matrix in
   let random_mat = Owl.Mat.uniform ~a:1. ~b:10. rows col in
   let out_mat = random_mat * adjcency_matrix in
-  print_mat out_mat;
+  out_mat
+
+(** Edge weights equal to the credibility of each voter, where credibility is
+    defined as the number of out going edges from voter i*)
+let credibility_matrix adjcency_matrix _ =
+  let rows, cols = Owl.Mat.shape adjcency_matrix in
+  let out_mat = Owl.Mat.empty rows cols in
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      let credibility = Owl.Mat.sum' @@ Owl.Mat.col adjcency_matrix j in
+      if Owl.Mat.get adjcency_matrix i j <> 0. && i <> j then (
+        Owl.Mat.set out_mat i j credibility;
+        Owl.Mat.set out_mat j i credibility)
+    done
+  done;
+  out_mat
+
+(** Edge weights equal to the similarity between voter i and j if they have a
+    link in *)
+let similarity_matrix adjcency_matrix distance_matrix =
+  let rows, cols = Owl.Mat.shape adjcency_matrix in
+  let out_mat = Owl.Mat.empty rows cols in
+  for i = 0 to rows - 1 do
+    for j = 0 to cols - 1 do
+      let distance = Owl.Mat.get distance_matrix i j in
+      if Owl.Mat.get adjcency_matrix i j <> 0. && i <> j then (
+        Owl.Mat.set out_mat i j distance;
+        Owl.Mat.set out_mat j i distance)
+    done
+  done;
   out_mat
 
 let opinion_to_dist matrix norm =
