@@ -2,6 +2,7 @@ type preference = int list list
 type profile = preference list
 type voter = { preference : preference; bias : float; announced : int }
 type spaces = KS | CS | DP
+type alternativeGenerators = Random | Voter | SampleVoters
 
 let experiments = function
   | "rad" -> `Rad

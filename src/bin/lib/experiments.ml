@@ -1,4 +1,6 @@
-open Model
+(* open ABMmodel *)
+open DeGrootmodel
+open Radmodel
 open Utils
 open Evaluations
 open Query
@@ -147,27 +149,21 @@ let load_data limit_n cond =
     normailzed such that the sum of the weights of all incoming edges in a node
     is exactly 1. *)
 let deGroot_experiment () =
-  (* let edges = read_adjacency_matrix "graphs/soc-academia.edges" in
-     let graph =
-       List.fold_left
-         (fun g (l, r) -> GenericGraph.add_edge g l r)
-         GenericGraph.empty edges
-     in
-     let out_file = "graphs/soc-academia_test.edges" in
-     let out_file_weighted = "graphs/soc-academia_sampled_weighted.edges" in *)
-  let num_voters = 10000 in
+  let num_voters = 100 in
   let num_candidates = 7 in
-  let _, _ = load_data num_voters "0" in
-  let _, post_delib = load_data num_voters "1" in
+  let _, post_delib = load_data num_voters "0" in
   let num_voters = Owl.Mat.row_num post_delib in
-  let pre_delib, _ = load_data num_voters "1" in
-  let edges = read_adjacency_matrix "graphs/soc-academia.edges" in
+  let pre_delib, _ = load_data num_voters "0" in
+  Printf.printf "number of voters: %d\n" num_voters;
+  (* let edges = read_adjacency_matrix "graphs/soc-academia.edges" in *)
+  let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
   let graph =
     List.fold_left
       (fun g (l, r) -> GenericGraph.add_edge g l r)
       GenericGraph.empty edges
   in
   let out_graph = ties_sampling graph num_voters in
+  Printf.printf "number of nodes : %d\n" (GenericGraph.nb_vertex out_graph);
   let trust_matrix = out_graph |> adjacency_matrix_from in
   let trust_matrix =
     trust_matrix

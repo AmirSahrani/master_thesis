@@ -286,36 +286,48 @@ let permute_matrix matrix order =
   result
 
 let ties_sampling graph n =
-  let rec sampling_edges nodes =
-    if List.length nodes = n then nodes
-    else
-      let sampled_edge = Random.int (GenericGraph.nb_edges graph) in
-      let _, sampled_nodes =
-        GenericGraph.fold_edges
-          (fun v1 v2 (i, lst) ->
-            if
-              i = sampled_edge && v1 <> v2
-              && (not (List.mem v1 nodes))
-              && not (List.mem v2 nodes)
-            then (i + 1, (v1, v2) :: lst)
-            else (i + 1, lst))
-          graph (0, [])
-      in
-      match sampled_nodes with
-      | [ (v1, v2) ] -> sampling_edges (v1 :: v2 :: nodes)
-      | _ -> sampling_edges nodes
-  in
-  let sampled_nodes = sampling_edges [] in
-  let induced_graph =
+  let all_edges = shuffle @@ List.init (GenericGraph.nb_edges graph) Fun.id in
+  let sampled_nodes =
     List.fold_left
-      (fun g' v1 ->
-        List.fold_left
-          (fun g'' v2 ->
+      (fun s edge_nb ->
+        if IntSet.cardinal s >= n then s
+        else
+          let _, opt_edge =
+            GenericGraph.fold_edges
+              (fun v1 v2 (i, found) ->
+                if i = edge_nb && v1 <> v2 then (i + 1, Some (v1, v2))
+                else (i + 1, found))
+              graph (0, None)
+          in
+          match opt_edge with
+          | Some (v1, v2) ->
+              let new_nodes =
+                List.filter (fun v -> not (IntSet.mem v s)) [ v1; v2 ]
+              in
+              List.fold_left
+                (fun acc v ->
+                  if IntSet.cardinal acc < n then IntSet.add v acc else acc)
+                s new_nodes
+          | None -> s)
+      IntSet.empty all_edges
+  in
+  assert (IntSet.cardinal sampled_nodes = n);
+  assert (IntSet.elements sampled_nodes |> List.length = n);
+  let edgeless_graph =
+    IntSet.fold
+      (fun v g -> GenericGraph.add_vertex g v)
+      sampled_nodes GenericGraph.empty
+  in
+  let induced_graph =
+    IntSet.fold
+      (fun v1 g' ->
+        IntSet.fold
+          (fun v2 g'' ->
             if GenericGraph.mem_edge graph v1 v2 then
               GenericGraph.add_edge g'' v1 v2
             else g'')
-          g' sampled_nodes)
-      GenericGraph.empty sampled_nodes
+          sampled_nodes g')
+      sampled_nodes edgeless_graph
   in
   induced_graph
 
@@ -378,5 +390,4 @@ let barabasi_albert n m =
              if List.mem node targets then (node, d + 2) else (node, d))
            !degree_list
   done;
-
   !g

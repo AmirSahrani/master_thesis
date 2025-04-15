@@ -1,5 +1,9 @@
 ## Experiments
     - DeGroot
+        - [ ] Setup parameter/config module
+        - [ ] Setup python script to generate parameters for experiments
+        - [ ] Create Csv writer
+        - [ ] Run experiments
     - ABM
         - Decide Scheduling
 ## General

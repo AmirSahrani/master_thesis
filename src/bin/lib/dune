@@ -2,4 +2,4 @@
  (name deliberation_model)
  (public_name deliberation_model.lib)
  (libraries owl pyml ocamlgraph progress csv sqlite3)
- (modules model utils graphs distances initpy evaluations experiments query))
+ (modules radmodel deGrootmodel ABMmodel utils graphs distances initpy evaluations experiments query))
