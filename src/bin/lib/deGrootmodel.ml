@@ -1,12 +1,16 @@
 open Utils
+open Graphs
 
 type config = {
+  pre_data : Owl.Mat.mat;
+  post_data : Owl.Mat.mat;
+  graph : GenericGraph.t;
+  timesteps : float;
   n_voters : int;
-  n_candiates : int;
+  n_candidates : int;
   bias_factor : float;
-  dense : bool;
-  condition : string;
-  seed : int;
+  cand_method : alternativeGenerators;
+  seed : int Option.t;
 }
 
 let normalize_matrix adjacency_matrix =
@@ -112,9 +116,49 @@ let opinion_to_pref pref candidates =
   |> List.sort (fun (_, d1) (_, d2) -> compare d1 d2)
   |> List.map fst
 
+let create_trust_matrix graph bias_factor =
+  let trust_matrix = graph |> adjacency_matrix_from in
+  trust_matrix
+  |> (fun m -> credibility_matrix m ())
+  |> (fun m -> add_self_bias m bias_factor)
+  |> normalize_matrix
+
 (** [deGroot] takes in a trust matrix and a number of steps, and returns the *)
-let deGroot trust_matrix t =
+let deGroot config =
   let open Owl.Mat in
-  let evolved_trust_matrix = trust_matrix **@ t in
-  assert (sum_cols evolved_trust_matrix =~ ones (row_num trust_matrix) 1);
-  evolved_trust_matrix
+  let {
+    pre_data;
+    post_data;
+    graph;
+    n_voters;
+    timesteps;
+    n_candidates;
+    cand_method;
+    bias_factor;
+    seed;
+  } =
+    config
+  in
+
+  (match seed with None -> () | Some s -> Random.init s);
+
+  (* First we create the proper trust matrix*)
+  let trust_matrix = create_trust_matrix graph bias_factor in
+
+  let candidates =
+    List.init n_candidates (fun _ -> gen_alterantive cand_method pre_data 10)
+  in
+
+  let trust = trust_matrix **@ timesteps in
+  let final_opinion = Owl.Mat.(trust *@ pre_data) in
+  let simulated_prefs =
+    List.mapi
+      (fun _ i -> opinion_to_pref (Owl.Mat.row final_opinion i) candidates)
+      (List.init n_voters Fun.id)
+  in
+  let true_prefs =
+    List.mapi
+      (fun _ i -> opinion_to_pref (Owl.Mat.row post_data i) candidates)
+      (List.init (Owl.Mat.row_num post_data) Fun.id)
+  in
+  ((final_opinion, post_data), (simulated_prefs, true_prefs))

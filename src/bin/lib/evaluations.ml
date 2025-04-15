@@ -228,7 +228,7 @@ let opposing profile dist =
   | p1 :: p2 :: _ -> dist p1 p2 = 6.
   | _ -> false
 
-let get_all_evals () =
+let get_all_evals_rad () =
   ( [
       "cyclic_start";
       "condorcet_start";
@@ -252,5 +252,26 @@ let get_all_evals () =
       (fun prof distance ->
         string_of_float @@ distance_to_consensus prof distance);
       (fun prof distance -> string_of_bool @@ opposing prof distance);
+      (fun prof _ -> string_of_float @@ fraction_strongly_single_peaked prof);
+    ] )
+
+let get_all_evals_degroot () =
+  ( [
+      "cyclic_start";
+      "condorcet_start";
+      "unique_start";
+      "intransative_start";
+      "proximity_to_sp_start";
+      "cyclic_end";
+      "condorcet_end";
+      "unique_end";
+      "intransative_end";
+      "proximity_to_sp_end";
+    ],
+    [
+      (fun prof _ -> string_of_bool @@ is_cyclic prof);
+      (fun prof _ -> string_of_bool @@ has_condorcet prof);
+      (fun prof _ -> string_of_int @@ n_unique_preferences prof);
+      (fun prof _ -> string_of_bool @@ not @@ is_transitive prof);
       (fun prof _ -> string_of_float @@ fraction_strongly_single_peaked prof);
     ] )

@@ -85,7 +85,7 @@ let rad_roy_bias_experiment () =
   let nDeliberationSteps = 2 in
   (* Open CSV file *)
   let oc = open_out "results/data_consensus.csv" in
-  let titles, evals = get_all_evals () in
+  let titles, evals = get_all_evals_rad () in
 
   (* Prepare header row *)
   Csv.output_all (Csv.to_channel oc)
@@ -148,15 +148,25 @@ let load_data limit_n cond =
     This trust matrix is based on the graph, but has added noise and is
     normailzed such that the sum of the weights of all incoming edges in a node
     is exactly 1. *)
+
 let deGroot_experiment () =
+  (* let oc = open_out "results/degroot_data.csv" in
+     let titles, evals = get_all_evals () in
+
+     (* Prepare header row *)
+     Csv.output_all (Csv.to_channel oc)
+       [ [ "bias"; "trial"; "metric_space" ] @ titles ]; *)
   let num_voters = 100 in
-  let num_candidates = 7 in
-  let _, post_delib = load_data num_voters "0" in
-  let num_voters = Owl.Mat.row_num post_delib in
-  let pre_delib, _ = load_data num_voters "0" in
-  Printf.printf "number of voters: %d\n" num_voters;
-  (* let edges = read_adjacency_matrix "graphs/soc-academia.edges" in *)
-  let edges = read_adjacency_matrix "graphs/ties_academia.edges" in
+  let num_candidates = 6 in
+  let _, _ = load_data 100000 "0" in
+  let pre_delib, post_delib = load_data 100000 "1" in
+  let max_idx = min (Owl.Mat.row_num pre_delib) (Owl.Mat.row_num post_delib) in
+  let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
+  let voter_indices = Array.sub indices 0 num_voters in
+  let pre_data = Owl.Mat.rows pre_delib voter_indices in
+  let post_data = Owl.Mat.rows pre_delib voter_indices in
+  let edges = read_adjacency_matrix "graphs/soc-astro.edges" in
+  (* let edges = read_adjacency_matrix "graphs/ties_academia.edges" in *)
   let graph =
     List.fold_left
       (fun g (l, r) -> GenericGraph.add_edge g l r)
@@ -164,41 +174,21 @@ let deGroot_experiment () =
   in
   let out_graph = ties_sampling graph num_voters in
   Printf.printf "number of nodes : %d\n" (GenericGraph.nb_vertex out_graph);
-  let trust_matrix = out_graph |> adjacency_matrix_from in
-  let trust_matrix =
-    trust_matrix
-    |> (fun m -> credibility_matrix m ())
-    |> (fun m -> add_self_bias m 0.3)
-    |> normalize_matrix
+
+  let conf =
+    {
+      pre_data;
+      post_data;
+      graph = out_graph;
+      n_voters = num_voters;
+      timesteps = 100.;
+      n_candidates = num_candidates;
+      cand_method = SampleVoters;
+      bias_factor = 3.;
+      seed = None;
+    }
   in
-  let candidates =
-    List.init num_candidates (fun _ ->
-        gen_alterantive SampleVoters pre_delib 10)
-  in
-  let trust = deGroot trust_matrix 10. in
-  let final_opinion = Owl.Mat.(trust *@ pre_delib) in
-  let simulated_prefs =
-    List.mapi
-      (fun _ i -> opinion_to_pref (Owl.Mat.row final_opinion i) candidates)
-      (List.init num_voters Fun.id)
-  in
-  let true_prefs =
-    List.mapi
-      (fun _ i -> opinion_to_pref (Owl.Mat.row post_delib i) candidates)
-      (List.init (Owl.Mat.row_num post_delib) Fun.id)
-  in
-  print_endline "Simulated: ";
-  List.iter
-    (fun l ->
-      print_list l string_of_int;
-      print_endline "")
-    simulated_prefs;
-  print_endline "Original: ";
-  List.iter
-    (fun l ->
-      print_list l string_of_int;
-      print_endline "")
-    true_prefs;
+  let _ = deGroot conf in
   ()
 
 let test () = ()
