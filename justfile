@@ -15,10 +15,10 @@ clean:
 	dune clean --root="src/bin/"
 
 install:
-	opam install ./src/ocaml --deps-only
+	opam install ./src/bin --deps-only
 
 vis: 
-	uv run ./src/python/visualize.py
+	uv run ./src/scripts/visualize.py
 
 debug type: 
 	ocamldebug src/bin/_build/default/bin/main.bc {{type}}

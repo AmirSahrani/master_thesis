@@ -261,17 +261,21 @@ let get_all_evals_degroot () =
       "condorcet_start";
       "unique_start";
       "intransative_start";
-      "proximity_to_sp_start";
+      (* "proximity_to_sp_start"; *)
       "cyclic_end";
       "condorcet_end";
       "unique_end";
       "intransative_end";
-      "proximity_to_sp_end";
+      (* "proximity_to_sp_end"; *)
+      "cyclic_true";
+      "condorcet_true";
+      "unique_true";
+      "intransative_true";
     ],
     [
       (fun prof _ -> string_of_bool @@ is_cyclic prof);
       (fun prof _ -> string_of_bool @@ has_condorcet prof);
       (fun prof _ -> string_of_int @@ n_unique_preferences prof);
       (fun prof _ -> string_of_bool @@ not @@ is_transitive prof);
-      (fun prof _ -> string_of_float @@ fraction_strongly_single_peaked prof);
+      (* (fun prof _ -> string_of_float @@ fraction_strongly_single_peaked prof); *)
     ] )

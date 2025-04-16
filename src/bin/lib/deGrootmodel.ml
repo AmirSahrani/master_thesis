@@ -112,9 +112,9 @@ let opinion_to_pref pref candidates =
     List.map (fun cand -> Owl.Mat.(sum' @@ abs (pref - cand))) candidates
   in
   candidates
-  |> List.mapi (fun i _ -> (i, List.nth distances i))
+  |> List.mapi (fun i _ -> (i + 1, List.nth distances i))
   |> List.sort (fun (_, d1) (_, d2) -> compare d1 d2)
-  |> List.map fst
+  |> List.map (fun tup -> [ fst tup ])
 
 let create_trust_matrix graph bias_factor =
   let trust_matrix = graph |> adjacency_matrix_from in
@@ -123,7 +123,7 @@ let create_trust_matrix graph bias_factor =
   |> (fun m -> add_self_bias m bias_factor)
   |> normalize_matrix
 
-(** [deGroot] takes in a trust matrix and a number of steps, and returns the *)
+(** [deGroot] takes in a configuration to simulate a deGroot learning process on the supplied input data, return the simulated final opinions, as well as the supplied true final options, and the trust matrix *)
 let deGroot config =
   let open Owl.Mat in
   let {
@@ -151,6 +151,12 @@ let deGroot config =
 
   let trust = trust_matrix **@ timesteps in
   let final_opinion = Owl.Mat.(trust *@ pre_data) in
+
+  let original_prefs =
+    List.mapi
+      (fun _ i -> opinion_to_pref (Owl.Mat.row pre_data i) candidates)
+      (List.init n_voters Fun.id)
+  in
   let simulated_prefs =
     List.mapi
       (fun _ i -> opinion_to_pref (Owl.Mat.row final_opinion i) candidates)
@@ -161,4 +167,4 @@ let deGroot config =
       (fun _ i -> opinion_to_pref (Owl.Mat.row post_data i) candidates)
       (List.init (Owl.Mat.row_num post_data) Fun.id)
   in
-  ((final_opinion, post_data), (simulated_prefs, true_prefs))
+  ((final_opinion, post_data), (original_prefs, simulated_prefs, true_prefs))

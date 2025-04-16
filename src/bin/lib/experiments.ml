@@ -4,10 +4,12 @@ open Radmodel
 open Utils
 open Evaluations
 open Query
+open Initpy
 open Distances
 open Graphs
-open Initpy
 open Pyops
+
+[@@@ocaml.warning "-26-27"]
 
 (* Function to run a single experiment *)
 let run_experiment_rad nVoters nAlternatives space distance between trial bias
@@ -77,14 +79,15 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
     spaces
 
 let rad_roy_bias_experiment () =
-  let _ = initPython () in
+  (* Duct tape fix*)
+  let _ = WrappedModels.SpectralClustering.fit in
   let biases = arange 0.45 0.99 0.01 in
   let num_experiments = 100 in
   let nVoters = 51 in
   let nAlternatives = 3 in
   let nDeliberationSteps = 2 in
   (* Open CSV file *)
-  let oc = open_out "results/data_consensus.csv" in
+  let oc = open_out "results/data_cnsus.csv" in
   let titles, evals = get_all_evals_rad () in
 
   (* Prepare header row *)
@@ -106,7 +109,7 @@ let rad_roy_bias_experiment () =
   (* Finalize Python *)
   Py.finalize ()
 
-let load_data limit_n cond =
+let load_data limit_n cond q =
   let db = open_db "data/a1r.db" in
   let table_pre = tables `Response_pre in
   let table_post = tables `Response_post in
@@ -130,7 +133,7 @@ let load_data limit_n cond =
   in
 
   let get_data table join where lim =
-    get_voters_opinions db questions table join where lim |> Owl.Mat.of_arrays
+    get_voters_opinions db q table join where lim |> Owl.Mat.of_arrays
   in
 
   let where = where_condition cond in
@@ -149,46 +152,118 @@ let load_data limit_n cond =
     normailzed such that the sum of the weights of all incoming edges in a node
     is exactly 1. *)
 
-let deGroot_experiment () =
-  (* let oc = open_out "results/degroot_data.csv" in
-     let titles, evals = get_all_evals () in
-
-     (* Prepare header row *)
-     Csv.output_all (Csv.to_channel oc)
-       [ [ "bias"; "trial"; "metric_space" ] @ titles ]; *)
-  let num_voters = 100 in
-  let num_candidates = 6 in
-  let _, _ = load_data 100000 "0" in
-  let pre_delib, post_delib = load_data 100000 "1" in
-  let max_idx = min (Owl.Mat.row_num pre_delib) (Owl.Mat.row_num post_delib) in
+let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
+    time methd bias =
+  let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
   let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
   let voter_indices = Array.sub indices 0 num_voters in
-  let pre_data = Owl.Mat.rows pre_delib voter_indices in
-  let post_data = Owl.Mat.rows pre_delib voter_indices in
+  let pre_data = Owl.Mat.rows pre_data voter_indices in
+  let post_data = Owl.Mat.rows post_data voter_indices in
+  let out_graph = ties_sampling graph num_voters in
+
+  let conf =
+    {
+      seed = None;
+      pre_data;
+      post_data;
+      graph = out_graph;
+      (* parameters to experiment with*)
+      n_voters = num_voters;
+      n_candidates = num_candidates;
+      timesteps = time;
+      cand_method = methd;
+      bias_factor = bias;
+    }
+  in
+  deGroot conf
+
+let deGroot_experiment () =
+  let titles, evals = get_all_evals_degroot () in
+
+  let oc = open_out "results/data_degroot_control.csv" in
+
+  (* Prepare header row *)
+  Csv.output_all (Csv.to_channel oc)
+    [
+      [
+        "bias";
+        "cand_sampler";
+        "n_voters";
+        "n_candidates";
+        "time_steps";
+        "trial";
+      ]
+      @ titles;
+    ];
+
+  let pre_delib, post_delib = load_data 100000 "0" questions_without_pk in
   let edges = read_adjacency_matrix "graphs/soc-astro.edges" in
-  (* let edges = read_adjacency_matrix "graphs/ties_academia.edges" in *)
   let graph =
     List.fold_left
       (fun g (l, r) -> GenericGraph.add_edge g l r)
       GenericGraph.empty edges
   in
-  let out_graph = ties_sampling graph num_voters in
-  Printf.printf "number of nodes : %d\n" (GenericGraph.nb_vertex out_graph);
 
-  let conf =
-    {
-      pre_data;
-      post_data;
-      graph = out_graph;
-      n_voters = num_voters;
-      timesteps = 100.;
-      n_candidates = num_candidates;
-      cand_method = SampleVoters;
-      bias_factor = 3.;
-      seed = None;
-    }
+  let num_voters_range =
+    List.init 5 (fun i -> 10 + (i * 30)) |> List.map (fun x -> [ `Int x ])
   in
-  let _ = deGroot conf in
+  let num_candidates_range =
+    List.init 3 (fun i -> 3 + (i * 2)) |> List.map (fun x -> [ `Int x ])
+  in
+  let bias_range = arange 0.1 1.5 0.1 |> List.map (fun x -> [ `Float x ]) in
+  let cand_methds =
+    [ Random; SampleVoters; Voter ] |> List.map (fun x -> [ `Method x ])
+  in
+  let timesteps_range =
+    arange 50. 101. 50. |> List.map (fun x -> [ `Float x ])
+  in
+  let product =
+    cartesian_product num_candidates_range num_voters_range
+    |> cartesian_product bias_range
+    |> cartesian_product cand_methds
+    |> cartesian_product timesteps_range
+  in
+  let total = List.length product in
+
+  Printf.printf "Running %d simulations\n" total;
+  let n_trials = 3 in
+  let results =
+    List.mapi
+      (fun i c ->
+        match c with
+        | [
+         `Int voters; `Int candidates; `Float bias; `Method meth; `Float steps;
+        ] ->
+            Printf.printf "\027[2K\r%.2f%% done%!%!"
+              (float_of_int i /. float_of_int total *. 100.);
+            List.map
+              (fun i ->
+                let ( (sim_opinion, true_opinion),
+                      (original_prof, sim_prof, true_prof) ) =
+                  run_deGroot_experiment pre_delib post_delib graph voters
+                    candidates steps meth bias
+                in
+                [
+                  string_of_float bias;
+                  string_of_sampler meth;
+                  string_of_int voters;
+                  string_of_int candidates;
+                  string_of_float steps;
+                  string_of_int i;
+                ]
+                @ List.map (fun eval -> eval original_prof ()) evals
+                @ List.map (fun eval -> eval sim_prof ()) evals
+                @ List.map (fun eval -> eval true_prof ()) evals)
+              (List.init n_trials (fun x -> x + 1))
+        | _ -> failwith "Unexpected pattern")
+      product
+    |> List.concat
+  in
+
+  Csv.output_all (Csv.to_channel oc) results;
+
+  (* Close CSV file *)
+  close_out oc;
   ()
 
 let test () = ()

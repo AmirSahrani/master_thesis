@@ -21,14 +21,14 @@ def read_data(filename):
     return pd.read_csv(filename)
 
 
-def compute_proportion(data, col_start, col_end, new_col):
+def compute_proportion(data, col_start, col_end, new_col, group):
     # Ensure 'cyclic_start' and 'cyclic_end' are numeric
     data[col_start] = data[col_start].astype(float)
     data[col_end] = data[col_end].astype(float)
 
     # Group by bias
-    aggregated_start = data.groupby(["bias", "metric_space"])[col_start].mean()
-    aggregated_end = data.groupby(["bias", "metric_space"])[col_end].mean()
+    aggregated_start = data.groupby(group)[col_start].mean()
+    aggregated_end = data.groupby(group)[col_end].mean()
 
     # Compute proportion (avoid division by zero)
     agg_prop = (aggregated_end / aggregated_start).replace(np.nan, 0)
@@ -37,25 +37,25 @@ def compute_proportion(data, col_start, col_end, new_col):
     return agg_prop.reset_index(name=new_col)
 
 
-def compute_average(data, col_start, new_col):
+def compute_average(data, col_start, new_col, group):
     # Ensure 'cyclic_start' and 'cyclic_end' are numeric
     data[col_start] = data[col_start].astype(float)
 
     # Group by bias
-    aggregated_start = data.groupby(["bias", "metric_space"])[col_start].mean()
+    aggregated_start = data.groupby(group)[col_start].mean()
 
     # Convert Series to DataFrame and reset index
     return aggregated_start.reset_index(name=new_col)
 
 
-def compute_percentage_change(data, col_start, col_end, new_col):
+def compute_percentage_change(data, col_start, col_end, new_col, group):
     # Ensure 'cyclic_start' and 'cyclic_end' are numeric
     data[col_start] = data[col_start].astype(float)
     data[col_end] = data[col_end].astype(float)
 
     # Group by bias
-    aggregated_start = data.groupby(["bias", "metric_space"])[col_start].mean()
-    aggregated_end = data.groupby(["bias", "metric_space"])[col_end].mean()
+    aggregated_start = data.groupby(group)[col_start].mean()
+    aggregated_end = data.groupby(group)[col_end].mean()
 
     # Compute proportion (avoid division by zero)
     agg_prop = ((aggregated_end - aggregated_start) / aggregated_start).replace(
@@ -98,7 +98,7 @@ def plot(data, col, ylab):
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("results/data_consensus.csv")
+    data = pd.read_csv("results/data_degroot_small.csv")
     cyclic_proportion = compute_proportion(
         data, "cyclic_start", "cyclic_end", "cyclic_proportion"
     )

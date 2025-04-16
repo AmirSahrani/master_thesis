@@ -1,11 +1,18 @@
 ## Experiments
     - DeGroot
         - [x] Setup parameter/config module
-        - [ ] Setup python script to generate parameters for experiments
-        - [ ] Create Csv writer
-        - [ ] Run experiments
+        - [x] Setup generation parameters for experiments
+        - [x] Create Csv writer
+        - [x] Run experiments
     - ABM
-        - Decide Scheduling
+        - [ ] Decide Scheduling
+        - [ ] Updating functions
+            - [ ] Knowledge
+            - [ ] Importance
+            - [ ] Trust
+        - [ ] Conversational Chain
+        - [ ] Importace
+            - [ ] Generation
 ## General
     - [x] Generate alterantives
         - [x] Random
@@ -14,3 +21,4 @@
     - [ ] Map voters to graph
     - [~] Handle orphans in TIES sampling
     - [x] Bias Factor
+    - [ ] Ability to select subset of questionnaire questions

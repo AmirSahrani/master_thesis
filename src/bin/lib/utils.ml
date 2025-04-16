@@ -28,6 +28,9 @@ let rec permutations lst =
              List.map (fun perm -> x :: perm) (permutations rest))
            lst)
 
+let cartesian_product l1 l2 =
+  List.concat_map (fun x -> List.map (fun y -> y @ x) l2) l1
+
 let int_of_bool b = match b with true -> 1 | false -> 0
 
 let all_profiles_weak _ =
@@ -93,6 +96,46 @@ let print_list lst convert =
 
 let print_mat mat = mat |> Owl_pretty.dsnda_to_string |> print_endline
 
+let string_of_list lst convert =
+  Printf.sprintf "\"%s\"" (String.concat " > " (List.map convert lst))
+
+let string_of_list_pref lst convert =
+  Printf.sprintf "%s"
+    (String.concat " ≻ "
+       (List.map
+          (fun inner ->
+            Printf.sprintf "(%s)" (String.concat ", " (List.map convert inner)))
+          lst))
+
+let print_profile prof =
+  List.iter
+    (fun p ->
+      print_endline
+      @@ String.concat " > "
+           (List.map
+              (fun inner ->
+                "( " ^ String.concat ", " (List.map string_of_int inner) ^ " )")
+              p))
+    prof
+
+let print_voter v =
+  Printf.printf "Bias: %.2f " v.bias;
+  print_profile [ v.preference ]
+
+let string_of_space = function KS -> "KS" | DP -> "DP" | CS -> "CS"
+
+let string_of_sampler = function
+  | Random -> "Random"
+  | SampleVoters -> "Sample"
+  | Voter -> "Voter"
+
+let print_judgementset s p =
+  List.iter
+    (fun (sign, (x, y)) ->
+      if sign = 1 then Printf.printf "(%d, %d) " x y
+      else Printf.printf "-(%d, %d) " x y)
+    (List.combine s (pairs p))
+
 let maj profile =
   let combinations = pairs (List.flatten @@ List.nth profile 0) in
   let tbl = Hashtbl.create (List.length combinations) in
@@ -102,23 +145,16 @@ let maj profile =
         List.fold_left
           (fun count p ->
             let ix =
-              List.find_index
-                (fun ranking ->
-                  (* print_list ranking string_of_int; *)
-                  List.mem x ranking)
-                p
+              List.find_index (fun ranking -> List.mem x ranking) p
               |> Option.get
             in
             let iy =
               List.find_index (fun ranking -> List.mem y ranking) p
               |> Option.get
             in
-
-            (* Printf.printf " ix: %d iy: %x\n" ix iy; *)
             if ix < iy then count + 1 else count)
           0 profile
       in
-      (* Printf.printf "%d > %d %d\n" x y count; *)
       Hashtbl.add tbl (x, y) count)
     combinations;
   tbl
@@ -162,38 +198,3 @@ let tupleToVoters (p, b) = { preference = p; bias = b; announced = 0 }
 
 let parse_pyVoters pv =
   Py.List.to_list_map parse_tuple pv |> List.map tupleToVoters
-
-let string_of_list lst convert =
-  Printf.sprintf "\"%s\"" (String.concat " > " (List.map convert lst))
-
-let string_of_list_pref lst convert =
-  Printf.sprintf "%s"
-    (String.concat " ≻ "
-       (List.map
-          (fun inner ->
-            Printf.sprintf "(%s)" (String.concat ", " (List.map convert inner)))
-          lst))
-
-let print_profile prof =
-  List.iter
-    (fun p ->
-      print_endline
-      @@ String.concat " > "
-           (List.map
-              (fun inner ->
-                "( " ^ String.concat ", " (List.map string_of_int inner) ^ " )")
-              p))
-    prof
-
-let print_voter v =
-  Printf.printf "Bias: %.2f " v.bias;
-  print_profile [ v.preference ]
-
-let string_of_space = function KS -> "KS" | DP -> "DP" | CS -> "CS"
-
-let print_judgementset s p =
-  List.iter
-    (fun (sign, (x, y)) ->
-      if sign = 1 then Printf.printf "(%d, %d) " x y
-      else Printf.printf "-(%d, %d) " x y)
-    (List.combine s (pairs p))
