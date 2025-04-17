@@ -1,13 +1,12 @@
 import sklearn
-import scipy
+from scipy.optimize import quadratic_assignment
 import numpy as np
 from numba import njit, prange
 
 
 def fit_SpectralClustering(data, n_clusters, affinity):
     print(data)
-    model = sklearn.cluster.SpectralClustering(
-        n_clusters=n_clusters, affinity=affinity)
+    model = sklearn.cluster.SpectralClustering(n_clusters=n_clusters, affinity=affinity)
     return model.fit(data).labels_
 
 
@@ -45,8 +44,8 @@ def get_neighbor(path, selection):
 
     if selection == 0:
         # Inverse
-        new_path[min(node1, node2): max(node1, node2)] = new_path[
-            min(node1, node2): max(node1, node2)
+        new_path[min(node1, node2) : max(node1, node2)] = new_path[
+            min(node1, node2) : max(node1, node2)
         ][::-1]
 
     elif selection == 1:
@@ -80,7 +79,7 @@ def objective(order, mat1, mat2):
     for i in range(len(order)):
         row_idx = int(order[i])
         for j in range(mat1.shape[1]):  # Assuming 2D matrices
-            total += abs(mat1[row_idx, j] - mat2[i, j])
+            total += abs(mat1[row_idx, j] - mat2[i, j]) ** 2
     return total
 
 
@@ -118,24 +117,11 @@ def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_ma
         f"Initial distance: {objective(
             initial_guess, normalized_opinions, node_distance_matrix)}"
     )
-
-    # Use differential evolution with bounds
-    # Using values that will be converted to permutation
-    bounds = [(0, 1) for _ in range(n)]
-    result = scipy.optimize.differential_evolution(
-        func=objective_wrapper,
-        bounds=bounds,
-        args=(normalized_opinions, node_distance_matrix),
-        popsize=15,
-        updating="deferred",
-        workers=-1,
+    res = quadratic_assignment(
+        A=normalized_opinions,
+        B=node_distance_matrix,
+        method="faq",
+        options={"maximize": True},
     )
 
-    # Convert final solution to permutation
-    final_order = np.argsort(result.x).astype(int)
-    print(
-        f"Final distance: {objective(final_order,
-                                     normalized_opinions, node_distance_matrix)}"
-    )
-
-    return final_order.tolist()
+    return res.col_ind.tolist()

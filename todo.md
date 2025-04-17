@@ -21,4 +21,4 @@
     - [ ] Map voters to graph
     - [~] Handle orphans in TIES sampling
     - [x] Bias Factor
-    - [ ] Ability to select subset of questionnaire questions
+    - [x] Ability to select subset of questionnaire questions
