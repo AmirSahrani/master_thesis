@@ -153,9 +153,9 @@ def _(mlines, plt):
 
 @app.cell
 def _(compute_average, compute_proportion, pd, plot, read_data):
-    data = read_data("results/data_degroot.csv")
-    data = data[data["time_steps"] == 50]
-    data = data[data["n_candidates"] == 7]
+    data = read_data("results/data_degroot_mapping_test.csv")
+    data = data[data["time_steps"] == 100]
+    data = data[data["n_candidates"] == 5]
 
 
     def compute_and_merge_proportions(
@@ -181,7 +181,7 @@ def _(compute_average, compute_proportion, pd, plot, read_data):
         "cyclic_end",
         "cyclic_true",
         "cyclic_proportion",
-        ["n_voters", "cand_sampler"],
+        ["bias", "cand_sampler"],
     )
 
     intransitive = compute_and_merge_proportions(
@@ -216,7 +216,7 @@ def _(compute_average, compute_proportion, pd, plot, read_data):
     )
 
     # === Plotting all variants in one figure ===
-    plot(cyclic, "n_voters", "cyclic_proportion", "Proportion Cyclic")
+    plot(cyclic, "bias", "cyclic_proportion", "Proportion Cyclic")
     plot(intransitive, "bias", "intransative_proportion", "Proportion Transitive")
     plot(condorcet, "bias", "condorcet_proportion", "Proportion Condorcet")
     plot(unique_profiles, "bias", "unique", r"\#Unique Preferences")

@@ -69,7 +69,7 @@ let apply_bijection matrix mapping =
         done;
         out
 
-let bijection m = fun x -> m.(x)
+let bijection m x = m.(x)
 
 let greedy_mapping dist_matrix shortest_path_matrix =
     let n = Owl.Mat.row_num dist_matrix in
@@ -77,8 +77,8 @@ let greedy_mapping dist_matrix shortest_path_matrix =
     let available = Array.init n (fun i -> i) in
     let nodes = Array.init n (fun i -> i) in
     let mapping = Array.init n (fun i -> i) in
-    (* start identity *)
 
+    (* start identity *)
     Array.iter
       (fun node ->
         (* pick best unused voter for this node *)
@@ -107,7 +107,6 @@ let greedy_mapping dist_matrix shortest_path_matrix =
                 available.(v) <- -1)
       nodes;
 
-    print_list (Array.to_list mapping) string_of_int;
     bijection mapping
 
 (** Edge weights equal to the similarity between voter i and j if they have a
@@ -183,7 +182,6 @@ let create_trust_matrix graph bias_factor =
     the supplied input data, return the simulated final opinions, as well as the
     supplied true final options, and the trust matrix *)
 let deGroot config =
-    let open Owl.Mat in
     let {
       pre_data;
       post_data;
@@ -199,31 +197,80 @@ let deGroot config =
     in
 
     (match seed with None -> () | Some s -> Random.init s);
+    let n_policies = Owl.Mat.col_num pre_data in
 
     (* First we create the proper trust matrix*)
     let trust_matrix = create_trust_matrix graph bias_factor in
 
+    (* list of mat *)
     let candidates =
         List.init n_candidates (fun _ ->
-            gen_alterantive cand_method pre_data 10)
+            gen_alterantive cand_method pre_data n_candidates)
     in
 
-    let trust = trust_matrix **@ timesteps in
-    let final_opinion = Owl.Mat.(trust *@ pre_data) in
+    let candidates_arr =
+        Array.of_list candidates
+        |> Owl.Dense.Ndarray.D.stack ~axis:0
+        |> Owl.Arr.squeeze ~axis:[| 1 |]
+    in
 
+    let v_candidates_arr = Array.init n_voters (fun _ -> candidates_arr) in
+    let cand_ndarray = Owl.Dense.Ndarray.D.stack ~axis:0 v_candidates_arr in
+    let shpe = Owl.Dense.Ndarray.D.shape cand_ndarray in
+    let cand_noisy =
+        Owl.Dense.Ndarray.D.(cand_ndarray + gaussian ~mu:0. ~sigma:2. shpe)
+    in
+    (* let estimated_candidates = *)
+    let trust = Owl.Mat.(trust_matrix **@ timesteps) in
+    let final_opinion = Owl.Mat.(trust *@ pre_data) in
+    let cand_noisy_2d =
+        Owl.Arr.reshape cand_noisy [| n_voters; n_candidates * n_policies |]
+    in
+
+    (* Perform matrix multiplication *)
+    let final_est_2d = Owl.Mat.(trust *@ cand_noisy_2d) in
+
+    (* Reshape the result back to 3D *)
+    let final_est =
+        Owl.Arr.reshape final_est_2d [| n_voters; n_candidates; n_policies |]
+    in
+
+    let extract_candidate_policies voter_idx tens =
+        (* Try a simpler approach - reshape the data *)
+        let n_candidates = (Owl.Arr.shape tens).(1) in
+        let n_policies = (Owl.Arr.shape tens).(2) in
+
+        (* Extract each candidate's policy row one by one *)
+        Array.init n_candidates (fun c_idx ->
+            let policy_array =
+                Array.init n_policies (fun p_idx ->
+                    Owl.Arr.get cand_noisy [| voter_idx; c_idx; p_idx |])
+            in
+                Owl.Mat.of_array policy_array 1 n_policies)
+        |> Array.to_list
+    in
     let original_prefs =
         List.mapi
-          (fun _ i -> opinion_to_pref (Owl.Mat.row pre_data i) candidates)
+          (fun _ i ->
+            opinion_to_pref (Owl.Mat.row pre_data i)
+              (extract_candidate_policies i cand_noisy))
           (List.init n_voters Fun.id)
     in
+
     let simulated_prefs =
         List.mapi
-          (fun _ i -> opinion_to_pref (Owl.Mat.row final_opinion i) candidates)
+          (fun _ i ->
+            opinion_to_pref
+              (Owl.Mat.row final_opinion i)
+              (extract_candidate_policies i final_est))
           (List.init n_voters Fun.id)
     in
+
     let true_prefs =
         List.mapi
-          (fun _ i -> opinion_to_pref (Owl.Mat.row post_data i) candidates)
+          (fun _ i ->
+            opinion_to_pref (Owl.Mat.row post_data i)
+              (extract_candidate_policies i final_est))
           (List.init (Owl.Mat.row_num post_data) Fun.id)
     in
         ( (final_opinion, post_data),

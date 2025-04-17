@@ -160,7 +160,17 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
     let pre_data = Owl.Mat.rows pre_data voter_indices in
     let post_data = Owl.Mat.rows post_data voter_indices in
     let out_graph = ties_sampling graph num_voters in
-
+    let voter_mapping =
+        WrappedModels.(
+          align_voters_to_graph
+            ~data1:
+              (owl_to_np_NDArray
+                 (opinion_to_dist pre_data (fun x y -> Owl.Mat.(x - y |> sum'))))
+            ~data2:
+              (adjacency_to_distance
+                 (owl_to_np_NDArray (adjacency_matrix_from out_graph)))
+            ())
+    in
     let conf =
         {
           seed = None;
@@ -180,7 +190,7 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
 let deGroot_experiment () =
     let titles, evals = get_all_evals_degroot () in
 
-    let oc = open_out "results/data_degroot_control.csv" in
+    let oc = open_out "results/data_degroot_mapping_test.csv" in
 
     (* Prepare header row *)
     Csv.output_all (Csv.to_channel oc)
@@ -205,10 +215,10 @@ let deGroot_experiment () =
     in
 
     let num_voters_range =
-        List.init 5 (fun i -> 10 + (i * 30)) |> List.map (fun x -> [ `Int x ])
+        List.init 1 (fun i -> 51 + (i * 30)) |> List.map (fun x -> [ `Int x ])
     in
     let num_candidates_range =
-        List.init 3 (fun i -> 3 + (i * 2)) |> List.map (fun x -> [ `Int x ])
+        List.init 1 (fun i -> 5 + (i * 2)) |> List.map (fun x -> [ `Int x ])
     in
     let bias_range = arange 0.1 1.5 0.1 |> List.map (fun x -> [ `Float x ]) in
     let cand_methds =

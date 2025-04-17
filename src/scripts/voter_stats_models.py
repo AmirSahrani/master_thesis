@@ -1,4 +1,5 @@
 import sklearn
+import scipy
 from scipy.optimize import quadratic_assignment
 import numpy as np
 from numba import njit, prange
@@ -6,7 +7,8 @@ from numba import njit, prange
 
 def fit_SpectralClustering(data, n_clusters, affinity):
     print(data)
-    model = sklearn.cluster.SpectralClustering(n_clusters=n_clusters, affinity=affinity)
+    model = sklearn.cluster.SpectralClustering(
+        n_clusters=n_clusters, affinity=affinity)
     return model.fit(data).labels_
 
 
@@ -44,8 +46,8 @@ def get_neighbor(path, selection):
 
     if selection == 0:
         # Inverse
-        new_path[min(node1, node2) : max(node1, node2)] = new_path[
-            min(node1, node2) : max(node1, node2)
+        new_path[min(node1, node2): max(node1, node2)] = new_path[
+            min(node1, node2): max(node1, node2)
         ][::-1]
 
     elif selection == 1:
@@ -113,15 +115,20 @@ def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_ma
 
     # Initial distance
     initial_guess = np.arange(0, n, step=1, dtype=np.int64)
-    print(
-        f"Initial distance: {objective(
-            initial_guess, normalized_opinions, node_distance_matrix)}"
-    )
+    initial_val = objective(
+        initial_guess, normalized_opinions, node_distance_matrix)
+    # print( f"Initial distance: {initial_val:.2f}")
     res = quadratic_assignment(
         A=normalized_opinions,
         B=node_distance_matrix,
         method="faq",
-        options={"maximize": True},
+        options={"maximize": False},
     )
 
+    final_val = objective(
+        res.col_ind, normalized_opinions, node_distance_matrix)
+    # print(f"Final distance:   {final_val:.2f}")
+    if initial_val > final_val:
+        print("Warning: QAP solver returned worse solution")
+        return initial_guess
     return res.col_ind.tolist()
