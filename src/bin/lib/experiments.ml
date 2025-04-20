@@ -190,7 +190,7 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
 let deGroot_experiment () =
     let titles, evals = get_all_evals_degroot () in
 
-    let oc = open_out "results/data_degroot_mapping_test.csv" in
+    let oc = open_out "results/data_degroot_mapping_delib.csv" in
 
     (* Prepare header row *)
     Csv.output_all (Csv.to_channel oc)
@@ -206,7 +206,7 @@ let deGroot_experiment () =
         @ titles;
       ];
 
-    let pre_delib, post_delib = load_data 100000 "0" questions_without_pk in
+    let pre_delib, post_delib = load_data 100000 "1" questions_without_pk in
     let edges = read_adjacency_matrix "graphs/soc-astro.edges" in
     let graph =
         List.fold_left
@@ -215,17 +215,17 @@ let deGroot_experiment () =
     in
 
     let num_voters_range =
-        List.init 1 (fun i -> 51 + (i * 30)) |> List.map (fun x -> [ `Int x ])
+        List.init 4 (fun i -> 9 + (i * 2)) |> List.map (fun x -> [ `Int x ])
     in
     let num_candidates_range =
-        List.init 1 (fun i -> 5 + (i * 2)) |> List.map (fun x -> [ `Int x ])
+        List.init 3 (fun i -> 5 + (i * 2)) |> List.map (fun x -> [ `Int x ])
     in
     let bias_range = arange 0.1 1.5 0.1 |> List.map (fun x -> [ `Float x ]) in
     let cand_methds =
         [ Random; SampleVoters; Voter ] |> List.map (fun x -> [ `Method x ])
     in
     let timesteps_range =
-        arange 50. 101. 50. |> List.map (fun x -> [ `Float x ])
+        [ 1.; 5.; 10.; 50. ] |> List.map (fun x -> [ `Float x ])
     in
     let product =
         cartesian_product num_candidates_range num_voters_range

@@ -5,20 +5,22 @@
         - [x] Create Csv writer
         - [x] Run experiments
     - ABM
-        - [ ] Decide Scheduling
+        - [x] Decide Scheduling -> not really issue, we can "freeze" time anyway
         - [ ] Updating functions
             - [ ] Knowledge
+                - Should take into account the knowledge of people you are with
             - [ ] Importance
+                - Maybe importance is decided by the strength of a position? e.g. a sort of normalized opinion vector?
             - [ ] Trust
-        - [ ] Conversational Chain
-        - [ ] Importace
-            - [ ] Generation
+                    - Asymtotically going to 1. Should grow relatively fast at first, results shoudl be that after a while there is uniform trust among all people in a group.
+        - [ ] Conversational Chain 
+            - random walker -> generate new trust matrix
 ## General
     - [x] Generate alterantives
         - [x] Random
         - [x] Sampling Voter
         - [x] Average of Sample
-    - [ ] Map voters to graph
+    - [x] Map voters to graph
     - [~] Handle orphans in TIES sampling
     - [x] Bias Factor
     - [x] Ability to select subset of questionnaire questions
