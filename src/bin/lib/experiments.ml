@@ -153,7 +153,7 @@ let load_data limit_n cond q =
     is exactly 1. *)
 
 let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
-    time methd bias =
+    times methd bias =
     let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
     let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
     let voter_indices = Array.sub indices 0 num_voters in
@@ -180,7 +180,7 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
           (* parameters to experiment with*)
           n_voters = num_voters;
           n_candidates = num_candidates;
-          timesteps = time;
+          timesteps = times;
           cand_method = methd;
           bias_factor = bias;
         }
@@ -190,7 +190,7 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
 let deGroot_experiment () =
     let titles, evals = get_all_evals_degroot () in
 
-    let oc = open_out "results/data_degroot_mapping_delib.csv" in
+    let oc = open_out "results/data_degroot_mapping_control_30_trials.csv" in
 
     (* Prepare header row *)
     Csv.output_all (Csv.to_channel oc)
@@ -206,7 +206,7 @@ let deGroot_experiment () =
         @ titles;
       ];
 
-    let pre_delib, post_delib = load_data 100000 "1" questions_without_pk in
+    let pre_delib, post_delib = load_data 100000 "0" questions_without_pk in
     let edges = read_adjacency_matrix "graphs/soc-astro.edges" in
     let graph =
         List.fold_left
@@ -215,61 +215,57 @@ let deGroot_experiment () =
     in
 
     let num_voters_range =
-        List.init 4 (fun i -> 9 + (i * 2)) |> List.map (fun x -> [ `Int x ])
+        List.init 4 (fun i -> 51 + (i * 2)) |> List.map (fun x -> [ `Int x ])
     in
     let num_candidates_range =
         List.init 3 (fun i -> 5 + (i * 2)) |> List.map (fun x -> [ `Int x ])
     in
-    let bias_range = arange 0.1 1.5 0.1 |> List.map (fun x -> [ `Float x ]) in
+    let bias_range = arange 0.1 1.5 0.2 |> List.map (fun x -> [ `Float x ]) in
     let cand_methds =
         [ Random; SampleVoters; Voter ] |> List.map (fun x -> [ `Method x ])
     in
-    let timesteps_range =
-        [ 1.; 5.; 10.; 50. ] |> List.map (fun x -> [ `Float x ])
-    in
+    let timesteps_range = [ 1.; 10.; 50. ] in
     let product =
         cartesian_product num_candidates_range num_voters_range
         |> cartesian_product bias_range
         |> cartesian_product cand_methds
-        |> cartesian_product timesteps_range
     in
     let total = List.length product in
 
     Printf.printf "Running %d simulations\n" total;
-    let n_trials = 3 in
+    let n_trials = 30 in
     let results =
         List.mapi
           (fun i c ->
             match c with
-            | [
-             `Int voters;
-             `Int candidates;
-             `Float bias;
-             `Method meth;
-             `Float steps;
-            ] ->
+            | [ `Int voters; `Int candidates; `Float bias; `Method meth ] ->
                 Printf.printf "\027[2K\r%.2f%% done%!%!"
                   (float_of_int i /. float_of_int total *. 100.);
                 List.map
                   (fun i ->
-                    let ( (sim_opinion, true_opinion),
-                          (original_prof, sim_prof, true_prof) ) =
+                    let out =
                         run_deGroot_experiment pre_delib post_delib graph voters
-                          candidates steps meth bias
+                          candidates timesteps_range meth bias
                     in
-                        [
-                          string_of_float bias;
-                          string_of_sampler meth;
-                          string_of_int voters;
-                          string_of_int candidates;
-                          string_of_float steps;
-                          string_of_int i;
-                        ]
-                        @ List.map (fun eval -> eval original_prof ()) evals
-                        @ List.map (fun eval -> eval sim_prof ()) evals
-                        @ List.map (fun eval -> eval true_prof ()) evals)
+                        List.mapi
+                          (fun j
+                               ( (sim_opinion, true_opinion),
+                                 (original_prof, sim_prof, true_prof) ) ->
+                            [
+                              string_of_float bias;
+                              string_of_sampler meth;
+                              string_of_int voters;
+                              string_of_int candidates;
+                              string_of_float (List.nth timesteps_range j);
+                              string_of_int i;
+                            ]
+                            @ List.map (fun eval -> eval original_prof ()) evals
+                            @ List.map (fun eval -> eval sim_prof ()) evals
+                            @ List.map (fun eval -> eval true_prof ()) evals)
+                          out
+                        |> List.flatten)
                   (List.init n_trials (fun x -> x + 1))
-            | _ -> failwith "Unexpected pattern")
+            | _ -> failwith "Unexpxected pattern")
           product
         |> List.concat
     in

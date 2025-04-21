@@ -21,7 +21,7 @@ def _(np, pd, plt):
     plt.rcParams.update(
         {
             "font.size": 20,
-            "figure.figsize": [15, 10],
+            "figure.figsize": [10, 8],
             "axes.linewidth": 1,
             "grid.linewidth": 1,
             "grid.alpha": 0.3,
@@ -150,7 +150,7 @@ def _(compute_proportion, mlines, pd, plt):
         ax.add_artist(legend1)  # Keep both legends visible
         plt.tight_layout()
         plt.show()
-    
+
     def compute_and_merge_proportions(
         data, start_col, end_col, true_col, name, group_by
     ):
@@ -169,69 +169,21 @@ def _(compute_proportion, mlines, pd, plt):
 
 @app.cell
 def _(read_data):
-    data = read_data("results/data_degroot_mapping.csv")
-
-
-
-
-    # cyclic = compute_and_merge_proportions(
-    #     data,
-    #     "cyclic_start",
-    #     "cyclic_end",
-    #     "cyclic_true",
-    #     "cyclic_proportion",
-    #     ["bias", "cand_sampler"],
-    # )
-
-    # intransitive = compute_and_merge_proportions(
-    #     data,
-    #     "intransative_start",
-    #     "intransative_end",
-    #     "intransative_true",
-    #     "intransative_proportion",
-    #     ["bias", "cand_sampler"],
-    # )
-
-    # condorcet = compute_and_merge_proportions(
-    #     data,
-    #     "condorcet_start",
-    #     "condorcet_end",
-    #     "condorcet_true",
-    #     "condorcet_proportion",
-    #     ["bias", "cand_sampler"],
-    # )
-
-    # unique_profiles_end = compute_average(
-    #     data, "unique_end", "unique", ["bias", "cand_sampler"]
-    # )
-    # unique_profiles_true = compute_average(
-    #     data, "unique_true", "unique", ["bias", "cand_sampler"]
-    # )
-    # unique_profiles_end["Type"] = "End"
-    # unique_profiles_true["Type"] = "True"
-    # df_combined = pd.concat([unique_profiles_end, unique_profiles_true])
-    # unique_profiles = df_combined.rename(
-    #     columns={"unique_start": "unique_profiles"}
-    # )
-
-    # # === Plotting all variants in one figure ===
-    # plot(cyclic, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
-    # plot(intransitive, "bias", "intransative_proportion", "Mean Number of Transative Profiles")
-    # plot(condorcet, "bias", "condorcet_proportion", "Mean number of Condorcet winners")
-    # plot(unique_profiles, "bias", "unique", r"\#Unique Preferences")
-    return (data,)
+    data_delib = read_data("results/data_degroot_mapping_delib_30_trials.csv")
+    data_control= read_data("results/data_degroot_mapping_control_30_trials.csv")
+    return data_control, data_delib
 
 
 @app.cell
-def _(data):
+def _(data_delib):
     voter_str = "n_voters"
     cand_str = "n_candidates"
     bias_str = "bias"
     time_str = "time_steps"
-    sampler_str = "cand_sampler"
-    voter_df = {x: data.loc[data[voter_str] == x ] for x in data[voter_str].unique()}
-    cand_df = {x: data.loc[data[cand_str] == x ] for x in data[cand_str].unique()}
-    time_df = {x: data.loc[data[time_str] == x ] for x in data[time_str].unique()}
+    sampler_str = "cand_sample"
+    voter_df = {x: data_delib.loc[data_delib[voter_str] == x ] for x in data_delib[voter_str].unique()}
+    cand_df = {x: data_delib.loc[data_delib[cand_str] == x ] for x in data_delib[cand_str].unique()}
+    time_df = {x: data_delib.loc[data_delib[time_str] == x ] for x in data_delib[time_str].unique()}
     print(voter_df.keys())
     print(cand_df.keys())
     print(time_df.keys())
@@ -252,18 +204,16 @@ def _(
     cand_str,
     compute_and_merge_proportions,
     compute_average,
-    data,
+    data_delib,
     pd,
     plot,
     time_str,
-    unique_profiles_end,
-    unique_profiles_true,
     voter_str,
 ):
-    data_51_5 = data.loc[(data[voter_str] == 51) & (data[cand_str] == 5) & (data[time_str] == 50)].copy()
+    data_delib_51_5 = data_delib.loc[(data_delib[voter_str] == 11) & (data_delib[cand_str] == 5) & (data_delib[time_str] == 50)].copy()
 
     cyclic_51_5 = compute_and_merge_proportions(
-        data_51_5,
+        data_delib_51_5,
         "cyclic_start",
         "cyclic_end",
         "cyclic_true",
@@ -272,7 +222,7 @@ def _(
     )
 
     intransitive_51_5 = compute_and_merge_proportions(
-        data_51_5,
+        data_delib_51_5,
         "intransative_start",
         "intransative_end",
         "intransative_true",
@@ -281,7 +231,7 @@ def _(
     )
 
     condorcet_51_5 = compute_and_merge_proportions(
-        data_51_5,
+        data_delib_51_5,
         "condorcet_start",
         "condorcet_end",
         "condorcet_true",
@@ -290,14 +240,14 @@ def _(
     )
 
     unique_profiles_end_51_5 = compute_average(
-        data_51_5, "unique_end", "unique", ["bias", "cand_sampler"]
+        data_delib_51_5, "unique_end", "unique", ["bias", "cand_sampler"]
     )
     unique_profiles_true_51_5 = compute_average(
-        data_51_5, "unique_true", "unique", ["bias", "cand_sampler"]
+        data_delib_51_5, "unique_true", "unique", ["bias", "cand_sampler"]
     )
-    unique_profiles_end["Type"] = "End"
-    unique_profiles_true["Type"] = "True"
-    df_combined_51_5 = pd.concat([unique_profiles_end, unique_profiles_true])
+    unique_profiles_end_51_5["Type"] = "End"
+    unique_profiles_true_51_5["Type"] = "True"
+    df_combined_51_5 = pd.concat([unique_profiles_end_51_5, unique_profiles_true_51_5])
     unique_profiles_51_5 = df_combined_51_5.rename(
         columns={"unique_start": "unique_profiles"}
     )
@@ -310,7 +260,7 @@ def _(
     return (
         condorcet_51_5,
         cyclic_51_5,
-        data_51_5,
+        data_delib_51_5,
         df_combined_51_5,
         intransitive_51_5,
         unique_profiles_51_5,
@@ -319,31 +269,56 @@ def _(
     )
 
 
-@app.cell
-def _(cand_str, data, mo, time_str, voter_str):
+@app.cell(hide_code=True)
+def _(cand_str, data_delib, mo, time_str, voter_str):
     # Create UI controls
     voter_dropdown = mo.ui.dropdown(
-        options={str(v): v for v in sorted(data[voter_str].unique())},
-        value="51",
+        options={str(v): v for v in sorted(data_delib[voter_str].unique())},
+        value="9",
         label="Number of Voters"
     )
 
     cand_dropdown = mo.ui.dropdown(
-        options={str(c): c for c in sorted(data[cand_str].unique())},
+        options={str(c): c for c in sorted(data_delib[cand_str].unique())},
         value="7",
         label="Number of Candidates"
     )
 
     time_dropdown = mo.ui.dropdown(
-        options={str(t): t for t in sorted(data[time_str].unique())},
+        options={str(t): t for t in sorted(data_delib[time_str].unique())},
         value="1.0",
         label="Time Value"
     )
 
     # Display UI controls
     controls = mo.hstack([voter_dropdown, cand_dropdown, time_dropdown])
-    controls
     return cand_dropdown, controls, time_dropdown, voter_dropdown
+
+
+@app.cell(hide_code=True)
+def _(cand_str, data_control, mo, time_str, voter_str):
+    # Create UI controls
+    voter_dropdown_c = mo.ui.dropdown(
+        options={str(v): v for v in sorted(data_control[voter_str].unique())},
+        value="51",
+        label="Number of Voters"
+    )
+
+    cand_dropdown_c = mo.ui.dropdown(
+        options={str(c): c for c in sorted(data_control[cand_str].unique())},
+        value="5",
+        label="Number of Candidates"
+    )
+
+    time_dropdown_c = mo.ui.dropdown(
+        options={str(t): t for t in sorted(data_control[time_str].unique())},
+        value="50.0",
+        label="Time Value"
+    )
+
+    # Display UI controls
+    controls_control = mo.hstack([voter_dropdown_c, cand_dropdown_c, time_dropdown_c])
+    return cand_dropdown_c, controls_control, time_dropdown_c, voter_dropdown_c
 
 
 @app.cell(hide_code=True)
@@ -351,55 +326,55 @@ def _(alt):
     def create_altair_chart(df, x_col, y_col, title):
         # Define color scale for different Type values
         type_colors = {"Start": "#A93C93", "End": "#008B72", "Final": "#613F99"}
-    
+
         # Define markers for different cand_sampler values
         markers = ["circle", "cross", "triangle", "diamond", "triangle-down", "square", "cross", "star"]
         sampler_markers = {
             sampler: markers[i % len(markers)]
             for i, sampler in enumerate(df["cand_sampler"].unique())
         }
-    
+
         # Create the chart with proper encoding
-        chart = alt.Chart(df).mark_line(
-            point=True,
-            strokeDash=[4, 4],  # Dashed line similar to linestyle="--"
-            opacity=0.7
-        ).encode(
+        chart = alt.Chart(df).mark_point().encode(
             x=alt.X(f'{x_col}:Q', title=x_col),
             y=alt.Y(f'{y_col}:Q', title=title),
-            color=alt.Color('Type:N', scale=alt.Scale(domain=list(type_colors.keys()), 
-                                                      range=list(type_colors.values())),
+            color=alt.Color('Type:N', 
+                           scale=alt.Scale(domain=list(type_colors.keys()), 
+                                          range=list(type_colors.values())),
                            title='Type'),
             shape=alt.Shape('cand_sampler:N', 
-                           scale=alt.Scale(domain=list(sampler_markers.keys()),
-                                           range=list(sampler_markers.values())),
-                           title='Candidate Sampler'),
+                          scale=alt.Scale(domain=list(sampler_markers.keys()),
+                                         range=list(sampler_markers.values())),
+                          title='Candidate Sampler'),
             tooltip=['bias', 'cand_sampler', 'Type', y_col]
-        ).properties(
+        )
+
+        # Add connecting lines, grouped by both Type and cand_sampler
+        lines = alt.Chart(df).mark_line(
+            strokeDash=[4, 4],
+            opacity=0.7
+        ).encode(
+            x=alt.X(f'{x_col}:Q'),
+            y=alt.Y(f'{y_col}:Q'),
+            color=alt.Color('Type:N'),
+            detail='cand_sampler:N'  # Group lines by sampler too
+        )
+
+        # Combine points and lines
+        combined = (lines + chart).properties(
             width=800,
             height=500,
             title=title
         ).interactive()
-    
-        return chart
 
-    # This function can be used to create a combined chart with legend
+        return combined
+
     def create_combined_chart(df, x_col, y_col, title):
+        # Create the main chart
         base = create_altair_chart(df, x_col, y_col, title)
-    
-        # Add a proper legend similar to the matplotlib version
-        # First, create a legend for Type (color)
-        type_legend = alt.Chart(df).mark_point().encode(
-            y=alt.Y('Type:N', axis=alt.Axis(orient='right')),
-            color=alt.Color('Type:N', legend=None)
-        ).properties(width=100, height=100)
-    
-        # Then, create a legend for cand_sampler (shape)
-        sampler_legend = alt.Chart(df).mark_point().encode(
-            y=alt.Y('cand_sampler:N', axis=alt.Axis(orient='right')),
-            shape=alt.Shape('cand_sampler:N', legend=None)
-        ).properties(width=100, height=100)
-    
+
+        # No need for separate legends as Altair handles this automatically
+        # Just return the base chart which already includes proper legends
         return base
     return create_altair_chart, create_combined_chart
 
@@ -410,8 +385,9 @@ def _(
     cand_str,
     compute_and_merge_proportions,
     compute_average,
+    controls,
     create_altair_chart,
-    data,
+    data_delib,
     mo,
     pd,
     time_dropdown,
@@ -424,54 +400,58 @@ def _(
     cand_value = int(cand_dropdown.value)
     time_value = int(time_dropdown.value)
 
-    # Filter data based on selections
-    filtered_data = data.loc[
-        (data[voter_str] == voter_value) & 
-        (data[cand_str] == cand_value) & 
-        (data[time_str] == time_value)
+    # Filter data_delib based on selections
+    filtered_data_delib = data_delib.loc[
+        (data_delib[voter_str] == voter_value) & 
+        (data_delib[cand_str] == cand_value) & 
+        (data_delib[time_str] == time_value)
     ].copy()
 
-    # Get the processed datasets using your existing helper functions
+    # Get the processed data_delibsets using your existing helper functions
     # Assuming these functions already handle the "Type" column correctly
     cyclic = compute_and_merge_proportions(
-        filtered_data,
+        filtered_data_delib,
         "cyclic_start", "cyclic_end", "cyclic_true", "cyclic_proportion",
         ["bias", "cand_sampler"]
     )
 
     intransitive = compute_and_merge_proportions(
-        filtered_data,
+        filtered_data_delib,
         "intransative_start", "intransative_end", "intransative_true", "intransative_proportion",
         ["bias", "cand_sampler"]
     )
 
     condorcet = compute_and_merge_proportions(
-        filtered_data,
+        filtered_data_delib,
         "condorcet_start", "condorcet_end", "condorcet_true", "condorcet_proportion",
         ["bias", "cand_sampler"]
     )
 
     unique_profiles_end = compute_average(
-        filtered_data, "unique_end", "unique", ["bias", "cand_sampler"]
+        filtered_data_delib, "unique_end", "unique", ["bias", "cand_sampler"]
     )
     unique_profiles_end["Type"] = "End"
 
     unique_profiles_true = compute_average(
-        filtered_data, "unique_true", "unique", ["bias", "cand_sampler"]
+        filtered_data_delib, "unique_true", "unique", ["bias", "cand_sampler"]
     )
     unique_profiles_true["Type"] = "True"
 
     unique_profiles = pd.concat([unique_profiles_end, unique_profiles_true])
 
     # Create the charts
-    # You'll need to specify the correct column names based on your actual data structure
+    # You'll need to specify the correct column names based on your actual data_delib structure
     chart1 = create_altair_chart(cyclic, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
     chart2 = create_altair_chart(intransitive, "bias", "intransative_proportion", "Mean Number of Transitive Profiles")
     chart3 = create_altair_chart(condorcet, "bias", "condorcet_proportion", "Mean Number of Condorcet Winners")
     chart4 = create_altair_chart(unique_profiles, "bias", "unique", "#Unique Preferences")
 
     # Display title and charts
-    mo.hstack([chart1, chart2])
+    mo.center(mo.vstack([
+        mo.center(mo.md("#Results for Deliberation")),
+        mo.center(controls),
+    mo.hstack([chart3, chart4]),
+    mo.hstack([chart1, chart2])]))
     return (
         cand_value,
         chart1,
@@ -480,7 +460,7 @@ def _(
         chart4,
         condorcet,
         cyclic,
-        filtered_data,
+        filtered_data_delib,
         intransitive,
         time_value,
         unique_profiles,
@@ -490,10 +470,95 @@ def _(
     )
 
 
-@app.cell
-def _(chart3, chart4, mo):
-    mo.hstack([chart3, chart4])
-    return
+@app.cell(hide_code=True)
+def _(
+    cand_dropdown_c,
+    cand_str,
+    compute_and_merge_proportions,
+    compute_average,
+    controls_control,
+    create_altair_chart,
+    data_control,
+    mo,
+    pd,
+    time_dropdown_c,
+    time_str,
+    voter_dropdown_c,
+    voter_str,
+):
+    # Get values from dropdowns
+    voter_value_c = int(voter_dropdown_c.value)
+    cand_value_c = int(cand_dropdown_c.value)
+    time_value_c = int(time_dropdown_c.value)
+
+    # Filter data_control based on selections
+    filtered_data_control = data_control.loc[
+        (data_control[voter_str] == voter_value_c) & 
+        (data_control[cand_str] == cand_value_c) & 
+        (data_control[time_str] == time_value_c)
+    ].copy()
+
+    # Get the processed data_controlsets using your existing helper functions
+    # Assuming these functions already handle the "Type" column correctly
+    cyclic_c = compute_and_merge_proportions(
+        filtered_data_control,
+        "cyclic_start", "cyclic_end", "cyclic_true", "cyclic_proportion",
+        ["bias", "cand_sampler"]
+    )
+
+    intransitive_c = compute_and_merge_proportions(
+        filtered_data_control,
+        "intransative_start", "intransative_end", "intransative_true", "intransative_proportion",
+        ["bias", "cand_sampler"]
+    )
+
+    condorcet_c = compute_and_merge_proportions(
+        filtered_data_control,
+        "condorcet_start", "condorcet_end", "condorcet_true", "condorcet_proportion",
+        ["bias", "cand_sampler"]
+    )
+
+    unique_profiles_end_c = compute_average(
+        filtered_data_control, "unique_end", "unique", ["bias", "cand_sampler"]
+    )
+    unique_profiles_end_c["Type"] = "End"
+
+    unique_profiles_true_c = compute_average(
+        filtered_data_control, "unique_true", "unique", ["bias", "cand_sampler"]
+    )
+    unique_profiles_true_c["Type"] = "True"
+
+    unique_profiles_c = pd.concat([unique_profiles_end_c, unique_profiles_true_c])
+
+    # Create the charts
+    # You'll need to specify the correct column names based on your actual data_control structure
+    chart1_c = create_altair_chart(cyclic_c, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
+    chart2_c = create_altair_chart(intransitive_c, "bias", "intransative_proportion", "Mean Number of Transitive Profiles")
+    chart3_c = create_altair_chart(condorcet_c, "bias", "condorcet_proportion", "Mean Number of Condorcet Winners")
+    chart4_c = create_altair_chart(unique_profiles_c, "bias", "unique", "#Unique Preferences")
+
+    # Display title and charts
+    mo.center(mo.vstack([
+        mo.center(mo.md("#Results for Control")),
+        mo.center(controls_control),
+    mo.hstack([chart3_c, chart4_c]),
+    mo.hstack([chart1_c, chart2_c])]))
+    return (
+        cand_value_c,
+        chart1_c,
+        chart2_c,
+        chart3_c,
+        chart4_c,
+        condorcet_c,
+        cyclic_c,
+        filtered_data_control,
+        intransitive_c,
+        time_value_c,
+        unique_profiles_c,
+        unique_profiles_end_c,
+        unique_profiles_true_c,
+        voter_value_c,
+    )
 
 
 if __name__ == "__main__":
