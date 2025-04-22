@@ -129,6 +129,5 @@ def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_ma
         res.col_ind, normalized_opinions, node_distance_matrix)
     # print(f"Final distance:   {final_val:.2f}")
     if initial_val > final_val:
-        print("Warning: QAP solver returned worse solution")
         return initial_guess
     return res.col_ind.tolist()

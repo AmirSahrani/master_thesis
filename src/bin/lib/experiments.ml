@@ -177,7 +177,6 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
           pre_data;
           post_data;
           graph = out_graph;
-          (* parameters to experiment with*)
           n_voters = num_voters;
           n_candidates = num_candidates;
           timesteps = times;
@@ -187,76 +186,88 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
     in
         deGroot conf
 
+type job = {
+  voters : int;
+  candidates : int;
+  bias : float;
+  meth : alternativeGenerators;
+  trial_id : int;
+}
+
+let run_one_job ~pre_data ~post_data ~graph ~timesteps_range ~evals (job : job)
+    : string list list =
+    (* unwrap the job *)
+    let { voters; candidates; bias; meth; trial_id } = job in
+    let out =
+        run_deGroot_experiment pre_data post_data graph voters candidates
+          timesteps_range meth bias
+    in
+        List.mapi
+          (fun j
+               ( (sim_opinion, true_opinion),
+                 (original_prof, sim_prof, true_prof) ) ->
+            [
+              string_of_float bias;
+              string_of_sampler meth;
+              string_of_int voters;
+              string_of_int candidates;
+              string_of_float (List.nth timesteps_range j);
+              string_of_int trial_id;
+            ]
+            @ List.map (fun eval -> eval original_prof ()) evals
+            @ List.map (fun eval -> eval sim_prof ()) evals
+            @ List.map (fun eval -> eval true_prof ()) evals)
+          out
+
 let run_parallel_simulations product pre_data post_data graph timesteps_range
     n_trials evals =
-    let total = List.length product in
-        Printf.printf "Running %d simulations in parallel\n%!" total;
+    let jobs =
+        product
+        |> List.concat_map (function
+             | [ `Int v; `Int c; `Float b; `Method m ] ->
+                 List.init n_trials (fun t ->
+                     {
+                       voters = v;
+                       candidates = c;
+                       bias = b;
+                       meth = m;
+                       trial_id = t + 1;
+                     })
+             | _ -> failwith "bad product")
+    in
+    let total = List.length jobs in
+    let cores = Domain.recommended_domain_count () in
 
-        (* Create a mutex for thread-safe progress updates *)
-        let mutex = Mutex.create () in
-        let completed = ref 0 in
+    Printf.printf "Running %d simulations in parallel, using %d cores\n" total
+      cores;
 
-        (* Function to safely update and display progress *)
-        let update_progress () =
-            Mutex.lock mutex;
-            incr completed;
-            let percentage =
-                float_of_int !completed /. float_of_int total *. 100.
-            in
-                Printf.printf "\027[2K\r%.2f%% done%!" percentage;
-                Mutex.unlock mutex
+    (* 2. Progress tracking *)
+    let mutex = Mutex.create () in
+    let completed = ref 0 in
+    let update_progress () =
+        Mutex.lock mutex;
+        incr completed;
+        let pct = float_of_int !completed /. float_of_int total *. 100. in
+
+        Printf.printf "\027[2K\r%d/%d done%!" !completed total;
+        Mutex.unlock mutex
+    in
+
+    (* 3. Worker: plain function over a single job *)
+    let worker job =
+        let result =
+            run_one_job ~pre_data ~post_data ~graph ~timesteps_range ~evals job
         in
+            update_progress ();
+            result
+    in
 
-        (* Process each configuration *)
-        let results =
-            Parmap.parfold
-              (fun c acc ->
-                match c with
-                | [ `Int voters; `Int candidates; `Float bias; `Method meth ] ->
-                    let trial_results =
-                        List.map
-                          (fun trial_id ->
-                            let out =
-                                run_deGroot_experiment pre_data post_data graph
-                                  voters candidates timesteps_range meth bias
-                            in
-                                List.mapi
-                                  (fun j
-                                       ( (sim_opinion, true_opinion),
-                                         (original_prof, sim_prof, true_prof) )
-                                     ->
-                                    [
-                                      string_of_float bias;
-                                      string_of_sampler meth;
-                                      string_of_int voters;
-                                      string_of_int candidates;
-                                      string_of_float
-                                        (List.nth timesteps_range j);
-                                      string_of_int trial_id;
-                                    ]
-                                    @ List.map
-                                        (fun eval -> eval original_prof ())
-                                        evals
-                                    @ List.map
-                                        (fun eval -> eval sim_prof ())
-                                        evals
-                                    @ List.map
-                                        (fun eval -> eval true_prof ())
-                                        evals)
-                                  out
-                                |> List.flatten)
-                          (List.init n_trials (fun x -> x + 1))
-                    in
-                        update_progress ();
-                        trial_results @ acc
-                | _ -> failwith "Unexpected pattern")
-              [] (* Initial accumulator *)
-              (Parmap.L product) (* Input list *)
-              ~ncores:0 (* Use all available cores (0 means auto-detect) *)
-        in
+    (* 4. Fire up Parmap: one process per core, mapping over jobs *)
+    let partials = Parmap.parmap ~ncores:cores worker (Parmap.L jobs) in
 
-        Printf.printf "\nSimulations complete!\n%!";
-        List.flatten results
+    Printf.printf "\nSimulations complete!\n%!";
+    (* 5. Flatten your list of lists *)
+    List.flatten partials
 
 let deGroot_experiment () =
     let titles, evals = get_all_evals_degroot () in
@@ -291,26 +302,15 @@ let deGroot_experiment () =
       ];
 
     let total = List.length product in
-        Printf.printf "Running %d simulations\n" total;
-        let results =
-            run_parallel_simulations product pre_data post_data graph
-              timesteps_range n_trials evals
-        in
-
-        Csv.output_all (Csv.to_channel oc) results;
-
-        (* Close CSV file *)
-        close_out oc;
-        ()
-
-let test () =
-    let ( (file_out, graph_loc, data_loc, condition, n_trials, timesteps_range),
-          product ) =
-        parse_yaml Sys.argv.(2) |> yaml_to_config_generator
+    let results =
+        run_parallel_simulations product pre_data post_data graph
+          timesteps_range n_trials evals
     in
-        List.iter print_endline [ file_out; graph_loc; data_loc; condition ];
-        print_int n_trials;
-        print_endline "";
-        print_list timesteps_range string_of_float;
-        print_raw_product product;
-        ()
+
+    Csv.output_all (Csv.to_channel oc) results;
+
+    (* Close CSV file *)
+    close_out oc;
+    ()
+
+let test () = ()
