@@ -109,8 +109,8 @@ let rad_roy_bias_experiment () =
     (* Finalize Python *)
     Py.finalize ()
 
-let load_data limit_n cond q =
-    let db = open_db "data/a1r.db" in
+let load_data loc limit_n cond q =
+    let db = open_db loc in
     let table_pre = tables `Response_pre in
     let table_post = tables `Response_post in
     let voter_info_tbl = tables `Voter_info in
@@ -187,10 +187,94 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
     in
         deGroot conf
 
+let run_parallel_simulations product pre_data post_data graph timesteps_range
+    n_trials evals =
+    let total = List.length product in
+        Printf.printf "Running %d simulations in parallel\n%!" total;
+
+        (* Create a mutex for thread-safe progress updates *)
+        let mutex = Mutex.create () in
+        let completed = ref 0 in
+
+        (* Function to safely update and display progress *)
+        let update_progress () =
+            Mutex.lock mutex;
+            incr completed;
+            let percentage =
+                float_of_int !completed /. float_of_int total *. 100.
+            in
+                Printf.printf "\027[2K\r%.2f%% done%!" percentage;
+                Mutex.unlock mutex
+        in
+
+        (* Process each configuration *)
+        let results =
+            Parmap.parfold
+              (fun c acc ->
+                match c with
+                | [ `Int voters; `Int candidates; `Float bias; `Method meth ] ->
+                    let trial_results =
+                        List.map
+                          (fun trial_id ->
+                            let out =
+                                run_deGroot_experiment pre_data post_data graph
+                                  voters candidates timesteps_range meth bias
+                            in
+                                List.mapi
+                                  (fun j
+                                       ( (sim_opinion, true_opinion),
+                                         (original_prof, sim_prof, true_prof) )
+                                     ->
+                                    [
+                                      string_of_float bias;
+                                      string_of_sampler meth;
+                                      string_of_int voters;
+                                      string_of_int candidates;
+                                      string_of_float
+                                        (List.nth timesteps_range j);
+                                      string_of_int trial_id;
+                                    ]
+                                    @ List.map
+                                        (fun eval -> eval original_prof ())
+                                        evals
+                                    @ List.map
+                                        (fun eval -> eval sim_prof ())
+                                        evals
+                                    @ List.map
+                                        (fun eval -> eval true_prof ())
+                                        evals)
+                                  out
+                                |> List.flatten)
+                          (List.init n_trials (fun x -> x + 1))
+                    in
+                        update_progress ();
+                        trial_results @ acc
+                | _ -> failwith "Unexpected pattern")
+              [] (* Initial accumulator *)
+              (Parmap.L product) (* Input list *)
+              ~ncores:0 (* Use all available cores (0 means auto-detect) *)
+        in
+
+        Printf.printf "\nSimulations complete!\n%!";
+        List.flatten results
+
 let deGroot_experiment () =
     let titles, evals = get_all_evals_degroot () in
+    let ( (file_out, graph_loc, data_loc, condition, n_trials, timesteps_range),
+          product ) =
+        parse_yaml Sys.argv.(2) |> yaml_to_config_generator
+    in
+    let pre_data, post_data =
+        load_data data_loc 10000 condition questions_without_pk
+    in
+    let edges = read_adjacency_matrix graph_loc in
+    let graph =
+        List.fold_left
+          (fun g (l, r) -> GenericGraph.add_edge g l r)
+          GenericGraph.empty edges
+    in
 
-    let oc = open_out "results/data_degroot_mapping_control_30_trials.csv" in
+    let oc = open_out file_out in
 
     (* Prepare header row *)
     Csv.output_all (Csv.to_channel oc)
@@ -206,98 +290,27 @@ let deGroot_experiment () =
         @ titles;
       ];
 
-    let pre_delib, post_delib = load_data 100000 "0" questions_without_pk in
-    let edges = read_adjacency_matrix "graphs/soc-astro.edges" in
-    let graph =
-        List.fold_left
-          (fun g (l, r) -> GenericGraph.add_edge g l r)
-          GenericGraph.empty edges
-    in
-
-    let num_voters_range =
-        List.init 4 (fun i -> 51 + (i * 2)) |> List.map (fun x -> [ `Int x ])
-    in
-    let num_candidates_range =
-        List.init 3 (fun i -> 5 + (i * 2)) |> List.map (fun x -> [ `Int x ])
-    in
-    let bias_range = arange 0.1 1.5 0.2 |> List.map (fun x -> [ `Float x ]) in
-    let cand_methds =
-        [ Random; SampleVoters; Voter ] |> List.map (fun x -> [ `Method x ])
-    in
-    let timesteps_range = [ 1.; 10.; 50. ] in
-    let product =
-        cartesian_product num_candidates_range num_voters_range
-        |> cartesian_product bias_range
-        |> cartesian_product cand_methds
-    in
     let total = List.length product in
+        Printf.printf "Running %d simulations\n" total;
+        let results =
+            run_parallel_simulations product pre_data post_data graph
+              timesteps_range n_trials evals
+        in
 
-    Printf.printf "Running %d simulations\n" total;
-    let n_trials = 30 in
-    let results =
-        List.mapi
-          (fun i c ->
-            match c with
-            | [ `Int voters; `Int candidates; `Float bias; `Method meth ] ->
-                Printf.printf "\027[2K\r%.2f%% done%!%!"
-                  (float_of_int i /. float_of_int total *. 100.);
-                List.map
-                  (fun i ->
-                    let out =
-                        run_deGroot_experiment pre_delib post_delib graph voters
-                          candidates timesteps_range meth bias
-                    in
-                        List.mapi
-                          (fun j
-                               ( (sim_opinion, true_opinion),
-                                 (original_prof, sim_prof, true_prof) ) ->
-                            [
-                              string_of_float bias;
-                              string_of_sampler meth;
-                              string_of_int voters;
-                              string_of_int candidates;
-                              string_of_float (List.nth timesteps_range j);
-                              string_of_int i;
-                            ]
-                            @ List.map (fun eval -> eval original_prof ()) evals
-                            @ List.map (fun eval -> eval sim_prof ()) evals
-                            @ List.map (fun eval -> eval true_prof ()) evals)
-                          out
-                        |> List.flatten)
-                  (List.init n_trials (fun x -> x + 1))
-            | _ -> failwith "Unexpxected pattern")
-          product
-        |> List.concat
-    in
+        Csv.output_all (Csv.to_channel oc) results;
 
-    Csv.output_all (Csv.to_channel oc) results;
-
-    (* Close CSV file *)
-    close_out oc;
-    ()
+        (* Close CSV file *)
+        close_out oc;
+        ()
 
 let test () =
-    let d =
-        Owl.Mat.of_arrays
-          [| [| 1.; 2.; 3. |]; [| 0.; 0.; 0. |]; [| 0.; 0.; 0. |] |]
+    let ( (file_out, graph_loc, data_loc, condition, n_trials, timesteps_range),
+          product ) =
+        parse_yaml Sys.argv.(2) |> yaml_to_config_generator
     in
-    let s =
-        Owl.Mat.of_arrays
-          [| [| 0.; 0.; 0. |]; [| 0.; 0.; 0. |]; [| 1.; 1.; 1. |] |]
-    in
-
-    print_mat d;
-    print_mat s;
-
-    let f = greedy_mapping d s in
-
-    print_mat (apply_bijection d f);
-
-    let perm =
-        WrappedModels.align_voters_to_graph ~data1:(owl_to_np_NDArray d)
-          ~data2:(owl_to_np_NDArray s) ()
-    in
-        print_list perm string_of_int;
-        print_mat (apply_bijection d (bijection (Array.of_list perm)));
-
+        List.iter print_endline [ file_out; graph_loc; data_loc; condition ];
+        print_int n_trials;
+        print_endline "";
+        print_list timesteps_range string_of_float;
+        print_raw_product product;
         ()

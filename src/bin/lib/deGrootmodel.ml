@@ -1,6 +1,12 @@
 open Utils
 open Graphs
 
+type rangeParameterFloat = { start : float; stop : float; step : float }
+[@@deriving of_yaml]
+
+type rangeParameterInt = { istart : int; istop : int; istep : int }
+[@@deriving of_yaml]
+
 type config = {
   pre_data : Owl.Mat.mat;
   post_data : Owl.Mat.mat;
@@ -12,6 +18,69 @@ type config = {
   cand_method : alternativeGenerators;
   seed : int Option.t;
 }
+
+type degroot_yaml = {
+  file_out : string;
+  data_loc : string;
+  graph : string;
+  condition : string;
+  cand_method : string list;
+  n_trials : int;
+  n_voters : rangeParameterInt;
+  n_candidates : rangeParameterInt;
+  timesteps : rangeParameterFloat;
+  bias : rangeParameterFloat;
+}
+[@@deriving of_yaml]
+
+let yaml_to_config_generator yaml_value =
+    let res =
+        match degroot_yaml_of_yaml yaml_value with
+        | Ok r -> r
+        | Error _ -> failwith "could not parse file"
+    in
+    let params_ranges_float = [ res.bias ] in
+    let params_ranges_int = [ res.n_voters; res.n_candidates ] in
+
+    let all_params_float =
+        List.map (fun x -> arange x.start x.stop x.step) params_ranges_float
+        |> List.map (fun x -> `Float x)
+    in
+    let all_params_int =
+        List.map (fun x -> range x.istart x.istop x.istep) params_ranges_int
+        |> List.map (fun x -> `Int x)
+    in
+    let all_params_method =
+        [
+          `Method
+            (List.map (fun x -> alternativeGenerator_of x) res.cand_method);
+        ]
+    in
+    let all_params = all_params_int @ all_params_float @ all_params_method in
+
+    let all_params_processed =
+        List.rev_map
+          (function
+            | `Int values -> List.map (fun v -> `Int v) values
+            | `Float values -> List.map (fun v -> `Float v) values
+            | `Method values -> List.map (fun v -> `Method v) values)
+          all_params
+    in
+
+    let raw_product =
+        List.fold_left
+          (fun acc lst ->
+            List.concat_map (fun x -> List.map (fun y -> y :: x) lst) acc)
+          [ [] ] all_params_processed
+    in
+
+    ( ( res.file_out,
+        res.graph,
+        res.data_loc,
+        res.condition,
+        res.n_trials,
+        (fun x -> arange x.start x.stop x.step) res.timesteps ),
+      raw_product )
 
 let normalize_matrix adjacency_matrix =
     let row_sums = Owl.Mat.sum_cols adjacency_matrix in

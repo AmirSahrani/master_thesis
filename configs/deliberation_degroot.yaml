@@ -1,0 +1,23 @@
+file_out: "results/degroot_deliberation_trials_30.csv"
+data_loc: "data/a1r.db"
+graph: "graphs/soc-astro.edges"
+n_voters: 
+  istart: 9
+  istop: 11
+  istep: 2
+n_trials: 10
+n_candidates: 
+  istart: 3
+  istop: 5
+  istep: 1
+condition: "1"
+timesteps: 
+  start: 1.0
+  stop: 51.0
+  step: 25.0
+bias:
+  start: 0.5
+  stop: 1.5
+  step: 0.1
+cand_method: ["Random", "SampleVoters", "Voter"]
+

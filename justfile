@@ -4,8 +4,8 @@ build:
 test: 
 	dune runtest --root="src/bin/" --profile=dev --debug-backtraces
 
-run type:
-	dune exec deliberation_model {{type}} --root="src/bin/" --instrument-with ocamlearlybird
+run type file:
+	dune exec deliberation_model {{type}} {{file}} --root="src/bin/" --instrument-with ocamlearlybird
 
 
 sync:
