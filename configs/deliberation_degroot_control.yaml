@@ -1,14 +1,14 @@
 file_out: "results/degroot_deliberation_trials_30_control.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
-n_trials: 50
+n_trials: 100
 n_voters: 
-  istart: 51
-  istop: 302
+  istart: 31
+  istop: 82
   istep: 50
 n_candidates: 
   istart: 3
-  istop: 3
+  istop: 7
   istep: 1
 condition: "0"
 timesteps: 

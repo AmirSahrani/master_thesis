@@ -2,6 +2,7 @@ import sklearn
 import scipy
 from scipy.optimize import quadratic_assignment
 import numpy as np
+import time
 from numba import njit, prange
 
 
@@ -34,47 +35,6 @@ def adjance_to_distance(matrix):
     return np.clip(scipy.sparse.csgraph.shortest_path(matrix), 0, 1000)
 
 
-@njit
-def get_neighbor(path, selection):
-    """Returns a random neighbor of the path"""
-    node1 = np.random.randint(0, len(path))
-    node2 = np.random.randint(0, len(path))
-    while node1 == node2:
-        node2 = np.random.randint(0, len(path))
-
-    new_path = path.copy()
-
-    if selection == 0:
-        # Inverse
-        new_path[min(node1, node2): max(node1, node2)] = new_path[
-            min(node1, node2): max(node1, node2)
-        ][::-1]
-
-    elif selection == 1:
-        # Swap
-        new_path[node1], new_path[node2] = new_path[node2], new_path[node1]
-
-    elif selection == 2:
-        # Swap routes
-        start, end = min(node1, node2), max(node1, node2)
-        subroute = path[start:end]
-        new_path = np.concatenate((path[:start], path[end:]))
-        insertion_point = np.random.randint(0, len(new_path))
-        new_path = np.concatenate(
-            (new_path[:insertion_point], subroute, new_path[insertion_point:])
-        )
-
-    else:
-        # Handle invalid selection
-        raise ValueError("Invalid selection value")
-
-    assert len(new_path) == len(path), "Operation caused an error"
-    assert len(np.unique(new_path)) == len(
-        new_path
-    ), f"Operation caused an error using slection {selection}\n {new_path}"
-    return new_path
-
-
 @njit()
 def objective(order, mat1, mat2):
     total = 0.0
@@ -89,11 +49,6 @@ def objective_wrapper(x, mat1, mat2):
     # Convert continuous values to permutation using argsort
     order = np.argsort(x)
     return objective(order, mat1, mat2)
-
-
-def next_step(order):
-    method = np.random.choice([0, 1, 2])
-    return get_neighbor(order, method)
 
 
 def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_matrix):
@@ -117,7 +72,6 @@ def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_ma
     initial_guess = np.arange(0, n, step=1, dtype=np.int64)
     initial_val = objective(
         initial_guess, normalized_opinions, node_distance_matrix)
-    # print( f"Initial distance: {initial_val:.2f}")
     res = quadratic_assignment(
         A=normalized_opinions,
         B=node_distance_matrix,
@@ -127,7 +81,6 @@ def map_voters_to_nodes_on_graph(voter_opinion_distance_matrix, node_distance_ma
 
     final_val = objective(
         res.col_ind, normalized_opinions, node_distance_matrix)
-    # print(f"Final distance:   {final_val:.2f}")
     if initial_val > final_val:
         return initial_guess
     return res.col_ind.tolist()

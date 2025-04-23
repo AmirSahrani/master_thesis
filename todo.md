@@ -26,3 +26,9 @@
     - [x] Ability to select subset of questionnaire questions
     - [ ] Simplifiy matrices to binary for voting mapping problem. If still np hard l1 and l2 norm does not make a difference + gives strong reason to believe l2 norm is actually np hard.
         - Popular matchings
+    - [ ] K-candidate deletion proximity to single peakedness (Only polynomial time algorithm)
+    - [ ] Analysis
+        - General desciptive stats
+        - Means testing
+        - Variance testing
+        - Convergence of trust?

@@ -9,10 +9,11 @@ def _():
     import marimo as mo
     import pandas as pd
     import numpy as np
+    from scipy import stats
     import matplotlib.pyplot as plt
     import matplotlib.lines as mlines
     import altair as alt
-    return alt, mlines, mo, np, pd, plt
+    return alt, mlines, mo, np, pd, plt, stats
 
 
 @app.cell
@@ -169,8 +170,8 @@ def _(compute_proportion, mlines, pd, plt):
 
 @app.cell
 def _(read_data):
-    data_delib = read_data("results/data_degroot_mapping_delib_30_trials.csv")
-    data_control= read_data("results/data_degroot_mapping_control_30_trials.csv")
+    data_delib = read_data("results/degroot_mapping_delib_30_trials.csv")
+    data_control= read_data("results/degroot_mapping_control_30_trials_1.csv")
     return data_control, data_delib
 
 
@@ -184,13 +185,16 @@ def _(data_delib):
     voter_df = {x: data_delib.loc[data_delib[voter_str] == x ] for x in data_delib[voter_str].unique()}
     cand_df = {x: data_delib.loc[data_delib[cand_str] == x ] for x in data_delib[cand_str].unique()}
     time_df = {x: data_delib.loc[data_delib[time_str] == x ] for x in data_delib[time_str].unique()}
+    measurements = ['cyclic_start', 'condorcet_start', 'unique_start',  'cyclic_end', 'condorcet_end', 'unique_end',  'cyclic_true', 'condorcet_true', 'unique_true' ]
     print(voter_df.keys())
     print(cand_df.keys())
     print(time_df.keys())
+    print(measurements)
     return (
         bias_str,
         cand_df,
         cand_str,
+        measurements,
         sampler_str,
         time_df,
         time_str,
@@ -559,6 +563,46 @@ def _(
         unique_profiles_true_c,
         voter_value_c,
     )
+
+
+@app.cell
+def _(mo):
+    mo.md(
+        r"""
+        # Statistical Analysis
+        We now proceed to analyze fit of this model compared to the `final` data. Here `final` is the data of the voters in the second time measurement.
+
+        """
+    )
+    return
+
+
+@app.cell
+def _(bias_str, data_delib, measurements, mo, time_str):
+    def describe_data (data):
+        bool_cols = [x for x in data.columns if data[x].dtype == bool]
+        for c in bool_cols:
+            data[c] = data[c].astype(int)
+        grouped_time= data.groupby([time_str, bias_str])[measurements].agg(["mean", "sum"])
+        return mo.ui.dataframe(grouped_time, page_size=24)
+
+    describe_data(data_delib)
+    return (describe_data,)
+
+
+@app.cell
+def _(data_control, describe_data):
+    describe_data(data_control)
+    return
+
+
+app._unparsable_cell(
+    r"""
+    def means_test(data, col):
+        stats.
+    """,
+    name="_"
+)
 
 
 if __name__ == "__main__":
