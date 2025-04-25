@@ -203,8 +203,9 @@ let unique_preferences profiles =
     in
         aux [] profiles
 
-let profile_sub a p = List.filter (fun elem -> List.mem elem a) p
+let profile_sub p a = List.filter (fun elem -> List.mem elem a) p
 let wrap_in_list lst = List.map (fun x -> [ x ]) lst
+let unique_length lst = unique lst |> List.length
 
 let intersection s1 s2 =
     List.filter (fun elem -> List.mem elem s1 && List.mem elem s2) (s1 @ s2)
@@ -215,7 +216,7 @@ let union s1 s2 =
     |> List.sort_uniq Stdlib.compare
 
 let bottom p a =
-    List.map (fun pref -> List.hd @@ List.rev @@ profile_sub a pref) p |> unique
+    List.map (fun pref -> List.hd @@ List.rev @@ profile_sub pref a) p |> unique
 
 let get_index e p = List.find_index (( = ) e) p |> Option.value ~default:0
 

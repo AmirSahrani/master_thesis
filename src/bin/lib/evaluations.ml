@@ -144,11 +144,22 @@ let fraction_strongly_single_peaked prof =
     in
         float_of_int max_closeness /. float_of_int (List.length prof)
 
-let index (left, right) cands =
-    let a, b = (List.rev left |> List.hd, List.hd right) in
-        (a * b * 3) + (List.length @@ unique cands)
+(* Encode an unordered pair (a, b) with a < b *)
+let pair_index a b n =
+    let a, b = if a < b then (a, b) else (b, a) in
+        (a * (n - 1)) - (a * (a + 1) / 2) + (b - a - 1)
 
-let next_c cands prof [ x ] =
+let index_c n (left, right) x =
+    let a, b = (List.rev left |> List.hd, List.hd right) in
+
+    let c = unique_length x in
+        if c < 0 || c > 2 then invalid_arg "c must be 0, 1, or 2";
+        (3 * pair_index a b n) + c
+
+let card (left, right) = left @ right |> List.length
+
+let next_c cands prof x =
+    let x = List.hd x in
     let out_candidates =
         List.filter
           (fun c ->
@@ -161,16 +172,20 @@ let next_c cands prof [ x ] =
           cands
     in
         List.map
-          (fun x -> List.map (fun y -> [ [ x ]; [ y ] ]) out_candidates)
+          (fun x -> List.map (fun y -> [ x; y ]) out_candidates)
           out_candidates
         |> List.flatten
 
-let k_candidate_delition prof =
+let place_p prof (left, right) x = ([ 1 ], [ 2 ]) (*TODO*)
+
+let k_candidate_deletion prof =
     let cands = List.flatten @@ List.hd prof in
     let num_cands = List.length @@ cands in
     let c0, c0' = (num_cands, num_cands + 1) in
     let prof = List.map (fun pref -> pref @ [ [ c0' ]; [ c0 ] ]) prof in
     let next = next_c cands prof in
+    let index = index_c num_cands in
+    let place = place_p prof in
     let state_size =
         1.5 *. Float.pow (float_of_int num_cands) 2.0
         |> Float.floor |> int_of_float
@@ -182,7 +197,7 @@ let k_candidate_delition prof =
         for _ = 0 to num_cands - 1 do
           let states_copy = Array.copy states in
 
-          for i = 0 to Array.length states do
+          for i = 0 to Array.length states - 1 do
             let state = states.(i) in
                 match state with
                 | None -> ()
@@ -190,7 +205,28 @@ let k_candidate_delition prof =
                     let potential_next = next (snd s) in
                         for k = 0 to List.length potential_next do
                           let x_new = List.nth potential_next k in
-                              if bottom prof x_new <> x_new then () else ()
+                          let bottom_alternatives =
+                              bottom prof (wrap_in_list x_new) |> unique
+                          in
+                              if
+                                unique_length x_new
+                                <> List.length bottom_alternatives
+                                && not
+                                     (List.for_all
+                                        (fun cand ->
+                                          List.mem cand bottom_alternatives)
+                                        (wrap_in_list x_new))
+                              then
+                                let new_order = place s x_new in
+                                let idx = index new_order x_new in
+                                    match states.(idx) with
+                                    | None ->
+                                        states.(idx) <- Some (new_order, x_new)
+                                    | Some (old_order, _) ->
+                                        if card old_order < card new_order then
+                                          states.(idx) <- Some (new_order, x_new)
+                                        else ()
+                              else ()
                         done
           done;
           Array.blit states_copy 0 states 0 state_size
