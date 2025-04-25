@@ -144,6 +144,59 @@ let fraction_strongly_single_peaked prof =
     in
         float_of_int max_closeness /. float_of_int (List.length prof)
 
+let index (left, right) cands =
+    let a, b = (List.rev left |> List.hd, List.hd right) in
+        (a * b * 3) + (List.length @@ unique cands)
+
+let next_c cands prof [ x ] =
+    let out_candidates =
+        List.filter
+          (fun c ->
+            List.for_all
+              (fun p ->
+                List.find_index (fun r -> List.mem x r) p
+                |> Option.get
+                > (List.find_index (fun r -> List.mem c r) p |> Option.get))
+              prof)
+          cands
+    in
+        List.map
+          (fun x -> List.map (fun y -> [ [ x ]; [ y ] ]) out_candidates)
+          out_candidates
+        |> List.flatten
+
+let k_candidate_delition prof =
+    let cands = List.flatten @@ List.hd prof in
+    let num_cands = List.length @@ cands in
+    let c0, c0' = (num_cands, num_cands + 1) in
+    let prof = List.map (fun pref -> pref @ [ [ c0' ]; [ c0 ] ]) prof in
+    let next = next_c cands prof in
+    let state_size =
+        1.5 *. Float.pow (float_of_int num_cands) 2.0
+        |> Float.floor |> int_of_float
+    in
+    let a_init = ([ c0 ], [ c0' ]) in
+    let x_init = [ c0' ] in
+    let states = Array.make state_size None in
+        states.(index a_init x_init) <- Some (a_init, x_init);
+        for _ = 0 to num_cands - 1 do
+          let states_copy = Array.copy states in
+
+          for i = 0 to Array.length states do
+            let state = states.(i) in
+                match state with
+                | None -> ()
+                | Some s ->
+                    let potential_next = next (snd s) in
+                        for k = 0 to List.length potential_next do
+                          let x_new = List.nth potential_next k in
+                              if bottom prof x_new <> x_new then () else ()
+                        done
+          done;
+          Array.blit states_copy 0 states 0 state_size
+        done;
+        ()
+
 let has_condorcet profile =
     let maj_pref = profile |> maj in
     let alternatives = List.flatten @@ List.hd profile in
@@ -241,13 +294,11 @@ let get_all_evals_rad () =
         "cyclic_start";
         "condorcet_start";
         "unique_start";
-        "intransative_start";
         "consensus_dist_start";
         "proximity_to_sp_start";
         "cyclic_end";
         "condorcet_end";
         "unique_end";
-        "intransative_end";
         "consensus_dist_end";
         "proximity_to_sp_end";
         "opposing";
@@ -256,7 +307,6 @@ let get_all_evals_rad () =
         (fun prof _ -> string_of_bool @@ is_cyclic prof);
         (fun prof _ -> string_of_bool @@ has_condorcet prof);
         (fun prof _ -> string_of_int @@ n_unique_preferences prof);
-        (fun prof _ -> string_of_bool @@ not @@ is_transitive prof);
         (fun prof distance ->
           string_of_float @@ distance_to_consensus prof distance);
         (fun prof distance -> string_of_bool @@ opposing prof distance);
@@ -272,7 +322,6 @@ let get_all_evals_degroot () =
         "cyclic_end";
         "condorcet_end";
         "unique_end";
-        "intransative_end";
         (* "proximity_to_sp_end"; *)
         "cyclic_true";
         "condorcet_true";

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.0"
+__generated_with = "0.11.31"
 app = marimo.App(width="full")
 
 
@@ -17,7 +17,7 @@ def _():
 
 
 @app.cell
-def _(np, pd, plt):
+def _(np, plt):
     plt.style.use("default")
     plt.rcParams.update(
         {
@@ -32,9 +32,6 @@ def _(np, pd, plt):
         }
     )
 
-
-    def read_data(filename):
-        return pd.read_csv(filename)
 
 
     def compute_proportion(data, col_start, col_end, new_col, group):
@@ -80,12 +77,7 @@ def _(np, pd, plt):
 
         # Convert Series to DataFrame and reset index
         return agg_prop.reset_index(name=new_col)
-    return (
-        compute_average,
-        compute_percentage_change,
-        compute_proportion,
-        read_data,
-    )
+    return compute_average, compute_percentage_change, compute_proportion
 
 
 @app.cell
@@ -169,9 +161,10 @@ def _(compute_proportion, mlines, pd, plt):
 
 
 @app.cell
-def _(read_data):
-    data_delib = read_data("results/degroot_mapping_delib_30_trials.csv")
-    data_control= read_data("results/degroot_mapping_control_30_trials_1.csv")
+def _(pd):
+    data_delib = pd.read_csv("results/degroot_deliberation_trials_30.csv")
+    data_control= pd.read_csv("results/degroot_deliberation_trials_30_control.csv", index_col=False)
+    data_control
     return data_control, data_delib
 
 
@@ -214,7 +207,7 @@ def _(
     time_str,
     voter_str,
 ):
-    data_delib_51_5 = data_delib.loc[(data_delib[voter_str] == 11) & (data_delib[cand_str] == 5) & (data_delib[time_str] == 50)].copy()
+    data_delib_51_5 = data_delib.loc[(data_delib[voter_str] == 11) & (data_delib[cand_str] == 5) & (data_delib[time_str] == 51.)].copy()
 
     cyclic_51_5 = compute_and_merge_proportions(
         data_delib_51_5,
@@ -304,7 +297,7 @@ def _(cand_str, data_control, mo, time_str, voter_str):
     # Create UI controls
     voter_dropdown_c = mo.ui.dropdown(
         options={str(v): v for v in sorted(data_control[voter_str].unique())},
-        value="51",
+        value="1.0",
         label="Number of Voters"
     )
 
@@ -316,7 +309,7 @@ def _(cand_str, data_control, mo, time_str, voter_str):
 
     time_dropdown_c = mo.ui.dropdown(
         options={str(t): t for t in sorted(data_control[time_str].unique())},
-        value="50.0",
+        value="1",
         label="Time Value"
     )
 
@@ -510,11 +503,6 @@ def _(
         ["bias", "cand_sampler"]
     )
 
-    intransitive_c = compute_and_merge_proportions(
-        filtered_data_control,
-        "intransative_start", "intransative_end", "intransative_true", "intransative_proportion",
-        ["bias", "cand_sampler"]
-    )
 
     condorcet_c = compute_and_merge_proportions(
         filtered_data_control,
@@ -537,7 +525,6 @@ def _(
     # Create the charts
     # You'll need to specify the correct column names based on your actual data_control structure
     chart1_c = create_altair_chart(cyclic_c, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
-    chart2_c = create_altair_chart(intransitive_c, "bias", "intransative_proportion", "Mean Number of Transitive Profiles")
     chart3_c = create_altair_chart(condorcet_c, "bias", "condorcet_proportion", "Mean Number of Condorcet Winners")
     chart4_c = create_altair_chart(unique_profiles_c, "bias", "unique", "#Unique Preferences")
 
@@ -546,17 +533,15 @@ def _(
         mo.center(mo.md("#Results for Control")),
         mo.center(controls_control),
     mo.hstack([chart3_c, chart4_c]),
-    mo.hstack([chart1_c, chart2_c])]))
+    mo.hstack([chart1_c, chart1_c])]))
     return (
         cand_value_c,
         chart1_c,
-        chart2_c,
         chart3_c,
         chart4_c,
         condorcet_c,
         cyclic_c,
         filtered_data_control,
-        intransitive_c,
         time_value_c,
         unique_profiles_c,
         unique_profiles_end_c,
@@ -571,7 +556,6 @@ def _(mo):
         r"""
         # Statistical Analysis
         We now proceed to analyze fit of this model compared to the `final` data. Here `final` is the data of the voters in the second time measurement.
-
         """
     )
     return

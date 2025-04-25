@@ -32,3 +32,7 @@
         - Means testing
         - Variance testing
         - Convergence of trust?
+## Single peakedness
+    - k-maverick is np-complete, thus our fraction approach for rad is also hard. If we know the fraction we could decide on k, but deciding on k is hard, thus deciding the fraction must also be hard.
+
+

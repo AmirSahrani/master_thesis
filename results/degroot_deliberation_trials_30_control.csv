@@ -1,4 +1,4 @@
-bias,cand_sampler,n_voters,n_candidates,time_steps,trial,cyclic_start,condorcet_start,unique_start,cyclic_end,condorcet_end,unique_end,intransative_end,cyclic_true,condorcet_true,unique_true
+bias,cand_sampler,n_voters,n_candidates,time_steps,trial,cyclic_start,condorcet_start,unique_start,cyclic_end,condorcet_end,unique_end,cyclic_true,condorcet_true,unique_true
 0.5,Sample,31,3,1.,1,false,true,4,0.967741935484,false,true,4,1.,false,true,2,1.
 0.5,Sample,31,3,26.,1,false,true,4,0.967741935484,false,true,5,0.967741935484,false,true,2,1.
 0.5,Sample,31,3,51.,1,false,true,4,0.967741935484,false,true,5,0.967741935484,false,true,2,1.
