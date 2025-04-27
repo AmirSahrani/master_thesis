@@ -1,4 +1,4 @@
-file_out: "results/degroot_deliberation_trials_30_control.csv"
+file_out: "results/degroot_deliberation_trials_100_control_SP.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 n_trials: 100

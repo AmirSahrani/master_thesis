@@ -80,7 +80,6 @@ let param_grid nVoters nAlternatives spaces trials biases nDeliberationsteps
 
 let rad_roy_bias_experiment () =
     (* Duct tape fix*)
-    let _ = WrappedModels.SpectralClustering.fit in
     let biases = arange 0.45 0.99 0.01 in
     let num_experiments = 100 in
     let nVoters = 51 in
@@ -313,4 +312,14 @@ let deGroot_experiment () =
     close_out oc;
     ()
 
-let test () = ()
+let test () =
+    let prof =
+        [
+          [ [ 0 ]; [ 1 ]; [ 2 ] ];
+          [ [ 1 ]; [ 0 ]; [ 2 ] ];
+          [ [ 2 ]; [ 1 ]; [ 0 ] ];
+        ]
+    in
+
+    k_candidate_deletion prof |> print_int;
+    print_endline ""
