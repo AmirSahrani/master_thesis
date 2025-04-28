@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -10,10 +10,11 @@ def _():
     import pandas as pd
     import numpy as np
     from scipy import stats
+    import pingouin as pg
     import matplotlib.pyplot as plt
     import matplotlib.lines as mlines
     import altair as alt
-    return alt, mlines, mo, np, pd, plt, stats
+    return alt, mlines, mo, np, pd, pg, plt, stats
 
 
 @app.cell
@@ -162,10 +163,17 @@ def _(compute_proportion, mlines, pd, plt):
 
 @app.cell
 def _(pd):
-    data_delib = pd.read_csv("results/degroot_deliberation_trials_30.csv")
-    data_control= pd.read_csv("results/degroot_deliberation_trials_30_control.csv", index_col=False)
-    data_control
-    return data_control, data_delib
+    data_delib = pd.read_csv("results/degroot_deliberation_trials_100_SP_dense.csv")
+    data_control= pd.read_csv("results/degroot_deliberation_trials_100_control_SP.csv", index_col=False)
+
+    prox_cols = ["proximity_to_cand_sp_" + x for x in ["start", "end", "true"]]
+
+    for c in prox_cols:
+        data_control[c] = data_control[c] /data_control["n_candidates"]
+        data_delib[c] = data_delib[c] /data_delib["n_candidates"]
+
+    print(data_delib)
+    return c, data_control, data_delib, prox_cols
 
 
 @app.cell
@@ -218,14 +226,6 @@ def _(
         ["bias", "cand_sampler"],
     )
 
-    intransitive_51_5 = compute_and_merge_proportions(
-        data_delib_51_5,
-        "intransative_start",
-        "intransative_end",
-        "intransative_true",
-        "intransative_proportion",
-        ["bias", "cand_sampler"],
-    )
 
     condorcet_51_5 = compute_and_merge_proportions(
         data_delib_51_5,
@@ -234,6 +234,19 @@ def _(
         "condorcet_true",
         "condorcet_proportion",
         ["bias", "cand_sampler"],
+    )
+
+    proximity_to_sp_end_51_5 = compute_average(
+        data_delib_51_5, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_sp_true_51_5 = compute_average(
+        data_delib_51_5, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_sp_end_51_5["Type"] = "End"
+    proximity_to_sp_true_51_5["Type"] = "True"
+    df_combined_51_5 = pd.concat([proximity_to_sp_end_51_5, proximity_to_sp_true_51_5])
+    proximity_to_sp_51_5 = df_combined_51_5.rename(
+        columns={"proximity_to_start": "proximity_to_cand_sp"}
     )
 
     unique_profiles_end_51_5 = compute_average(
@@ -251,7 +264,7 @@ def _(
 
     # === Plotting all variants in one figure ===
     plot(cyclic_51_5, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
-    plot(intransitive_51_5, "bias", "intransative_proportion", "Mean Number of Transative Profiles")
+    plot(proximity_to_sp_51_5, "bias", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles")
     plot(condorcet_51_5, "bias", "condorcet_proportion", "Mean number of Condorcet winners")
     plot(unique_profiles_51_5, "bias", "unique", r"\#Unique Preferences")
     return (
@@ -259,7 +272,9 @@ def _(
         cyclic_51_5,
         data_delib_51_5,
         df_combined_51_5,
-        intransitive_51_5,
+        proximity_to_sp_51_5,
+        proximity_to_sp_end_51_5,
+        proximity_to_sp_true_51_5,
         unique_profiles_51_5,
         unique_profiles_end_51_5,
         unique_profiles_true_51_5,
@@ -297,7 +312,7 @@ def _(cand_str, data_control, mo, time_str, voter_str):
     # Create UI controls
     voter_dropdown_c = mo.ui.dropdown(
         options={str(v): v for v in sorted(data_control[voter_str].unique())},
-        value="1.0",
+        value="31",
         label="Number of Voters"
     )
 
@@ -309,7 +324,7 @@ def _(cand_str, data_control, mo, time_str, voter_str):
 
     time_dropdown_c = mo.ui.dropdown(
         options={str(t): t for t in sorted(data_control[time_str].unique())},
-        value="1",
+        value="1.0",
         label="Time Value"
     )
 
@@ -318,7 +333,7 @@ def _(cand_str, data_control, mo, time_str, voter_str):
     return cand_dropdown_c, controls_control, time_dropdown_c, voter_dropdown_c
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(alt):
     def create_altair_chart(df, x_col, y_col, title):
         # Define color scale for different Type values
@@ -366,17 +381,10 @@ def _(alt):
 
         return combined
 
-    def create_combined_chart(df, x_col, y_col, title):
-        # Create the main chart
-        base = create_altair_chart(df, x_col, y_col, title)
-
-        # No need for separate legends as Altair handles this automatically
-        # Just return the base chart which already includes proper legends
-        return base
-    return create_altair_chart, create_combined_chart
+    return (create_altair_chart,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(
     cand_dropdown,
     cand_str,
@@ -412,17 +420,32 @@ def _(
         ["bias", "cand_sampler"]
     )
 
-    intransitive = compute_and_merge_proportions(
-        filtered_data_delib,
-        "intransative_start", "intransative_end", "intransative_true", "intransative_proportion",
-        ["bias", "cand_sampler"]
-    )
-
     condorcet = compute_and_merge_proportions(
         filtered_data_delib,
         "condorcet_start", "condorcet_end", "condorcet_true", "condorcet_proportion",
         ["bias", "cand_sampler"]
     )
+
+    proximity_to_cand_sp_profiles_start = compute_average(
+        filtered_data_delib, "proximity_to_cand_sp_start", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_cand_sp_profiles_start["Type"] = "Start"
+    proximity_to_cand_sp_profiles_end = compute_average(
+        filtered_data_delib, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_cand_sp_profiles_end["Type"] = "End"
+
+    proximity_to_cand_sp_profiles_true = compute_average(
+        filtered_data_delib, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_cand_sp_profiles_true["Type"] = "Final"
+
+    proximity_to_cand_sp_profiles = pd.concat([proximity_to_cand_sp_profiles_start, proximity_to_cand_sp_profiles_end, proximity_to_cand_sp_profiles_true])
+
+    unique_profiles_start = compute_average(
+        filtered_data_delib, "unique_start", "unique", ["bias", "cand_sampler"]
+    )
+    unique_profiles_start["Type"] = "Start"
 
     unique_profiles_end = compute_average(
         filtered_data_delib, "unique_end", "unique", ["bias", "cand_sampler"]
@@ -432,14 +455,14 @@ def _(
     unique_profiles_true = compute_average(
         filtered_data_delib, "unique_true", "unique", ["bias", "cand_sampler"]
     )
-    unique_profiles_true["Type"] = "True"
+    unique_profiles_true["Type"] = "Final"
 
-    unique_profiles = pd.concat([unique_profiles_end, unique_profiles_true])
+    unique_profiles = pd.concat([unique_profiles_start,unique_profiles_end, unique_profiles_true])
 
     # Create the charts
     # You'll need to specify the correct column names based on your actual data_delib structure
     chart1 = create_altair_chart(cyclic, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
-    chart2 = create_altair_chart(intransitive, "bias", "intransative_proportion", "Mean Number of Transitive Profiles")
+    chart2 = create_altair_chart(proximity_to_cand_sp_profiles,"bias", "proximity_to_cand_sp", "Mean candidate proximity to SP")
     chart3 = create_altair_chart(condorcet, "bias", "condorcet_proportion", "Mean Number of Condorcet Winners")
     chart4 = create_altair_chart(unique_profiles, "bias", "unique", "#Unique Preferences")
 
@@ -458,10 +481,14 @@ def _(
         condorcet,
         cyclic,
         filtered_data_delib,
-        intransitive,
+        proximity_to_cand_sp_profiles,
+        proximity_to_cand_sp_profiles_end,
+        proximity_to_cand_sp_profiles_start,
+        proximity_to_cand_sp_profiles_true,
         time_value,
         unique_profiles,
         unique_profiles_end,
+        unique_profiles_start,
         unique_profiles_true,
         voter_value,
     )
@@ -510,6 +537,29 @@ def _(
         ["bias", "cand_sampler"]
     )
 
+
+    proximity_to_cand_sp_start_c = compute_average(
+        filtered_data_control, "proximity_to_cand_sp_start", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_cand_sp_start_c["Type"] = "Start"
+
+    proximity_to_cand_sp_end_c = compute_average(
+        filtered_data_control, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_cand_sp_end_c["Type"] = "End"
+
+    proximity_to_cand_sp_true_c = compute_average(
+        filtered_data_control, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_cand_sp_true_c["Type"] = "Final"
+
+    proximity_to_cand_sp_c = pd.concat([proximity_to_cand_sp_start_c, proximity_to_cand_sp_end_c, proximity_to_cand_sp_true_c])
+
+    unique_profiles_start_c = compute_average(
+        filtered_data_control, "unique_start", "unique", ["bias", "cand_sampler"]
+    )
+    unique_profiles_start_c["Type"] = "Start"
+
     unique_profiles_end_c = compute_average(
         filtered_data_control, "unique_end", "unique", ["bias", "cand_sampler"]
     )
@@ -518,13 +568,14 @@ def _(
     unique_profiles_true_c = compute_average(
         filtered_data_control, "unique_true", "unique", ["bias", "cand_sampler"]
     )
-    unique_profiles_true_c["Type"] = "True"
+    unique_profiles_true_c["Type"] = "Final"
 
-    unique_profiles_c = pd.concat([unique_profiles_end_c, unique_profiles_true_c])
+    unique_profiles_c = pd.concat([unique_profiles_start_c, unique_profiles_end_c, unique_profiles_true_c])
 
     # Create the charts
     # You'll need to specify the correct column names based on your actual data_control structure
     chart1_c = create_altair_chart(cyclic_c, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
+    chart2_c = create_altair_chart(proximity_to_cand_sp_c, "bias", "proximity_to_cand_sp", "#Unique Preferences")
     chart3_c = create_altair_chart(condorcet_c, "bias", "condorcet_proportion", "Mean Number of Condorcet Winners")
     chart4_c = create_altair_chart(unique_profiles_c, "bias", "unique", "#Unique Preferences")
 
@@ -533,18 +584,24 @@ def _(
         mo.center(mo.md("#Results for Control")),
         mo.center(controls_control),
     mo.hstack([chart3_c, chart4_c]),
-    mo.hstack([chart1_c, chart1_c])]))
+    mo.hstack([chart1_c, chart2_c])]))
     return (
         cand_value_c,
         chart1_c,
+        chart2_c,
         chart3_c,
         chart4_c,
         condorcet_c,
         cyclic_c,
         filtered_data_control,
+        proximity_to_cand_sp_c,
+        proximity_to_cand_sp_end_c,
+        proximity_to_cand_sp_start_c,
+        proximity_to_cand_sp_true_c,
         time_value_c,
         unique_profiles_c,
         unique_profiles_end_c,
+        unique_profiles_start_c,
         unique_profiles_true_c,
         voter_value_c,
     )
@@ -580,13 +637,48 @@ def _(data_control, describe_data):
     return
 
 
-app._unparsable_cell(
-    r"""
-    def means_test(data, col):
-        stats.
-    """,
-    name="_"
-)
+@app.cell
+def _(data_delib):
+    def normalize(df):
+        return (df - df.min() )/ df.max()
+    
+    data_control_5_cands = data_delib.loc[data_delib["n_candidates"] == 7].copy()
+    # Compute differences for each metric
+    def diff_data_on_metrics(df):
+        metrics = ['cyclic', 'condorcet', 'unique', 'proximity_to_cand_sp']
+        for m in metrics:
+            df[f'{m}_diff'] = normalize(df[f'{m}_end']) - normalize(df[f'{m}_true'])
+            df[f'{m}_absdiff'] = df[f'{m}_diff'].abs()
+    
+        # Example: combine into a total error score (sum of absolute differences)
+        df['total_absdiff'] = df[[f'{m}_absdiff' for m in metrics]].sum(axis=1)
+
+    diff_data_on_metrics(data_control_5_cands)
+    summary = data_control_5_cands.groupby(['bias','cand_sampler','n_voters','n_candidates','time_steps']) \
+                ['total_absdiff'].agg(['mean','std']).reset_index()
+    summary
+
+    return data_control_5_cands, diff_data_on_metrics, normalize, summary
+
+
+@app.cell
+def _(bias_str, plt, summary):
+    lab = [int(x) for x in summary["time_steps"].unique().tolist()]
+    scatter = plt.scatter(summary[bias_str], summary["mean"], c=summary["time_steps"])
+    plt.xlabel("Bias")
+    plt.ylabel("Total Absolute difference")
+    legend = plt.legend(
+        handles=scatter.legend_elements()[0],
+        labels=lab,
+        title="Time step",
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.36),  # center it under the plot
+        ncol=len(lab)//2 + 1,
+        columnspacing = 0.1
+    )
+
+    plt.show()
+    return lab, legend, scatter
 
 
 if __name__ == "__main__":

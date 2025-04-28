@@ -277,10 +277,19 @@ let deGroot_experiment () =
     let pre_data, post_data =
         load_data data_loc 10000 condition questions_without_pk
     in
-    let edges = read_adjacency_matrix graph_loc in
+
+    let edges =
+        if condition = "0" then read_adjacency_matrix graph_loc
+        else
+          let voter_list = List.init 50 Fun.id in
+              List.map
+                (fun i -> List.map (fun j -> (i, j)) voter_list)
+                voter_list
+              |> List.flatten
+    in
     let graph =
         List.fold_left
-          (fun g (l, r) -> GenericGraph.add_edge g l r)
+          (fun g (l, r) -> if l <> r then GenericGraph.add_edge g l r else g)
           GenericGraph.empty edges
     in
 

@@ -1,10 +1,10 @@
-file_out: "results/degroot_deliberation_trials_30.csv"
+file_out: "results/degroot_deliberation_trials_100_SP_dense.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 n_trials: 100
 n_voters: 
   istart: 9
-  istop: 11
+  istop: 15
   istep: 2
 n_candidates: 
   istart: 3
@@ -16,8 +16,8 @@ timesteps:
   stop: 151.0
   step: 25.0
 bias:
-  start: 0.5
+  start: 0.8
   stop: 1.5
-  step: 0.3
+  step: 0.1
 cand_method: ["SampleVoters", "Voter"]
 
