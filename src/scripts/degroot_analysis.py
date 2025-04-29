@@ -27,7 +27,7 @@ def _(np, plt):
             "axes.linewidth": 1,
             "grid.linewidth": 1,
             "grid.alpha": 0.3,
-            "image.cmap": "viridis",
+            "image.cmap": "cividis",
             "text.usetex": True,
             "font.family": "Charter",
         }
@@ -380,7 +380,6 @@ def _(alt):
         ).interactive()
 
         return combined
-
     return (create_altair_chart,)
 
 
@@ -638,47 +637,102 @@ def _(data_control, describe_data):
 
 
 @app.cell
-def _(data_delib):
+def _(data_control, data_delib):
     def normalize(df):
         return (df - df.min() )/ df.max()
-    
-    data_control_5_cands = data_delib.loc[data_delib["n_candidates"] == 7].copy()
+
     # Compute differences for each metric
     def diff_data_on_metrics(df):
         metrics = ['cyclic', 'condorcet', 'unique', 'proximity_to_cand_sp']
         for m in metrics:
             df[f'{m}_diff'] = normalize(df[f'{m}_end']) - normalize(df[f'{m}_true'])
-            df[f'{m}_absdiff'] = df[f'{m}_diff'].abs()
-    
+            df[f'{m}_absdiff'] = df[f'{m}_diff']**2
+
         # Example: combine into a total error score (sum of absolute differences)
         df['total_absdiff'] = df[[f'{m}_absdiff' for m in metrics]].sum(axis=1)
-
-    diff_data_on_metrics(data_control_5_cands)
-    summary = data_control_5_cands.groupby(['bias','cand_sampler','n_voters','n_candidates','time_steps']) \
+        return df.groupby(['bias','cand_sampler','n_voters','n_candidates','time_steps']) \
                 ['total_absdiff'].agg(['mean','std']).reset_index()
-    summary
 
-    return data_control_5_cands, diff_data_on_metrics, normalize, summary
+    summary_delib = diff_data_on_metrics(data_delib)
+    summary_control = diff_data_on_metrics(data_control)
+    summary_delib
+    return diff_data_on_metrics, normalize, summary_control, summary_delib
 
 
 @app.cell
-def _(bias_str, plt, summary):
-    lab = [int(x) for x in summary["time_steps"].unique().tolist()]
-    scatter = plt.scatter(summary[bias_str], summary["mean"], c=summary["time_steps"])
-    plt.xlabel("Bias")
-    plt.ylabel("Total Absolute difference")
-    legend = plt.legend(
-        handles=scatter.legend_elements()[0],
-        labels=lab,
-        title="Time step",
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.36),  # center it under the plot
-        ncol=len(lab)//2 + 1,
-        columnspacing = 0.1
-    )
+def _(bias_str, plt, summary_control, summary_delib):
+    def plot_summary(summary):
+        lab = [int(x) for x in summary["time_steps"].unique().tolist()]
+        scatter = plt.scatter(summary[bias_str], summary["mean"], c=summary["time_steps"])
+        plt.xlabel("Bias")
+        plt.ylabel("Total Absolute difference")
+        legend = plt.legend(
+            handles=scatter.legend_elements()[0],
+            labels=lab,
+            title="Time step",
+            loc="upper right",
+            bbox_to_anchor=(1.24, 0.8),  # center it under the plot
+            ncol= 1,
+        )
+    
+        plt.show()
+    plot_summary(summary_delib)
+    plot_summary(summary_control)
+    return (plot_summary,)
 
-    plt.show()
-    return lab, legend, scatter
+
+@app.cell
+def _(summary_control, summary_delib):
+    for i in range (3,8):
+        sub_s = summary_control.loc[summary_control["n_candidates"] == i].reset_index()
+        print(sub_s.iloc[sub_s["mean"].idxmin()].to_markdown())
+
+    print("----------------------")
+    for i in range (3,8,2):
+        sub_d = summary_delib.loc[summary_delib["n_candidates"] == i].reset_index()
+        print(sub_d.iloc[sub_d["mean"].idxmin()].to_markdown())
+    return i, sub_d, sub_s
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        From this, we see that a bias of 1.3 seems to perform best for the deliberation group. For the control group, however, it seems that people have a weaker bias of 0.5. This seems to indicate that people take their opinion to be about 1.3 more important than the opinion of all other voters when deliberating.  For the control group, it seems a less bias is needed, this might be a result of voters talking more to like-minded people, and therefore need to be less strict about their own opinion.
+
+        We also note that as we increase the deliberation time, we get closer to the original preferences. We must note, however, that if we do not normalize the different outcomes, then a bias of 1.1-1.4 become the best for both control and deliberation.
+
+        Finally, it seems that the `Sample` method for generating alternatives is most successful for the control group, while the `voter` method is best under the deliberation group.
+        """
+    )
+    return
+
+
+@app.cell
+def _(summary_delib):
+    # Step 1: Filter for time_steps == 151
+    df_151 = summary_delib[summary_delib["time_steps"] == 151]
+
+    # Step 2: For each group, find the row with the minimum 'mean'
+    idx_min = df_151.groupby(
+        ["n_candidates", "n_voters", "cand_sampler"]
+    )["mean"].idxmin()
+
+    # Step 3: Use the indices to get the full rows
+    min_rows = df_151.loc[idx_min].copy()
+
+    # Step 4: Pivot the dataframe so each 'cand_sampler' becomes columns for both 'mean' and 'bias'
+    pivoted = min_rows.pivot(
+        index=["n_candidates", "n_voters"],
+        columns="cand_sampler",
+        values=["mean", "bias"]
+    ).reset_index()
+
+    # Optional: flatten MultiIndex columns
+    pivoted.columns = ['_'.join(col).strip('_') for col in pivoted.columns.values]
+
+    print(pivoted.head(10))
+    return df_151, idx_min, min_rows, pivoted
 
 
 if __name__ == "__main__":
