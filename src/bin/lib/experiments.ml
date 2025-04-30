@@ -204,7 +204,7 @@ let run_one_job ~pre_data ~post_data ~graph ~timesteps_range ~evals (job : job)
         List.mapi
           (fun j
                ( (sim_opinion, true_opinion),
-                 (original_prof, sim_prof, true_prof) ) ->
+                 (original_prof, sim_prof, true_prof, trust, trust_start) ) ->
             [
               string_of_float bias;
               string_of_sampler meth;
@@ -213,9 +213,10 @@ let run_one_job ~pre_data ~post_data ~graph ~timesteps_range ~evals (job : job)
               string_of_float (List.nth timesteps_range j);
               string_of_int trial_id;
             ]
-            @ List.map (fun eval -> eval original_prof ()) evals
-            @ List.map (fun eval -> eval sim_prof ()) evals
-            @ List.map (fun eval -> eval true_prof ()) evals)
+            @ List.map
+                (fun eval ->
+                  eval original_prof sim_prof true_prof trust trust_start)
+                evals)
           out
 
 let run_parallel_simulations product pre_data post_data graph timesteps_range
@@ -246,8 +247,6 @@ let run_parallel_simulations product pre_data post_data graph timesteps_range
     let update_progress () =
         Mutex.lock mutex;
         incr completed;
-        let pct = float_of_int !completed /. float_of_int total *. 100. in
-
         Printf.printf "\027[2K\r%d/%d done%!" !completed total;
         Mutex.unlock mutex
     in
@@ -269,11 +268,12 @@ let run_parallel_simulations product pre_data post_data graph timesteps_range
     List.flatten partials
 
 let deGroot_experiment () =
-    let titles, evals = get_all_evals_degroot () in
     let ( (file_out, graph_loc, data_loc, condition, n_trials, timesteps_range),
-          product ) =
+          product,
+          get_evals ) =
         parse_yaml Sys.argv.(2) |> yaml_to_config_generator
     in
+    let titles, evals = get_evals () in
     let pre_data, post_data =
         load_data data_loc 10000 condition questions_without_pk
     in
@@ -321,14 +321,4 @@ let deGroot_experiment () =
     close_out oc;
     ()
 
-let test () =
-    let prof =
-        [
-          [ [ 0 ]; [ 1 ]; [ 2 ] ];
-          [ [ 1 ]; [ 0 ]; [ 2 ] ];
-          [ [ 2 ]; [ 1 ]; [ 0 ] ];
-        ]
-    in
-
-    k_candidate_deletion prof |> print_int;
-    print_endline ""
+let test () = ()

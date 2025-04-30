@@ -1,10 +1,10 @@
-file_out: "results/degroot_deliberation_trials_100_SP_dense.csv"
+file_out: "results/degroot_deliberation_trials_100_convergence_sparse.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 n_trials: 100
 n_voters: 
-  istart: 9
-  istop: 15
+  istart: 31
+  istop: 41
   istep: 2
 n_candidates: 
   istart: 3
@@ -13,12 +13,11 @@ n_candidates:
 condition: "1"
 timesteps: 
   start: 1.0
-  stop: 151.0
-  step: 25.0
+  stop: 51.0
+  step: 5.0
 bias:
-  start: 0.8
-  stop: 1.5
-  step: 0.1
+  start: 1.3
+  stop: 1.4
+  step: 0.3
 cand_method: ["SampleVoters", "Voter"]
-eval: degroot
-
+eval: degroot_convergence

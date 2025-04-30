@@ -30,6 +30,7 @@ type degroot_yaml = {
   n_candidates : rangeParameterInt;
   timesteps : rangeParameterFloat;
   bias : rangeParameterFloat;
+  eval : string;
 }
 [@@deriving of_yaml]
 
@@ -66,6 +67,12 @@ let yaml_to_config_generator yaml_value =
             | `Method values -> List.map (fun v -> `Method v) values)
           all_params
     in
+    let evals =
+        match res.eval |> String.lowercase_ascii with
+        | "degroot" -> Evaluations.get_all_evals_degroot
+        | "degroot_convergence" -> Evaluations.get_all_evals_degroot_convergence
+        | _ -> failwith "invalid evals"
+    in
 
     let raw_product =
         List.fold_left
@@ -80,14 +87,15 @@ let yaml_to_config_generator yaml_value =
         res.condition,
         res.n_trials,
         (fun x -> arange x.start x.stop x.step) res.timesteps ),
-      raw_product )
+      raw_product,
+      evals )
 
 let normalize_matrix adjacency_matrix =
     let row_sums = Owl.Mat.sum_cols adjacency_matrix in
     let row_sums_fix =
         Owl.Mat.map (fun sum -> if sum <> 0. then sum else 1.) row_sums
     in
-        Owl.Mat.div adjacency_matrix row_sums_fix
+        Owl.Mat.(adjacency_matrix / row_sums_fix)
 
 (** Add bias to a voter, bias is defined in terms of a factor x, where voter
     having bias x means they weight their opinion x times more than that of the
@@ -271,6 +279,8 @@ let deGroot config =
     (* First we create the proper trust matrix*)
     let trust_matrix = create_trust_matrix graph bias_factor in
 
+    assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_matrix);
+
     (* list of mat *)
     let candidates =
         List.init n_candidates (fun _ ->
@@ -293,6 +303,8 @@ let deGroot config =
         List.map
           (fun t ->
             let trust = Owl.Mat.(trust_matrix **@ t) in
+
+            assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust);
             let final_opinion = Owl.Mat.(trust *@ pre_data) in
             let cand_noisy_2d =
                 Owl.Arr.reshape cand_noisy
@@ -347,5 +359,9 @@ let deGroot config =
                   (List.init (Owl.Mat.row_num post_data) Fun.id)
             in
                 ( (final_opinion, post_data),
-                  (original_prefs, simulated_prefs, true_prefs) ))
+                  ( original_prefs,
+                    simulated_prefs,
+                    true_prefs,
+                    trust,
+                    trust_matrix ) ))
           timesteps

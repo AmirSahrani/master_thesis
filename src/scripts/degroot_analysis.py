@@ -182,7 +182,7 @@ def _(data_delib):
     cand_str = "n_candidates"
     bias_str = "bias"
     time_str = "time_steps"
-    sampler_str = "cand_sample"
+    sampler_str = "cand_sampler"
     voter_df = {x: data_delib.loc[data_delib[voter_str] == x ] for x in data_delib[voter_str].unique()}
     cand_df = {x: data_delib.loc[data_delib[cand_str] == x ] for x in data_delib[cand_str].unique()}
     time_df = {x: data_delib.loc[data_delib[time_str] == x ] for x in data_delib[time_str].unique()}
@@ -674,7 +674,7 @@ def _(bias_str, plt, summary_control, summary_delib):
             bbox_to_anchor=(1.24, 0.8),  # center it under the plot
             ncol= 1,
         )
-    
+
         plt.show()
     plot_summary(summary_delib)
     plot_summary(summary_control)
@@ -733,6 +733,81 @@ def _(summary_delib):
 
     print(pivoted.head(10))
     return df_151, idx_min, min_rows, pivoted
+
+
+@app.cell
+def _(pd):
+    convergence_data = pd.read_csv("results/degroot_deliberation_trials_100_convergence_sparse.csv")
+    convergence_data["entrywise_distance"] = convergence_data["entrywise_distance"].apply(
+        lambda x: x if x != 0 and x < 31**2 else None
+    )
+    convergence_data = convergence_data.bfill()
+    convergence_data
+    return (convergence_data,)
+
+
+@app.cell
+def _(cand_str, convergence_data, sampler_str, time_str):
+    grouped_by_cand_and_sampler = convergence_data.groupby([cand_str, sampler_str, time_str]).agg("mean")
+    print(grouped_by_cand_and_sampler)
+    return (grouped_by_cand_and_sampler,)
+
+
+@app.cell
+def _(grouped_by_cand_and_sampler, np, plt):
+    df_reset = grouped_by_cand_and_sampler.reset_index()
+
+    # Unique values for styling
+    candidate_counts = sorted(df_reset['n_candidates'].unique())
+    sampler_styles = {'Sample': 'X', 'Voter': 's'}
+    colors = plt.cm.viridis_r(np.linspace(0, 1, len(candidate_counts)))
+
+    # Begin plotting
+    fig, ax = plt.subplots(3, 1, figsize=(15, 8), sharex=True)
+
+    # Plot each combination
+    for idx, n in enumerate(candidate_counts):
+        for sampler, marker in sampler_styles.items():
+            subset = df_reset[(df_reset['n_candidates'] == n) & (df_reset['cand_sampler'] == sampler)]
+            if not subset.empty:
+                ax[0].plot(subset['time_steps'], subset['ks_distance_true'], 
+                           label=f'{n} cand, {sampler}', 
+                           marker=marker, color=colors[idx], linestyle='-')
+                ax[1].plot(subset['time_steps'], subset['cs_distance_true'], 
+                           label=f'{n} cand, {sampler}', 
+                           marker=marker, color=colors[idx], linestyle='-')
+                ax[2].plot(subset['time_steps'], subset['entrywise_distance'], 
+                           label=f'{n} cand, {sampler}', 
+                           marker=marker, color=colors[idx], linestyle='-')
+
+    # Labels and titles
+    ax[0].set_ylabel('KS Distance')
+    ax[1].set_ylabel('CS Distance')
+    ax[1].set_xlabel('Time Steps')
+    ax[2].set_ylabel('Entrywise distance')
+    ax[2].set_xlabel('Time Steps')
+
+    # Legend
+    handles, labels = ax[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper right', ncol=3)
+
+    # plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
+    return (
+        ax,
+        candidate_counts,
+        colors,
+        df_reset,
+        fig,
+        handles,
+        idx,
+        labels,
+        marker,
+        n,
+        sampler,
+        sampler_styles,
+        subset,
+    )
 
 
 if __name__ == "__main__":

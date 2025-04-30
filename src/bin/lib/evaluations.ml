@@ -376,9 +376,58 @@ let get_all_evals_degroot () =
         "proximity_to_cand_sp_true";
       ],
       [
-        (fun prof _ -> string_of_bool @@ is_cyclic prof);
-        (fun prof _ -> string_of_bool @@ has_condorcet prof);
-        (fun prof _ -> string_of_int @@ n_unique_preferences prof);
-        (* (fun prof _ -> string_of_int @@ num_voter_strongly_single_peaked prof); *)
-        (fun prof _ -> string_of_int @@ num_cand_strongly_single_peaked prof);
+        (fun prof _ _ _ _ -> string_of_bool @@ is_cyclic prof);
+        (fun prof _ _ _ _ -> string_of_bool @@ has_condorcet prof);
+        (fun prof _ _ _ _ -> string_of_int @@ n_unique_preferences prof);
+        (* (fun prof _ _ _ _-> string_of_int @@ num_voter_strongly_single_peaked prof); *)
+        (fun prof _ _ _ _ ->
+          string_of_int @@ num_cand_strongly_single_peaked prof);
+        (fun _ prof_end _ _ _ -> string_of_bool @@ is_cyclic prof_end);
+        (fun _ prof_end _ _ _ -> string_of_bool @@ has_condorcet prof_end);
+        (fun _ prof_end _ _ _ -> string_of_int @@ n_unique_preferences prof_end);
+        (* (fun _ prof_end _ _  -> string_of_int @@ num_voter_strongly_single_peaked prof); *)
+        (fun _ prof_end _ _ _ ->
+          string_of_int @@ num_cand_strongly_single_peaked prof_end);
+        (fun _ _ prof_true _ _ -> string_of_bool @@ is_cyclic prof_true);
+        (fun _ _ prof_true _ _ -> string_of_bool @@ has_condorcet prof_true);
+        (fun _ _ prof_true _ _ ->
+          string_of_int @@ n_unique_preferences prof_true);
+        (* (fun _ _ prof_true _  -> string_of_int @@ num_voter_strongly_single_peaked prof); *)
+        (fun _ _ prof_true _ _ ->
+          string_of_int @@ num_cand_strongly_single_peaked prof_true);
+      ] )
+
+let get_all_evals_degroot_convergence () =
+    (* fun args should be: profile_start profile_simulation profile_final trust_matrix_t trust_matrix_start*)
+    ( [
+        "ks_distance_start";
+        "cs_distance_start";
+        "ks_distance_true";
+        "cs_distance_true";
+        "entrywise_distance";
+      ],
+      [
+        (fun prof_start prof_end _ _ _ ->
+          string_of_float
+          @@ List.fold_left2
+               (fun sum p p' -> sum +. Distances.ksDistance p p')
+               0. prof_start prof_end);
+        (fun prof_start prof_end _ _ _ ->
+          string_of_float
+          @@ List.fold_left2
+               (fun sum p p' -> sum +. Distances.csDistance p p')
+               0. prof_start prof_end);
+        (fun _ prof prof_true _ _ ->
+          string_of_float
+          @@ List.fold_left2
+               (fun sum p p' -> sum +. Distances.ksDistance p p')
+               0. prof prof_true);
+        (fun _ prof prof_true _ _ ->
+          string_of_float
+          @@ List.fold_left2
+               (fun sum p p' -> sum +. Distances.csDistance p p')
+               0. prof prof_true);
+        (fun _ _ _ trust_now trust_start ->
+          Owl.Mat.(trust_now - trust_start)
+          |> Owl.Mat.abs |> Owl.Mat.sum' |> string_of_float);
       ] )

@@ -1,6 +1,7 @@
 import numpy as np
 from preflibtools.properties.subdomains.ordinal.singlepeaked import k_alternative_deletion, singlepeakedness
 from preflibtools.instances import OrdinalInstance
+import preflibtools
 import sys
 import os
 
@@ -33,6 +34,11 @@ def get_max_num_voters_for_single_peakedness(prof: np.ndarray):
         num_removed, _, axis, _ = singlepeakedness.approx_SP_voter_deletion_ILP(
             inst)
     return int(len(prof)-num_removed)
+
+
+def get_profile_distances(prof: np.ndarray, prof2: np.ndarray):
+    inst = np_to_Ordinal(prof)
+    inst2 = np_to_Ordinal(prof2)
 
 
 if __name__ == "__main__":
