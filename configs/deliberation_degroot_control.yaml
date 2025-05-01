@@ -1,11 +1,11 @@
-file_out: "results/degroot_deliberation_trials_100_control_SP.csv"
+file_out: "results/degroot_control_100.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 n_trials: 100
 n_voters: 
   istart: 31
   istop: 82
-  istep: 50
+  istep: 10
 n_candidates: 
   istart: 3
   istop: 7
@@ -21,3 +21,6 @@ bias:
   step: 0.3
 cand_method: ["SampleVoters", "Voter"]
 eval: degroot
+credibility: false
+sparse: true 
+include_knowledge: true

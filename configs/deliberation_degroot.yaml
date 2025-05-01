@@ -1,4 +1,4 @@
-file_out: "results/degroot_deliberation_trials_100_SP_dense.csv"
+file_out: "results/degroot_deliberation_100.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 n_trials: 100
@@ -9,8 +9,11 @@ n_voters:
 n_candidates: 
   istart: 3
   istop: 7
-  istep: 2
+  istep: 1
 condition: "1"
+credibility: false
+sparse: false
+include_knowledge: true
 timesteps: 
   start: 1.0
   stop: 151.0

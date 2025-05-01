@@ -10,6 +10,8 @@ type rangeParameterInt = { istart : int; istop : int; istep : int }
 type config = {
   pre_data : Owl.Mat.mat;
   post_data : Owl.Mat.mat;
+  knowledge_data : Owl.Mat.mat option;
+  credibility_bool : bool;
   graph : GenericGraph.t;
   timesteps : float list;
   n_voters : int;
@@ -31,6 +33,9 @@ type degroot_yaml = {
   timesteps : rangeParameterFloat;
   bias : rangeParameterFloat;
   eval : string;
+  include_knowledge : bool;
+  sparse : bool;
+  credibility : bool;
 }
 [@@deriving of_yaml]
 
@@ -84,11 +89,14 @@ let yaml_to_config_generator yaml_value =
     ( ( res.file_out,
         res.graph,
         res.data_loc,
+        res.sparse,
         res.condition,
+        res.credibility,
         res.n_trials,
         (fun x -> arange x.start x.stop x.step) res.timesteps ),
       raw_product,
-      evals )
+      evals,
+      res.include_knowledge )
 
 let normalize_matrix adjacency_matrix =
     let row_sums = Owl.Mat.sum_cols adjacency_matrix in
@@ -118,18 +126,21 @@ let randomize_matrix adjcency_matrix _ =
 
 (** Edge weights equal to the credibility of each voter, where credibility is
     defined as the number of out going edges from voter i*)
-let credibility_matrix adjcency_matrix _ =
-    let rows, cols = Owl.Mat.shape adjcency_matrix in
-    let out_mat = Owl.Mat.empty rows cols in
-        for i = 0 to rows - 1 do
-          for j = 0 to cols - 1 do
-            let credibility = Owl.Mat.sum' @@ Owl.Mat.col adjcency_matrix j in
-                if Owl.Mat.get adjcency_matrix i j <> 0. && i <> j then (
-                  Owl.Mat.set out_mat i j credibility;
-                  Owl.Mat.set out_mat j i credibility)
-          done
-        done;
-        out_mat
+let credibility_matrix adjcency_matrix use_cred =
+    if not use_cred then adjcency_matrix
+    else
+      let rows, cols = Owl.Mat.shape adjcency_matrix in
+
+      let out_mat = Owl.Mat.zeros rows cols in
+          for i = 0 to rows - 1 do
+            for j = 0 to cols - 1 do
+              let credibility = Owl.Mat.sum' @@ Owl.Mat.col adjcency_matrix j in
+
+              if Owl.Mat.get adjcency_matrix i j <> 0. && i <> j then
+                Owl.Mat.set out_mat i j credibility
+            done
+          done;
+          out_mat
 
 let abs_diff_sum mat mat2 = Owl.Mat.(mat - mat2) |> Owl.Mat.abs |> Owl.Mat.sum'
 
@@ -248,12 +259,17 @@ let opinion_to_pref pref candidates =
         |> List.sort (fun (_, d1) (_, d2) -> compare d1 d2)
         |> List.map (fun tup -> [ fst tup ])
 
-let create_trust_matrix graph bias_factor =
+let create_trust_matrix graph credibility_bool knowledge_data bias_factor =
     let trust_matrix = graph |> adjacency_matrix_from in
-        trust_matrix
-        |> (fun m -> credibility_matrix m ())
-        |> (fun m -> add_self_bias m bias_factor)
-        |> normalize_matrix
+        trust_matrix |> fun m ->
+        credibility_matrix m credibility_bool |> fun m ->
+        let optional_mat =
+            match knowledge_data with
+            | None -> m
+            | Some knowledge -> Owl.Mat.(m * knowledge)
+        in
+
+        add_self_bias optional_mat bias_factor |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on
     the supplied input data, return the simulated final opinions, as well as the
@@ -262,6 +278,8 @@ let deGroot config =
     let {
       pre_data;
       post_data;
+      knowledge_data;
+      credibility_bool;
       graph;
       n_voters;
       timesteps;
@@ -277,7 +295,9 @@ let deGroot config =
     let n_policies = Owl.Mat.col_num pre_data in
 
     (* First we create the proper trust matrix*)
-    let trust_matrix = create_trust_matrix graph bias_factor in
+    let trust_matrix =
+        create_trust_matrix graph credibility_bool knowledge_data bias_factor
+    in
 
     assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_matrix);
 

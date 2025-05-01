@@ -118,6 +118,10 @@ let print_list lst convert =
 
 let print_mat mat = mat |> Owl_pretty.dsnda_to_string |> print_endline
 
+let print_shape mat =
+    let n_row, n_cols = Owl.Mat.shape mat in
+        Printf.printf "Matrix of shape %d %d\n%!" n_row n_cols
+
 let string_of_list lst convert =
     Printf.sprintf "\"%s\"" (String.concat " > " (List.map convert lst))
 

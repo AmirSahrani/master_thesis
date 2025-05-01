@@ -29,11 +29,14 @@ def get_max_num_cands_for_single_peakedness(prof: np.ndarray):
 
 
 def get_max_num_voters_for_single_peakedness(prof: np.ndarray):
-    inst = np_to_Ordinal(prof)
-    with HiddenPrints():
-        num_removed, _, axis, _ = singlepeakedness.approx_SP_voter_deletion_ILP(
-            inst)
-    return int(len(prof)-num_removed)
+    if prof.shape[0] > 31:
+        return -1
+    else:
+        inst = np_to_Ordinal(prof)
+        with HiddenPrints():
+            num_removed, _, axis, _ = singlepeakedness.approx_SP_voter_deletion_ILP(
+                inst)
+        return int(len(prof)-num_removed)
 
 
 def get_profile_distances(prof: np.ndarray, prof2: np.ndarray):

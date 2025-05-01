@@ -362,37 +362,40 @@ let get_all_evals_degroot () =
         "cyclic_start";
         "condorcet_start";
         "unique_start";
-        (* "proximity_to_voter_sp_start"; *)
+        "proximity_to_voter_sp_start";
         "proximity_to_cand_sp_start";
         "cyclic_end";
         "condorcet_end";
         "unique_end";
-        (* "proximity_to_voter_sp_end"; *)
+        "proximity_to_voter_sp_end";
         "proximity_to_cand_sp_end";
         "cyclic_true";
         "condorcet_true";
         "unique_true";
-        (* "proximity_to_voter_sp_true"; *)
+        "proximity_to_voter_sp_true";
         "proximity_to_cand_sp_true";
       ],
       [
         (fun prof _ _ _ _ -> string_of_bool @@ is_cyclic prof);
         (fun prof _ _ _ _ -> string_of_bool @@ has_condorcet prof);
         (fun prof _ _ _ _ -> string_of_int @@ n_unique_preferences prof);
-        (* (fun prof _ _ _ _-> string_of_int @@ num_voter_strongly_single_peaked prof); *)
+        (fun prof _ _ _ _ ->
+          string_of_int @@ num_voter_strongly_single_peaked prof);
         (fun prof _ _ _ _ ->
           string_of_int @@ num_cand_strongly_single_peaked prof);
         (fun _ prof_end _ _ _ -> string_of_bool @@ is_cyclic prof_end);
         (fun _ prof_end _ _ _ -> string_of_bool @@ has_condorcet prof_end);
         (fun _ prof_end _ _ _ -> string_of_int @@ n_unique_preferences prof_end);
-        (* (fun _ prof_end _ _  -> string_of_int @@ num_voter_strongly_single_peaked prof); *)
+        (fun _ prof_end _ _ _ ->
+          string_of_int @@ num_voter_strongly_single_peaked prof_end);
         (fun _ prof_end _ _ _ ->
           string_of_int @@ num_cand_strongly_single_peaked prof_end);
         (fun _ _ prof_true _ _ -> string_of_bool @@ is_cyclic prof_true);
         (fun _ _ prof_true _ _ -> string_of_bool @@ has_condorcet prof_true);
         (fun _ _ prof_true _ _ ->
           string_of_int @@ n_unique_preferences prof_true);
-        (* (fun _ _ prof_true _  -> string_of_int @@ num_voter_strongly_single_peaked prof); *)
+        (fun _ _ prof_true _ _ ->
+          string_of_int @@ num_voter_strongly_single_peaked prof_true);
         (fun _ _ prof_true _ _ ->
           string_of_int @@ num_cand_strongly_single_peaked prof_true);
       ] )

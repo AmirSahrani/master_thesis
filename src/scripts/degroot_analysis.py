@@ -163,7 +163,7 @@ def _(compute_proportion, mlines, pd, plt):
 
 @app.cell
 def _(pd):
-    data_delib = pd.read_csv("results/degroot_deliberation_trials_100_SP_dense.csv")
+    data_delib = pd.read_csv("results/degroot_deliberation_trials_100_SP_dense_knowledge.csv")
     data_control= pd.read_csv("results/degroot_deliberation_trials_100_control_SP.csv", index_col=False)
 
     prox_cols = ["proximity_to_cand_sp_" + x for x in ["start", "end", "true"]]
@@ -737,9 +737,9 @@ def _(summary_delib):
 
 @app.cell
 def _(pd):
-    convergence_data = pd.read_csv("results/degroot_deliberation_trials_100_convergence_sparse.csv")
+    convergence_data = pd.read_csv("results/degroot_deliberation_trials_100_convergence_dense_knowledge.csv")
     convergence_data["entrywise_distance"] = convergence_data["entrywise_distance"].apply(
-        lambda x: x if x != 0 and x < 31**2 else None
+        lambda x: x if x != 0  else None
     )
     convergence_data = convergence_data.bfill()
     convergence_data
@@ -771,13 +771,13 @@ def _(grouped_by_cand_and_sampler, np, plt):
             subset = df_reset[(df_reset['n_candidates'] == n) & (df_reset['cand_sampler'] == sampler)]
             if not subset.empty:
                 ax[0].plot(subset['time_steps'], subset['ks_distance_true'], 
-                           label=f'{n} cand, {sampler}', 
+                           label=f'{n} candidates, {sampler}', 
                            marker=marker, color=colors[idx], linestyle='-')
                 ax[1].plot(subset['time_steps'], subset['cs_distance_true'], 
-                           label=f'{n} cand, {sampler}', 
+                           label=f'{n} candidates, {sampler}', 
                            marker=marker, color=colors[idx], linestyle='-')
                 ax[2].plot(subset['time_steps'], subset['entrywise_distance'], 
-                           label=f'{n} cand, {sampler}', 
+                           label=f'{n} candidates, {sampler}', 
                            marker=marker, color=colors[idx], linestyle='-')
 
     # Labels and titles
@@ -789,7 +789,8 @@ def _(grouped_by_cand_and_sampler, np, plt):
 
     # Legend
     handles, labels = ax[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper right', ncol=3)
+    fig.legend(handles, labels, loc='lower center', ncol=3,
+               bbox_to_anchor=(0.51, -0.15))
 
     # plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()

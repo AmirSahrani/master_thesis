@@ -151,13 +151,20 @@ let load_data loc limit_n cond q =
     normailzed such that the sum of the weights of all incoming edges in a node
     is exactly 1. *)
 
-let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
-    times methd bias =
+let run_deGroot_experiment pre_data post_data credibility_bool knowledge_data
+    graph num_voters num_candidates times methd bias =
     let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
     let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
     let voter_indices = Array.sub indices 0 num_voters in
     let pre_data = Owl.Mat.rows pre_data voter_indices in
     let post_data = Owl.Mat.rows post_data voter_indices in
+    let knowledge_data =
+        match knowledge_data with
+        | None -> None
+        | Some knowledge_score ->
+            Some
+              (Owl.Mat.rows knowledge_score voter_indices |> Owl.Mat.transpose)
+    in
     let out_graph = ties_sampling graph num_voters in
     let voter_mapping =
         WrappedModels.(
@@ -175,6 +182,8 @@ let run_deGroot_experiment pre_data post_data graph num_voters num_candidates
           seed = None;
           pre_data;
           post_data;
+          knowledge_data;
+          credibility_bool;
           graph = out_graph;
           n_voters = num_voters;
           n_candidates = num_candidates;
@@ -193,13 +202,13 @@ type job = {
   trial_id : int;
 }
 
-let run_one_job ~pre_data ~post_data ~graph ~timesteps_range ~evals (job : job)
-    : string list list =
+let run_one_job ~pre_data ~post_data ~credibility_bool ~knowledge_scores ~graph
+    ~timesteps_range ~evals (job : job) : string list list =
     (* unwrap the job *)
     let { voters; candidates; bias; meth; trial_id } = job in
     let out =
-        run_deGroot_experiment pre_data post_data graph voters candidates
-          timesteps_range meth bias
+        run_deGroot_experiment pre_data post_data credibility_bool
+          knowledge_scores graph voters candidates timesteps_range meth bias
     in
         List.mapi
           (fun j
@@ -219,8 +228,8 @@ let run_one_job ~pre_data ~post_data ~graph ~timesteps_range ~evals (job : job)
                 evals)
           out
 
-let run_parallel_simulations product pre_data post_data graph timesteps_range
-    n_trials evals =
+let run_parallel_simulations product pre_data post_data credibility_bool
+    knowledge_scores graph timesteps_range n_trials evals =
     let jobs =
         product
         |> List.concat_map (function
@@ -254,7 +263,8 @@ let run_parallel_simulations product pre_data post_data graph timesteps_range
     (* 3. Worker: plain function over a single job *)
     let worker job =
         let result =
-            run_one_job ~pre_data ~post_data ~graph ~timesteps_range ~evals job
+            run_one_job ~pre_data ~post_data ~credibility_bool ~knowledge_scores
+              ~graph ~timesteps_range ~evals job
         in
             update_progress ();
             result
@@ -268,9 +278,17 @@ let run_parallel_simulations product pre_data post_data graph timesteps_range
     List.flatten partials
 
 let deGroot_experiment () =
-    let ( (file_out, graph_loc, data_loc, condition, n_trials, timesteps_range),
+    let ( ( file_out,
+            graph_loc,
+            data_loc,
+            sparse,
+            condition,
+            credibility_bool,
+            n_trials,
+            timesteps_range ),
           product,
-          get_evals ) =
+          get_evals,
+          include_knowledge ) =
         parse_yaml Sys.argv.(2) |> yaml_to_config_generator
     in
     let titles, evals = get_evals () in
@@ -278,8 +296,14 @@ let deGroot_experiment () =
         load_data data_loc 10000 condition questions_without_pk
     in
 
+    let knowledge_data =
+        if include_knowledge then
+          Some (fst @@ load_data data_loc 10000 condition pk_score)
+        else None
+    in
+
     let edges =
-        if condition = "0" then read_adjacency_matrix graph_loc
+        if sparse then read_adjacency_matrix graph_loc
         else
           let voter_list = List.init 50 Fun.id in
               List.map
@@ -311,8 +335,8 @@ let deGroot_experiment () =
 
     let total = List.length product in
     let results =
-        run_parallel_simulations product pre_data post_data graph
-          timesteps_range n_trials evals
+        run_parallel_simulations product pre_data post_data credibility_bool
+          knowledge_data graph timesteps_range n_trials evals
     in
 
     Csv.output_all (Csv.to_channel oc) results;
@@ -321,4 +345,13 @@ let deGroot_experiment () =
     close_out oc;
     ()
 
-let test () = ()
+let test () =
+    let t =
+        Owl.Mat.of_arrays
+          [| [| 0.; 1.; 1. |]; [| 1.; 0.; 0. |]; [| 0.; 1.; 0. |] |]
+    in
+    let k = Owl.Mat.of_arrays [| [| 0.8; 0.3; 0.4 |] |] in
+    let n, m = Owl.Mat.shape k in
+
+    Printf.printf "K is a %d by %d matrix\n" n m;
+    print_mat Owl.Mat.(t * k)

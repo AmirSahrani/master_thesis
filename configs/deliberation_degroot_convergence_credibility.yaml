@@ -1,11 +1,12 @@
-file_out: "results/degroot_deliberation_100_convergence.csv"
+file_out: "results/degroot_deliberation_100_convergence_credibility.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 n_trials: 100
 n_voters: 
-  istart: 9
-  istop: 15
-  istep: 2
+n_voters: 
+  istart: 31
+  istop: 82
+  istep: 10
 n_candidates: 
   istart: 3
   istop: 7
@@ -21,6 +22,6 @@ bias:
   step: 0.3
 cand_method: ["SampleVoters", "Voter"]
 eval: degroot_convergence
-sparse: false
-credibility: false
-include_knowledge: true
+sparse: true
+credibility: true 
+include_knowledge: false 
