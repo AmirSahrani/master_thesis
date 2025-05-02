@@ -1,9 +1,0 @@
-bias,cand_sampler,n_voters,n_candidates,time_steps,trial,cyclic_start,condorcet_start,unique_start,proximity_to_voter_sp_start,proximity_to_cand_sp_start,cyclic_end,condorcet_end,unique_end,proximity_to_voter_sp_end,proximity_to_cand_sp_end,cyclic_true,condorcet_true,unique_true,proximity_to_voter_sp_true,proximity_to_cand_sp_true
-0.5,Voter,51,3,1.,1,false,true,3,51,3,false,true,6,49,2,false,true,1,51,3
-0.5,Voter,61,3,1.,1,false,true,4,61,3,false,true,1,61,3,false,true,1,61,3
-0.5,Voter,71,3,1.,1,false,true,5,70,2,false,true,3,71,3,false,true,1,71,3
-0.5,Voter,81,3,1.,1,false,true,5,80,2,false,true,2,81,3,false,true,1,81,3
-0.5,Voter,51,5,1.,1,false,true,10,48,3,false,true,15,45,2,false,true,3,51,5
-0.5,Voter,61,5,1.,1,false,true,10,57,3,false,true,4,61,5,false,true,2,61,5
-0.5,Voter,71,5,1.,1,false,true,11,66,3,false,true,6,70,4,false,true,2,71,5
-0.5,Voter,81,5,1.,1,false,true,15,75,3,false,true,4,81,5,false,true,2,81,5

@@ -162,18 +162,25 @@ def _(compute_proportion, mlines, pd, plt):
 
 
 @app.cell
-def _(pd):
-    data_delib = pd.read_csv("results/degroot_deliberation_trials_100_SP_dense_knowledge.csv")
-    data_control= pd.read_csv("results/degroot_deliberation_trials_100_control_SP.csv", index_col=False)
+def _(np, pd):
+    data_delib = pd.read_csv("results/degroot_deliberation_100.csv")
+    data_control= pd.read_csv("results/degroot_control_100.csv", index_col=False)
 
     prox_cols = ["proximity_to_cand_sp_" + x for x in ["start", "end", "true"]]
+    prox_voter_cols = ["proximity_to_voter_sp_" + x for x in ["start", "end", "true"]]
 
     for c in prox_cols:
         data_control[c] = data_control[c] /data_control["n_candidates"]
         data_delib[c] = data_delib[c] /data_delib["n_candidates"]
+    
+    for c in prox_voter_cols:
+        data_control[c] = data_control[c].replace(-1, np.nan)
+        data_delib[c] = data_delib[c].replace(-1, np.nan)
+        data_control[c] = data_control[c] /data_control["n_voters"]
+        data_delib[c] = data_delib[c] /data_delib["n_voters"]
 
     print(data_delib)
-    return c, data_control, data_delib, prox_cols
+    return c, data_control, data_delib, prox_cols, prox_voter_cols
 
 
 @app.cell
@@ -205,17 +212,9 @@ def _(data_delib):
 
 
 @app.cell
-def _(
-    cand_str,
-    compute_and_merge_proportions,
-    compute_average,
-    data_delib,
-    pd,
-    plot,
-    time_str,
-    voter_str,
-):
-    data_delib_51_5 = data_delib.loc[(data_delib[voter_str] == 11) & (data_delib[cand_str] == 5) & (data_delib[time_str] == 51.)].copy()
+def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
+    # data_delib_51_5 = data_delib.loc[(data_delib[voter_str] == 11) & (data_delib[cand_str] == 5) & (data_delib[time_str] == 51.)].copy()
+    data_delib_51_5 = data_delib
 
     cyclic_51_5 = compute_and_merge_proportions(
         data_delib_51_5,
@@ -249,6 +248,19 @@ def _(
         columns={"proximity_to_start": "proximity_to_cand_sp"}
     )
 
+    proximity_to_voter_sp_end_51_5 = compute_average(
+        data_delib_51_5, "proximity_to_voter_sp_end", "proximity_to_voter_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_voter_sp_true_51_5 = compute_average(
+        data_delib_51_5, "proximity_to_voter_sp_true", "proximity_to_voter_sp", ["bias", "cand_sampler"]
+    )
+    proximity_to_voter_sp_end_51_5["Type"] = "End"
+    proximity_to_voter_sp_true_51_5["Type"] = "True"
+    df_combined_51_5 = pd.concat([proximity_to_voter_sp_end_51_5, proximity_to_voter_sp_true_51_5])
+    proximity_to_voter_sp_51_5 = df_combined_51_5.rename(
+        columns={"proximity_to_start": "proximity_to_voter_sp"}
+    )
+
     unique_profiles_end_51_5 = compute_average(
         data_delib_51_5, "unique_end", "unique", ["bias", "cand_sampler"]
     )
@@ -265,6 +277,7 @@ def _(
     # === Plotting all variants in one figure ===
     plot(cyclic_51_5, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
     plot(proximity_to_sp_51_5, "bias", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles")
+    plot(proximity_to_voter_sp_51_5, "bias", "proximity_to_voter_sp", "Mean voter proximity to single peaked Profiles")
     plot(condorcet_51_5, "bias", "condorcet_proportion", "Mean number of Condorcet winners")
     plot(unique_profiles_51_5, "bias", "unique", r"\#Unique Preferences")
     return (
@@ -275,6 +288,9 @@ def _(
         proximity_to_sp_51_5,
         proximity_to_sp_end_51_5,
         proximity_to_sp_true_51_5,
+        proximity_to_voter_sp_51_5,
+        proximity_to_voter_sp_end_51_5,
+        proximity_to_voter_sp_true_51_5,
         unique_profiles_51_5,
         unique_profiles_end_51_5,
         unique_profiles_true_51_5,
@@ -643,7 +659,7 @@ def _(data_control, data_delib):
 
     # Compute differences for each metric
     def diff_data_on_metrics(df):
-        metrics = ['cyclic', 'condorcet', 'unique', 'proximity_to_cand_sp']
+        metrics = ['cyclic', 'condorcet', 'unique', 'proximity_to_cand_sp', 'proximity_to_voter_sp']
         for m in metrics:
             df[f'{m}_diff'] = normalize(df[f'{m}_end']) - normalize(df[f'{m}_true'])
             df[f'{m}_absdiff'] = df[f'{m}_diff']**2
@@ -737,7 +753,7 @@ def _(summary_delib):
 
 @app.cell
 def _(pd):
-    convergence_data = pd.read_csv("results/degroot_deliberation_trials_100_convergence_dense_knowledge.csv")
+    convergence_data = pd.read_csv("results/degroot_deliberation_100_convergence_groups.csv")
     convergence_data["entrywise_distance"] = convergence_data["entrywise_distance"].apply(
         lambda x: x if x != 0  else None
     )
@@ -763,7 +779,7 @@ def _(grouped_by_cand_and_sampler, np, plt):
     colors = plt.cm.viridis_r(np.linspace(0, 1, len(candidate_counts)))
 
     # Begin plotting
-    fig, ax = plt.subplots(3, 1, figsize=(15, 8), sharex=True)
+    fig, ax = plt.subplots(3, 1, figsize=(15, 15), sharex=True)
 
     # Plot each combination
     for idx, n in enumerate(candidate_counts):
@@ -790,7 +806,7 @@ def _(grouped_by_cand_and_sampler, np, plt):
     # Legend
     handles, labels = ax[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='lower center', ncol=3,
-               bbox_to_anchor=(0.51, -0.15))
+               bbox_to_anchor=(0.51, -0.05))
 
     # plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.14"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -337,7 +337,7 @@ def _(mo):
 
 
 @app.cell
-def _():
+def gen_response_query():
     def gen_response_query(cols, q, response_type, time):
         return f"""
             SELECT {" ".join(cols)}
@@ -443,7 +443,7 @@ def _(mo):
 
 
 @app.cell
-def _(pl, sk, sqlite3):
+def _(pl, sqlite3):
     conn = sqlite3.connect("data/a1r.db")
     pre_deliberation_responses = pl.read_database(
         query="""
@@ -472,120 +472,29 @@ def _(pl, sk, sqlite3):
     pre_deliberation_responses_affiliation = pre_deliberation_responses.join(
         pre_affiliation, how="inner", on="ID"
     )
-
-    drop_columns = ["ID", "Q9_1", "Q9_2"]
-    gmm_pre = sk.mixture.GaussianMixture(n_components=2)
-    gmm_post = sk.mixture.GaussianMixture(n_components=2)
-    fitted_gmm_pre = gmm_pre.fit(
-        pre_deliberation_responses.drop(drop_columns),
-        pre_deliberation_responses_affiliation["D1"],
-    )
-    fitted_gmm_post = gmm_post.fit(
-        post_deliberation_responses.drop(drop_columns),
-        pre_deliberation_responses_affiliation.select(
-            pl.col(["T2D1"]).filter(
-                pl.col("ID").is_in(post_deliberation_responses["ID"])
-            )
-        ).to_series(),
-    )
-
-    predictions_pre = fitted_gmm_pre.predict(
-        pre_deliberation_responses.drop(drop_columns)
-    )
-    predictions_post = fitted_gmm_post.predict(
-        post_deliberation_responses.drop(drop_columns)
-    )
     return (
         conn,
-        drop_columns,
-        fitted_gmm_post,
-        fitted_gmm_pre,
-        gmm_post,
-        gmm_pre,
         post_deliberation_responses,
         pre_affiliation,
         pre_deliberation_responses,
         pre_deliberation_responses_affiliation,
-        predictions_post,
-        predictions_pre,
     )
 
 
 @app.cell
-def _(
-    drop_columns,
-    fitted_gmm_post,
-    fitted_gmm_pre,
-    pl,
-    post_deliberation_responses,
-    pre_deliberation_responses,
-    pre_deliberation_responses_affiliation,
-):
-    print(
-        fitted_gmm_pre.score(
-            pre_deliberation_responses.drop(drop_columns),
-            pre_deliberation_responses_affiliation["D1"],
-        )
-    )
-
-    print(
-        fitted_gmm_post.score(
-            post_deliberation_responses.drop(drop_columns),
-            pre_deliberation_responses_affiliation.select(
-                pl.col(["T2D1"]).filter(
-                    pl.col("ID").is_in(post_deliberation_responses["ID"])
-                )
-            ).to_series(),
-        )
-    )
-    return
-
-
-@app.cell
-def _(
-    drop_columns,
-    plt,
-    post_deliberation_responses,
-    pre_deliberation_responses,
-    pre_deliberation_responses_affiliation,
-    predictions_post,
-    predictions_pre,
-    sk,
-):
-    pca = sk.manifold.TSNE(2)
-    pca_data_pre = pca.fit_transform(pre_deliberation_responses.drop(drop_columns))
-    pca_data_post = pca.fit_transform(post_deliberation_responses.drop(drop_columns))
-
-    markers = {1: "X", 2: "o", 3: "^", 4: "s"}
-    colors = {1: "blue", 2: "red", 3: "green", 4: "pink"}
-
-    marker_affiliations = [
-        markers.get(x, "2") for x in pre_deliberation_responses_affiliation["D1"]
-    ]
-    pre_colors = [colors.get(int(x), "gray") for x in predictions_pre]
-    post_colors = [colors.get(int(x), "gray") for x in predictions_post]
-
-    for (c, m), (x, y) in zip(zip(pre_colors, marker_affiliations), pca_data_pre):
-        plt.scatter(x, y, marker=m, color=c)
-    plt.show()
-
-    for (c, m), (x, y) in zip(zip(post_colors, marker_affiliations), pca_data_post):
-        plt.scatter(x, y, marker=m, color=c)
-    plt.show()
-    return (
-        c,
-        colors,
-        m,
-        marker_affiliations,
-        markers,
-        pca,
-        pca_data_post,
-        pca_data_pre,
-        post_colors,
-        pre_colors,
-        x,
-        y,
-    )
+def _(conn, pl):
+    groups = pl.read_database(
+        query="""
+                     SELECT "GROUP"
+                     FROM voter_info
+                     """,
+        connection=conn,
+    ).drop_nulls()
+    print(groups.unique())
+    for group in groups.unique().iter_rows():
+        group = group[0]
+        print(f'group: {group} has {len(groups.filter(pl.col("GROUP") == group))} members')
+    return group, groups
 
 
 if __name__ == "__main__":

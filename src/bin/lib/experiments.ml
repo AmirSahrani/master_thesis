@@ -108,7 +108,7 @@ let rad_roy_bias_experiment () =
     (* Finalize Python *)
     Py.finalize ()
 
-let load_data loc limit_n cond q =
+let load_data loc limit_n cond group q =
     let db = open_db loc in
     let table_pre = tables `Response_pre in
     let table_post = tables `Response_post in
@@ -123,19 +123,24 @@ let load_data loc limit_n cond q =
         inner_join (tables `Response_pk) table_post (voter_info `ID)
     in
     let limit_str = limit limit_n in
-    let where_condition cond_value =
+    let where_condition cond_value group_value =
         join_where
-          [
-            condition_sub voter_info_tbl (voter_info `Condition) (comp `Equal)
-              cond_value;
-          ]
+          (condition_sub voter_info_tbl (voter_info `Condition) (comp `Equal)
+             cond_value
+          ::
+          (match group_value with
+          | Some v ->
+              [
+                condition_sub voter_info_tbl (voter_info `Group) (comp `Equal) v;
+              ]
+          | None -> []))
     in
 
     let get_data table join where lim =
         get_voters_opinions db q table join where lim |> Owl.Mat.of_arrays
     in
 
-    let where = where_condition cond in
+    let where = where_condition cond group in
         ( get_data table_pre [ join_pre; join_pk_pre ] where limit_str,
           get_data table_post [ join_post; join_pk_post ] where limit_str )
 
@@ -152,7 +157,7 @@ let load_data loc limit_n cond q =
     is exactly 1. *)
 
 let run_deGroot_experiment pre_data post_data credibility_bool knowledge_data
-    graph num_voters num_candidates times methd bias =
+    graph num_voters num_candidates times methd bias grouped =
     let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
     let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
     let voter_indices = Array.sub indices 0 num_voters in
@@ -203,12 +208,14 @@ type job = {
 }
 
 let run_one_job ~pre_data ~post_data ~credibility_bool ~knowledge_scores ~graph
-    ~timesteps_range ~evals (job : job) : string list list =
+    ~timesteps_range ~evals ~grouped (job : job) : string list list =
     (* unwrap the job *)
     let { voters; candidates; bias; meth; trial_id } = job in
+    let voters = if not grouped then voters else Owl.Mat.row_num pre_data in
     let out =
         run_deGroot_experiment pre_data post_data credibility_bool
           knowledge_scores graph voters candidates timesteps_range meth bias
+          grouped
     in
         List.mapi
           (fun j
@@ -229,7 +236,7 @@ let run_one_job ~pre_data ~post_data ~credibility_bool ~knowledge_scores ~graph
           out
 
 let run_parallel_simulations product pre_data post_data credibility_bool
-    knowledge_scores graph timesteps_range n_trials evals =
+    knowledge_scores graph timesteps_range n_trials evals grouped =
     let jobs =
         product
         |> List.concat_map (function
@@ -264,7 +271,7 @@ let run_parallel_simulations product pre_data post_data credibility_bool
     let worker job =
         let result =
             run_one_job ~pre_data ~post_data ~credibility_bool ~knowledge_scores
-              ~graph ~timesteps_range ~evals job
+              ~graph ~timesteps_range ~evals ~grouped job
         in
             update_progress ();
             result
@@ -284,6 +291,7 @@ let deGroot_experiment () =
             sparse,
             condition,
             credibility_bool,
+            group_bool,
             n_trials,
             timesteps_range ),
           product,
@@ -291,14 +299,18 @@ let deGroot_experiment () =
           include_knowledge ) =
         parse_yaml Sys.argv.(2) |> yaml_to_config_generator
     in
+    let group =
+        if group_bool then Some (string_of_int @@ Random.int 33) else None
+    in
+
     let titles, evals = get_evals () in
     let pre_data, post_data =
-        load_data data_loc 10000 condition questions_without_pk
+        load_data data_loc 10000 condition group questions_without_pk
     in
 
     let knowledge_data =
         if include_knowledge then
-          Some (fst @@ load_data data_loc 10000 condition pk_score)
+          Some (fst @@ load_data data_loc 10000 condition group pk_score)
         else None
     in
 
@@ -336,7 +348,7 @@ let deGroot_experiment () =
     let total = List.length product in
     let results =
         run_parallel_simulations product pre_data post_data credibility_bool
-          knowledge_data graph timesteps_range n_trials evals
+          knowledge_data graph timesteps_range n_trials evals group_bool
     in
 
     Csv.output_all (Csv.to_channel oc) results;

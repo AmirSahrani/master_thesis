@@ -24,4 +24,4 @@ bias:
   step: 0.1
 cand_method: ["SampleVoters", "Voter"]
 eval: degroot
-
+group: false

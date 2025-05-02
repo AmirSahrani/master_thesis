@@ -36,6 +36,7 @@ type degroot_yaml = {
   include_knowledge : bool;
   sparse : bool;
   credibility : bool;
+  group : bool;
 }
 [@@deriving of_yaml]
 
@@ -92,6 +93,7 @@ let yaml_to_config_generator yaml_value =
         res.sparse,
         res.condition,
         res.credibility,
+        res.group,
         res.n_trials,
         (fun x -> arange x.start x.stop x.step) res.timesteps ),
       raw_product,

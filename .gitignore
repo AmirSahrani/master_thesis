@@ -9,3 +9,4 @@ _build/
 
 # General
 *.log
+temporary_data/

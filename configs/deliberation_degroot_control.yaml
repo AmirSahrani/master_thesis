@@ -24,3 +24,4 @@ eval: degroot
 credibility: false
 sparse: true 
 include_knowledge: true
+group: false

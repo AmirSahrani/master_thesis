@@ -1,1 +1,0 @@
-bias,cand_sampler,n_voters,n_candidates,time_steps,trial,cyclic_start,condorcet_start,unique_start,proximity_to_cand_sp_start,cyclic_end,condorcet_end,unique_end,proximity_to_cand_sp_end,cyclic_true,condorcet_true,unique_true,proximity_to_cand_sp_true

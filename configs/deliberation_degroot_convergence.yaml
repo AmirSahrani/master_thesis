@@ -24,3 +24,4 @@ eval: degroot_convergence
 sparse: false
 credibility: false
 include_knowledge: true
+group: false
