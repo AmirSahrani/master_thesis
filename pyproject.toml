@@ -20,4 +20,7 @@ dependencies = [
     "scipy>=1.15.2",
     "seaborn>=0.13.2",
     "preflibtools>=2.0.32",
+    "pymc>=5.22.0",
+    "arviz>=0.21.0",
+    "numpyro>=0.18.0",
 ]
