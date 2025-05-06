@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.0"
+__generated_with = "0.11.31"
 app = marimo.App(width="full")
 
 
@@ -10,25 +10,24 @@ def _():
     import pandas as pd
     import numpy as np
     from scipy import stats
-    import pingouin as pg
     import matplotlib.pyplot as plt
     import matplotlib.lines as mlines
     import seaborn as sns
     import altair as alt
     import arviz as az
     import pymc as pm
-
+    from sklearn.preprocessing import StandardScaler
     from pymc import Model, Normal, sample
     return (
         Model,
         Normal,
+        StandardScaler,
         alt,
         az,
         mlines,
         mo,
         np,
         pd,
-        pg,
         plt,
         pm,
         sample,
@@ -865,231 +864,159 @@ def _():
 
 
 @app.cell
-def _(az, data_delib, np, plt, pm, sns):
-    def pymc_model(data):# Convert categorical variables to numeric for the model
+def _(StandardScaler, az, np, plt, pm):
+    def preprocess_data(data):
+        data = data.copy()
         data['cand_sampler_numeric'] = data['cand_sampler'].map({'Sample': 0, 'Voter': 1})
-    
-        # Prepare data for modeling - focus on key parameters
-        # We'll model how bias, n_voters, n_candidates, and sampler type affect total_absdiff
+        return data
+
+    def prepare_model_data(data):
         model_data = data[['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric', 'total_absdiff']].copy()
-    
-        # Remove duplicate parameter combinations to get unique configurations
-        unique_params = model_data.drop_duplicates(subset=['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric'])
-        print(f"Number of unique parameter combinations: {len(unique_params)}")
-    
-        # Group by the parameter combinations and compute mean total_absdiff
-        grouped_data = model_data.groupby(['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric'])['total_absdiff'].mean().reset_index()
-        print(f"Grouped data shape: {grouped_data.shape}")
-    
-        # Scale the features for better model convergence
-        from sklearn.preprocessing import StandardScaler
+        grouped_data = model_data.groupby(
+            ['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric']
+        )['total_absdiff'].mean().reset_index()
+        return grouped_data
+
+    def scale_features(grouped_data):
         scaler = StandardScaler()
         X = grouped_data[['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric']].values
-        X_scaled = scaler.fit_transform(X)
         y = grouped_data['total_absdiff'].values
+        X_scaled = scaler.fit_transform(X)
+        return X_scaled, y, scaler
     
-        # Build PyMC model
+    def build_and_run_model(X_scaled, y):
         with pm.Model() as model:
-            voters = pm.Data('n_voters', data['n_voters'])
-            candidates = pm.Data('n_candidates', data['n_candidates'])
-
             intercept = pm.Normal('intercept', mu=0, sigma=1)
             beta_bias = pm.TruncatedNormal('beta_bias', lower=0, upper=3, mu=0, sigma=1)
             beta_n_voters = pm.Normal('beta_n_voters', mu=0, sigma=1)
             beta_n_candidates = pm.Normal('beta_n_candidates', mu=0, sigma=1)
             beta_sampler = pm.Bernoulli('beta_sampler', p=0.5)
-        
-            # Interaction terms
+
             beta_bias_voters = pm.Normal('beta_bias_voters', mu=0, sigma=0.5)
             beta_bias_candidates = pm.Normal('beta_bias_candidates', mu=0, sigma=0.5)
             beta_bias_sampler = pm.Normal('beta_bias_sampler', mu=0, sigma=0.5)
-        
-            # Model error
+
             sigma = pm.HalfNormal('sigma', sigma=1)
-        
-            mu = (intercept + 
-              beta_bias * X_scaled[:, 0] + 
-              beta_n_voters * X_scaled[:, 1] + 
-              beta_n_candidates * X_scaled[:, 2] + 
-              beta_sampler * X_scaled[:, 3] +
-              beta_bias_voters * X_scaled[:, 0] * X_scaled[:, 1] +
-              beta_bias_candidates * X_scaled[:, 0] * X_scaled[:, 2] +
-              beta_bias_sampler * X_scaled[:, 0] * X_scaled[:, 3])
-        
-            # Likelihood
+
+            mu = (
+                intercept +
+                beta_bias * X_scaled[:, 0] +
+                beta_n_voters * X_scaled[:, 1] +
+                beta_n_candidates * X_scaled[:, 2] +
+                beta_sampler * X_scaled[:, 3] +
+                beta_bias_voters * X_scaled[:, 0] * X_scaled[:, 1] +
+                beta_bias_candidates * X_scaled[:, 0] * X_scaled[:, 2] +
+                beta_bias_sampler * X_scaled[:, 0] * X_scaled[:, 3]
+            )
+
             likelihood = pm.Normal('likelihood', mu=mu, sigma=sigma, observed=y)
-        
-            # Sample from the posterior
+
             trace = pm.sample(2000, tune=1000, return_inferencedata=True)
-    
-        # Analyze the results
-        summary = az.summary(trace)
-        az.plot_trace(trace)
-        plt.show()
-        print("Model parameter summary:")
-        print(summary)
-    
-        # Plot the posterior distributions
-        az.plot_posterior(trace)
-        plt.tight_layout()
-        plt.savefig('parameter_posteriors.png')
-    
-        # Calculate the R-squared to assess model fit
+
+        return trace
+
+
+    def analyze_trace(trace):
+        rc_custom = {
+            "font.size": 20,
+            "figure.figsize": [10, 8],
+            "axes.linewidth": 1,
+            "grid.linewidth": 1,
+            "grid.alpha": 0.3,
+            "image.cmap": "cividis",
+            "text.usetex": True,
+            "font.family": "Charter",
+        }
+
+        with plt.rc_context(rc_custom):
+            summary = az.summary(trace)
+
+            az.plot_trace(trace, var_names=['beta_bias', 'beta_n_voters', 'beta_n_candidates', 'beta_sampler'])
+            plt.tight_layout()
+            plt.show()
+
+
+            az.plot_pair(trace, figsize=(10, 10), kind="hexbin", var_names=['beta_bias', 'beta_n_voters', 'beta_n_candidates', 'beta_sampler'])
+            plt.show()
+            plt.tight_layout()
+            plt.savefig('figures/parameter_posteriors.pdf')
+            print("Model parameter summary:")
+            print(summary)
+
+        return summary
+
+    def compute_r_squared(trace, X_scaled, y):
         y_pred = trace.posterior['intercept'].mean().item()
-        for i, param in enumerate(['beta_bias', 'beta_n_voters', 'beta_n_candidates', 'beta_sampler', 
-                                 'beta_bias_voters', 'beta_bias_candidates', 'beta_bias_sampler']):
-            if i < 4:  # Main effects
+        for i, param in enumerate(['beta_bias', 'beta_n_voters', 'beta_n_candidates', 'beta_sampler',
+                                   'beta_bias_voters', 'beta_bias_candidates', 'beta_bias_sampler']):
+            if i < 4:
                 y_pred += trace.posterior[param].mean().item() * X_scaled[:, i % 4]
-            else:  # Interaction terms
-                idx1 = 0  # bias is always the first component of interactions
-                idx2 = i - 3  # the other component
+            else:
+                idx1 = 0
+                idx2 = i - 3
                 y_pred += trace.posterior[param].mean().item() * X_scaled[:, idx1] * X_scaled[:, idx2]
-    
+
         ss_total = np.sum((y - np.mean(y))**2)
         ss_residual = np.sum((y - y_pred)**2)
         r_squared = 1 - (ss_residual / ss_total)
         print(f"R-squared: {r_squared:.4f}")
+        return r_squared
     
-        # Find optimal parameters that minimize total_absdiff
-        # For each sampler type
-        samplers = ['Sample', 'Voter']
-        sampler_nums = [0, 1]
-    
-        for sampler, sampler_num in zip(samplers, sampler_nums):
-            print(f"\nOptimal parameters for {sampler} sampler:")
-        
-            # Create a grid of parameter values
-            biases = np.unique(data['bias'])
-            n_voters_values = np.unique(data['n_voters'])
-            n_candidates_values = np.unique(data['n_candidates'])
-        
-            best_params = None
-            lowest_absdiff = float('inf')
-        
-            # Filter data for this sampler
-            sampler_data = data[data['cand_sampler'] == sampler]
-        
-            for bias in biases:
-                for n_voters in n_voters_values:
-                    for n_candidates in n_candidates_values:
-                        subset = sampler_data[(sampler_data['bias'] == bias) & 
-                                            (sampler_data['n_voters'] == n_voters) & 
-                                            (sampler_data['n_candidates'] == n_candidates)]
-                    
-                        if len(subset) > 0:
-                            mean_absdiff = subset['total_absdiff'].mean()
-                        
-                            if mean_absdiff < lowest_absdiff:
-                                lowest_absdiff = mean_absdiff
-                                best_params = (bias, n_voters, n_candidates)
-        
-            if best_params:
-                print(f"Bias: {best_params[0]}, N_voters: {best_params[1]}, N_candidates: {best_params[2]}")
-                print(f"Minimum total_absdiff: {lowest_absdiff:.6f}")
-    
-        # Create more detailed visualizations
-        # Plot relationship between parameters and total_absdiff for each sampler
-        plt.figure(figsize=(15, 10))
-    
-        # Plot bias vs total_absdiff for different voter counts
-        plt.subplot(2, 2, 1)
-        for n_voters in np.unique(data['n_voters']):
-            subset = data[data['n_voters'] == n_voters]
-            sns.lineplot(x='bias', y='total_absdiff', data=subset, label=f'Voters: {n_voters}')
-        plt.title('Bias vs Total Absolute Difference by Voter Count')
-        plt.xlabel('Bias')
-        plt.ylabel('Total Absolute Difference')
-    
-        # Plot bias vs total_absdiff for different candidate counts
-        plt.subplot(2, 2, 2)
-        for n_candidates in np.unique(data['n_candidates']):
-            subset = data[data['n_candidates'] == n_candidates]
-            sns.lineplot(x='bias', y='total_absdiff', data=subset, label=f'Candidates: {n_candidates}')
-        plt.title('Bias vs Total Absolute Difference by Candidate Count')
-        plt.xlabel('Bias')
-        plt.ylabel('Total Absolute Difference')
-    
-        # Heatmap of bias and n_voters on total_absdiff (Sample)
-        plt.subplot(2, 2, 3)
-        pivot_sample = data[data['cand_sampler'] == 'Sample'].groupby(['bias', 'n_voters'])['total_absdiff'].mean().reset_index()
-        sns.heatmap(pivot_sample, annot=True, fmt=".3f", cmap="YlGnBu")
-        plt.title('Mean Total Absolute Difference (Sample)')
-        plt.xlabel('Number of Voters')
-        plt.ylabel('Bias')
-    
-        # Heatmap of bias and n_voters on total_absdiff (Voter)
-        plt.subplot(2, 2, 4)
-        pivot_voter = data[data['cand_sampler'] == 'Voter'].groupby(['bias', 'n_voters'])['total_absdiff'].mean().reset_index()
-        sns.heatmap(pivot_voter, annot=True, fmt=".3f", cmap="YlGnBu")
-        plt.title('Mean Total Absolute Difference (Voter)')
-        plt.xlabel('Number of Voters')
-        plt.ylabel('Bias')
-    
-        plt.tight_layout()
-        plt.savefig('detailed_parameter_analysis.png')
-    
-        # Generate predictive analysis for different parameter combinations
+    def make_predictor(trace, scaler):
         def predict_absdiff(bias, n_voters, n_candidates, sampler_numeric):
-            # Scale input using the same scaler
             X_new = np.array([[bias, n_voters, n_candidates, sampler_numeric]])
-            X_new_scaled = scaler.transform(X_new)
-        
-            # Make prediction
-            pred = (trace.posterior['intercept'].mean().item() + 
-                    trace.posterior['beta_bias'].mean().item() * X_new_scaled[0, 0] + 
-                    trace.posterior['beta_n_voters'].mean().item() * X_new_scaled[0, 1] + 
-                    trace.posterior['beta_n_candidates'].mean().item() * X_new_scaled[0, 2] + 
-                    trace.posterior['beta_sampler'].mean().item() * X_new_scaled[0, 3] +
-                    trace.posterior['beta_bias_voters'].mean().item() * X_new_scaled[0, 0] * X_new_scaled[0, 1] +
-                    trace.posterior['beta_bias_candidates'].mean().item() * X_new_scaled[0, 0] * X_new_scaled[0, 2] +
-                    trace.posterior['beta_bias_sampler'].mean().item() * X_new_scaled[0, 0] * X_new_scaled[0, 3])
-        
+            X_scaled = scaler.transform(X_new)
+            pred = (trace.posterior['intercept'].mean().item() +
+                    trace.posterior['beta_bias'].mean().item() * X_scaled[0, 0] +
+                    trace.posterior['beta_n_voters'].mean().item() * X_scaled[0, 1] +
+                    trace.posterior['beta_n_candidates'].mean().item() * X_scaled[0, 2] +
+                    trace.posterior['beta_sampler'].mean().item() * X_scaled[0, 3] +
+                    trace.posterior['beta_bias_voters'].mean().item() * X_scaled[0, 0] * X_scaled[0, 1] +
+                    trace.posterior['beta_bias_candidates'].mean().item() * X_scaled[0, 0] * X_scaled[0, 2] +
+                    trace.posterior['beta_bias_sampler'].mean().item() * X_scaled[0, 0] * X_scaled[0, 3])
             return pred
-    
-        print("\nPredictions for some parameter combinations:")
-        combinations = [
-            (0.8, 9, 3, 0),  # Low bias, low voters/candidates, Sample
-            (1.4, 15, 7, 1),  # High bias, high voters/candidates, Voter
-            (1.0, 12, 5, 0),  # Medium bias, medium voters/candidates, Sample
-            (1.0, 12, 5, 1),  # Medium bias, medium voters/candidates, Voter
-        ]
-    
-        for bias, n_voters, n_candidates, sampler_numeric in combinations:
-            sampler_name = "Sample" if sampler_numeric == 0 else "Voter"
-            pred = predict_absdiff(bias, n_voters, n_candidates, sampler_numeric)
-            print(f"Bias: {bias}, Voters: {n_voters}, Candidates: {n_candidates}, Sampler: {sampler_name} → Predicted total_absdiff: {pred:.6f}")
-    
-        # Find optimal parameter combination using the model
-        best_bias = None
-        best_n_voters = None
-        best_n_candidates = None
-        best_sampler = None
-        lowest_pred = float('inf')
-    
-        # Grid search through parameter space
-        for bias in biases:
-            for n_voters in n_voters_values:
-                for n_candidates in n_candidates_values:
-                    for sampler_numeric in [0, 1]:
-                        pred = predict_absdiff(bias, n_voters, n_candidates, sampler_numeric)
-                        if pred < lowest_pred:
-                            lowest_pred = pred
-                            best_bias = bias
-                            best_n_voters = n_voters
-                            best_n_candidates = n_candidates
-                            best_sampler = "Sample" if sampler_numeric == 0 else "Voter"
-    
-        print("\nOptimal parameter combination based on model predictions:")
-        print(f"Bias: {best_bias}, Voters: {best_n_voters}, Candidates: {best_n_candidates}, Sampler: {best_sampler}")
-        print(f"Predicted minimum total_absdiff: {lowest_pred:.6f}")
+        return predict_absdiff
 
-    pymc_model(data_delib)
-    return (pymc_model,)
+
+    return (
+        analyze_trace,
+        build_and_run_model,
+        compute_r_squared,
+        make_predictor,
+        prepare_model_data,
+        preprocess_data,
+        scale_features,
+    )
 
 
 @app.cell
-def _(data_control, pymc_model):
-    pymc_model(data_control)
+def _(
+    analyze_trace,
+    build_and_run_model,
+    compute_r_squared,
+    data_delib,
+    make_predictor,
+    prepare_model_data,
+    preprocess_data,
+    scale_features,
+):
+    def bayesian_analysis(data):
+        data_cleaned = preprocess_data(data)
+        grouped = prepare_model_data(data_cleaned)
+        X_scaled, y, scaler = scale_features(grouped)
+        trace = build_and_run_model(X_scaled, y)
+        analyze_trace(trace)
+        compute_r_squared(trace, X_scaled, y)
+        predict_fn = make_predictor(trace, scaler)
+        pred = predict_fn(1.0, 12, 5, 0)
+
+    bayesian_analysis(data_delib)
+    return (bayesian_analysis,)
+
+
+@app.cell
+def _(bayesian_analysis, data_control):
+    bayesian_analysis(data_control)
     return
 
 

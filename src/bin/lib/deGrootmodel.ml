@@ -7,10 +7,25 @@ type rangeParameterFloat = { start : float; stop : float; step : float }
 type rangeParameterInt = { istart : int; istop : int; istep : int }
 [@@deriving of_yaml]
 
+type rangeParameterDiscrete = string list [@@deriving of_yaml]
+
+type rangeParameter =
+  | RangeInt of rangeParameterInt
+  | RangeFloat of rangeParameterFloat
+  | RangeDiscrete of rangeParameterDiscrete
+
+let sample_range = function
+    | RangeInt x -> `Int (Random.int (x.istop + x.istart) - x.istart)
+    | RangeFloat x -> `Float (Random.float (x.stop +. x.start) -. x.start)
+    | RangeDiscrete x ->
+        `Method
+          (alternativeGenerator_of @@ List.nth x (Random.int (List.length x)))
+
 type config = {
   pre_data : Owl.Mat.mat;
   post_data : Owl.Mat.mat;
-  knowledge_data : Owl.Mat.mat option;
+  knowledge_data : Owl.Mat.mat;
+  knowledge_bool : bool;
   credibility_bool : bool;
   graph : GenericGraph.t;
   timesteps : float list;
@@ -26,13 +41,14 @@ type degroot_yaml = {
   data_loc : string;
   graph : string;
   condition : string;
-  cand_method : string list;
   n_trials : int;
+  cand_method : rangeParameterDiscrete;
   n_voters : rangeParameterInt;
   n_candidates : rangeParameterInt;
   timesteps : rangeParameterFloat;
   bias : rangeParameterFloat;
   eval : string;
+  random : bool;
   include_knowledge : bool;
   sparse : bool;
   credibility : bool;
@@ -63,6 +79,7 @@ let yaml_to_config_generator yaml_value =
             (List.map (fun x -> alternativeGenerator_of x) res.cand_method);
         ]
     in
+
     let all_params = all_params_int @ all_params_float @ all_params_method in
 
     let all_params_processed =
@@ -81,24 +98,35 @@ let yaml_to_config_generator yaml_value =
     in
 
     let raw_product =
-        List.fold_left
-          (fun acc lst ->
-            List.concat_map (fun x -> List.map (fun y -> y :: x) lst) acc)
-          [ [] ] all_params_processed
+        if res.random then
+          List.init res.n_trials (fun _ ->
+              [
+                `Bool (Random.bool ());
+                `Bool (Random.bool ());
+                sample_range (RangeInt res.n_voters) |> filter_odd;
+                sample_range (RangeInt res.n_candidates);
+                sample_range (RangeFloat res.bias);
+                sample_range (RangeDiscrete res.cand_method);
+              ])
+        else
+          List.fold_left
+            (fun acc lst ->
+              List.concat_map (fun x -> List.map (fun y -> y :: x) lst) acc)
+            [ [] ] all_params_processed
+          |> List.map (fun x ->
+                 [ `Bool res.include_knowledge; `Bool res.credibility ] @ x)
     in
 
-    ( ( res.file_out,
-        res.graph,
-        res.data_loc,
-        res.sparse,
-        res.condition,
-        res.credibility,
-        res.group,
-        res.n_trials,
-        (fun x -> arange x.start x.stop x.step) res.timesteps ),
+    ( res.file_out,
+      res.graph,
+      res.data_loc,
+      res.condition,
+      res.sparse,
+      res.group,
+      (if res.random then 1 else res.n_trials),
+      (fun x -> arange x.start x.stop x.step) res.timesteps,
       raw_product,
-      evals,
-      res.include_knowledge )
+      evals )
 
 let normalize_matrix adjacency_matrix =
     let row_sums = Owl.Mat.sum_cols adjacency_matrix in
@@ -261,14 +289,13 @@ let opinion_to_pref pref candidates =
         |> List.sort (fun (_, d1) (_, d2) -> compare d1 d2)
         |> List.map (fun tup -> [ fst tup ])
 
-let create_trust_matrix graph credibility_bool knowledge_data bias_factor =
+let create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
+    bias_factor =
     let trust_matrix = graph |> adjacency_matrix_from in
         trust_matrix |> fun m ->
         credibility_matrix m credibility_bool |> fun m ->
         let optional_mat =
-            match knowledge_data with
-            | None -> m
-            | Some knowledge -> Owl.Mat.(m * knowledge)
+            if knowledge_bool then Owl.Mat.(m * knowledge_data) else m
         in
 
         add_self_bias optional_mat bias_factor |> normalize_matrix
@@ -281,6 +308,7 @@ let deGroot config =
       pre_data;
       post_data;
       knowledge_data;
+      knowledge_bool;
       credibility_bool;
       graph;
       n_voters;
@@ -298,7 +326,8 @@ let deGroot config =
 
     (* First we create the proper trust matrix*)
     let trust_matrix =
-        create_trust_matrix graph credibility_bool knowledge_data bias_factor
+        create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
+          bias_factor
     in
 
     assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_matrix);
