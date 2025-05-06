@@ -161,10 +161,8 @@ let run_deGroot_experiment pre_data post_data credibility_bool knowledge_bool
     sparse =
     let group = string_of_int @@ Random.int 33 in
     let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
-
-    let indices =
-        if grouped then Owl.Mat.Owl.Stats.shuffle (Array.init max_idx Fun.id)
-    in
+    let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
+    let num_voters = if not grouped then num_voters else max_idx in
     let voter_indices = Array.sub indices 0 num_voters in
     let pre_data = Owl.Mat.rows pre_data voter_indices in
     let post_data = Owl.Mat.rows post_data voter_indices in
