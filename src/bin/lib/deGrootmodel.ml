@@ -15,8 +15,8 @@ type rangeParameter =
   | RangeDiscrete of rangeParameterDiscrete
 
 let sample_range = function
-    | RangeInt x -> `Int (Random.int (x.istop + x.istart) - x.istart)
-    | RangeFloat x -> `Float (Random.float (x.stop +. x.start) -. x.start)
+    | RangeInt x -> `Int (Random.int (x.istop - x.istart + 1) + x.istart)
+    | RangeFloat x -> `Float (Random.float (x.stop -. x.start) +. x.start)
     | RangeDiscrete x ->
         `Method
           (alternativeGenerator_of @@ List.nth x (Random.int (List.length x)))
@@ -117,6 +117,12 @@ let yaml_to_config_generator yaml_value =
                  [ `Bool res.include_knowledge; `Bool res.credibility ] @ x)
     in
 
+    (* List.iter
+       (function
+         | [ `Bool g; `Bool k; `Int nv; `Int nc; `Float b; _ ] ->
+             Printf.printf "Simluation params%b %b %d %d %f:\n" g k nv nc b
+         | _ -> print_endline "warning")
+       raw_product; *)
     ( res.file_out,
       res.graph,
       res.data_loc,
@@ -175,14 +181,14 @@ let credibility_matrix adjcency_matrix use_cred =
 let abs_diff_sum mat mat2 = Owl.Mat.(mat - mat2) |> Owl.Mat.abs |> Owl.Mat.sum'
 
 let apply_bijection matrix mapping =
-    let n, _ = Owl.Mat.shape matrix in
-    let out = Owl.Mat.empty n n in
+    let n, m = Owl.Mat.shape matrix in
+
+    let out = Owl.Mat.empty n m in
         for i = 0 to n - 1 do
-          for j = 0 to n - 1 do
-            let new_i = mapping i in
-            let new_j = mapping j in
-            let new_val = Owl.Mat.get matrix i j in
-                Owl.Mat.set out new_i new_j new_val
+          let new_i = mapping i in
+
+          for j = 0 to m - 1 do
+            Owl.Mat.get matrix i j |> Owl.Mat.set out new_i j
           done
         done;
         out

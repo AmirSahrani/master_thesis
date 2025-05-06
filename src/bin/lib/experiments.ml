@@ -156,19 +156,16 @@ let load_data loc limit_n cond group q =
     normailzed such that the sum of the weights of all incoming edges in a node
     is exactly 1. *)
 
-let run_deGroot_experiment pre_data post_data credibility_bool knowledge_bool
-    knowledge_data graph num_voters num_candidates times methd bias grouped
-    sparse =
-    let group = string_of_int @@ Random.int 33 in
+let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
+    ~knowledge_bool ~knowledge_scores ~graph ~num_voters ~num_candidates
+    ~timesteps ~methd ~bias ~grouped ~sparse =
     let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
     let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
     let num_voters = if not grouped then num_voters else max_idx in
     let voter_indices = Array.sub indices 0 num_voters in
     let pre_data = Owl.Mat.rows pre_data voter_indices in
     let post_data = Owl.Mat.rows post_data voter_indices in
-    let knowledge_data =
-        Owl.Mat.rows knowledge_data voter_indices |> Owl.Mat.transpose
-    in
+    let knowledge_data = Owl.Mat.rows knowledge_scores voter_indices in
     let out_graph = ties_sampling graph num_voters in
     let voter_mapping =
         if sparse then
@@ -185,6 +182,10 @@ let run_deGroot_experiment pre_data post_data credibility_bool knowledge_bool
         else List.init num_voters Fun.id
     in
     let b = bijection (Array.of_list voter_mapping) in
+
+    let knowledge_data =
+        apply_bijection knowledge_data b |> Owl.Mat.transpose
+    in
     let pre_data = apply_bijection pre_data b in
     let post_data = apply_bijection post_data b in
 
@@ -199,7 +200,7 @@ let run_deGroot_experiment pre_data post_data credibility_bool knowledge_bool
           graph = out_graph;
           n_voters = num_voters;
           n_candidates = num_candidates;
-          timesteps = times;
+          timesteps;
           cand_method = methd;
           bias_factor = bias;
         }
@@ -209,32 +210,34 @@ let run_deGroot_experiment pre_data post_data credibility_bool knowledge_bool
 type job = {
   credibility_bool : bool;
   knowledge_bool : bool;
-  voters : int;
-  candidates : int;
+  num_voters : int;
+  num_candidates : int;
   bias : float;
-  meth : alternativeGenerators;
+  methd : alternativeGenerators;
   trial_id : int;
 }
 
-let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps_range
-    ~evals ~grouped ~sparse (job : job) : string list list =
+let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps ~evals
+    ~grouped ~sparse (job : job) : string list list =
     (* unwrap the job *)
     let {
       credibility_bool;
       knowledge_bool;
-      voters;
-      candidates;
+      num_voters;
+      num_candidates;
       bias;
-      meth;
+      methd;
       trial_id;
     } =
         job
     in
-    let voters = if not grouped then voters else Owl.Mat.row_num pre_data in
+    let num_voters =
+        if not grouped then num_voters else Owl.Mat.row_num pre_data
+    in
     let out =
-        run_deGroot_experiment pre_data post_data credibility_bool
-          knowledge_bool knowledge_scores graph voters candidates
-          timesteps_range meth bias grouped sparse
+        run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
+          ~knowledge_bool ~knowledge_scores ~graph ~num_voters ~num_candidates
+          ~timesteps ~methd ~bias ~grouped ~sparse
     in
         List.mapi
           (fun j
@@ -242,13 +245,15 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps_range
                  (original_prof, sim_prof, true_prof, trust, trust_start) ) ->
             [
               string_of_float bias;
-              string_of_sampler meth;
-              string_of_int voters;
-              string_of_int candidates;
-              string_of_float (List.nth timesteps_range j);
+              string_of_sampler methd;
+              string_of_int num_voters;
+              string_of_int num_candidates;
+              string_of_float (List.nth timesteps j);
               string_of_int trial_id;
-              string_of_int trial_id;
-              string_of_int trial_id;
+              string_of_bool sparse;
+              string_of_bool grouped;
+              string_of_bool credibility_bool;
+              string_of_bool knowledge_bool;
             ]
             @ List.map
                 (fun eval ->
@@ -257,7 +262,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps_range
           out
 
 let run_parallel_simulations product pre_data post_data knowledge_scores graph
-    timesteps_range n_trials evals grouped sparse =
+    timesteps n_trials evals grouped sparse =
     let jobs =
         product
         |> List.concat_map (function
@@ -273,10 +278,10 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
                      {
                        credibility_bool = cred;
                        knowledge_bool = knowledge;
-                       voters = v;
-                       candidates = c;
+                       num_voters = v;
+                       num_candidates = c;
                        bias = b;
-                       meth = m;
+                       methd = m;
                        trial_id = t + 1;
                      })
              | _ -> failwith "bad product")
@@ -300,8 +305,8 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
     (* 3. Worker: plain function over a single job *)
     let worker job =
         let result =
-            run_one_job ~pre_data ~post_data ~knowledge_scores ~graph
-              ~timesteps_range ~evals ~grouped ~sparse job
+            run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps
+              ~evals ~grouped ~sparse job
         in
             update_progress ();
             result
@@ -369,8 +374,8 @@ let deGroot_experiment () =
           "trial";
           "sparse";
           "grouped";
-          "knowledge";
           "credibility";
+          "knowledge";
         ]
         @ titles;
       ];

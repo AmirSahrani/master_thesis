@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -182,8 +182,8 @@ def _(compute_proportion, mlines, pd, plt):
 
 @app.cell
 def _(np, pd):
-    data_delib = pd.read_csv("results/degroot_deliberation_100.csv")
-    data_control= pd.read_csv("results/degroot_control_100.csv", index_col=False)
+    data_delib = pd.read_csv("results/degroot_deliberation_100_random.csv")
+    data_control= pd.read_csv("results/degroot_deliberation_100_control_random.csv", index_col=False)
 
     prox_cols = ["proximity_to_cand_sp_" + x for x in ["start", "end", "true"]]
     prox_voter_cols = ["proximity_to_voter_sp_" + x for x in ["start", "end", "true"]]
@@ -198,8 +198,14 @@ def _(np, pd):
         data_control[c] = data_control[c] /data_control["n_voters"]
         data_delib[c] = data_delib[c] /data_delib["n_voters"]
 
-    print(data_delib)
+
     return c, data_control, data_delib, prox_cols, prox_voter_cols
+
+
+@app.cell
+def _(data_control):
+    data_control.describe()
+    return
 
 
 @app.cell
@@ -883,7 +889,7 @@ def _(StandardScaler, az, np, plt, pm):
         y = grouped_data['total_absdiff'].values
         X_scaled = scaler.fit_transform(X)
         return X_scaled, y, scaler
-    
+
     def build_and_run_model(X_scaled, y):
         with pm.Model() as model:
             intercept = pm.Normal('intercept', mu=0, sigma=1)
@@ -961,7 +967,7 @@ def _(StandardScaler, az, np, plt, pm):
         r_squared = 1 - (ss_residual / ss_total)
         print(f"R-squared: {r_squared:.4f}")
         return r_squared
-    
+
     def make_predictor(trace, scaler):
         def predict_absdiff(bias, n_voters, n_candidates, sampler_numeric):
             X_new = np.array([[bias, n_voters, n_candidates, sampler_numeric]])
@@ -976,8 +982,6 @@ def _(StandardScaler, az, np, plt, pm):
                     trace.posterior['beta_bias_sampler'].mean().item() * X_scaled[0, 0] * X_scaled[0, 3])
             return pred
         return predict_absdiff
-
-
     return (
         analyze_trace,
         build_and_run_model,

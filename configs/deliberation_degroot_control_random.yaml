@@ -1,0 +1,28 @@
+file_out: "results/degroot_deliberation_100_control_random.csv"
+data_loc: "data/a1r.db"
+graph: "graphs/soc-astro.edges"
+n_trials: 1000
+random: true
+n_voters: 
+  istart: 31
+  istop: 81
+  istep: 2
+n_candidates: 
+  istart: 3
+  istop: 7
+  istep: 1
+condition: "0"
+timesteps: 
+  start: 1.0
+  stop: 151.0
+  step: 25.0
+bias:
+  start: 0.1
+  stop: 1.5
+  step: 0.1
+cand_method: ["SampleVoters", "Voter"]
+eval: degroot
+group: False
+credibility: false
+sparse: True
+include_knowledge: true
