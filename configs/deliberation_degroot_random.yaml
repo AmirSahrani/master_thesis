@@ -1,7 +1,7 @@
 file_out: "results/degroot_deliberation_100_random.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
-n_trials: 1000
+n_trials: 1024
 random: true
 n_voters: 
   istart: 9

@@ -60,7 +60,7 @@ def _(np, plt):
         data[col_end] = data[col_end].astype(float)
 
         # Group by bias
-        aggregated_start = data.groupby(group)[col_start].mean()
+        aggregated_start = data(group)[col_start].mean()
         aggregated_end = data.groupby(group)[col_end].mean()
 
         # Compute proportion (avoid division by zero)
@@ -101,9 +101,9 @@ def _(np, plt):
 
 
 @app.cell
-def _(compute_proportion, mlines, pd, plt):
-    def plot(df, x, y, ylabel):
-        fig, ax = plt.subplots()
+def _(compute_proportion, mlines, np, pd, plt):
+    def plot(df, x, y, ylabel, file_prefix):
+        fig, ax = plt.subplots(figsize=(12,8))
 
         # Define markers for each sampler (cycling if needed)
         marker_styles = ["o", "X", "^", "D", "v", "P", "X", "*"]
@@ -113,26 +113,30 @@ def _(compute_proportion, mlines, pd, plt):
         }
 
         # Define colors for 'Type' — consistent ordering
-        type_colors = {"Start": "#A93C93", "End": "#008B72", "Final": "#613F99"}
-
+        type_colors = {"Start": "#A93C93", "End": "#008B72", "Final": "#613F99", "True": "#613F99"}
+    
         for sampler in df["cand_sampler"].unique():
             for typ in df["Type"].unique():
                 subset = df[(df["cand_sampler"] == sampler) & (df["Type"] == typ)]
+                bins = np.linspace(subset[x].min(), subset[x].max(), 10)
+                digitized = np.digitize(subset[x], bins)
+                bin_means = [subset[y][digitized == i].mean() for i in range(0, len(bins))]
                 if not subset.empty:
                     ax.plot(
-                        subset[x],
-                        subset[y],
+                        bins,
+                        bin_means,
                         label=f"{typ} / {sampler}",
                         color=type_colors.get(typ, "black"),
                         marker=sampler_markers[sampler],
                         markersize=10,
                         linestyle="--",
+                        linewidth=1,
                         alpha=0.4,
                     )
 
-        ax.set_xlabel(x)
-        ax.set_ylabel(ylabel)
-        ax.set_title(ylabel)
+        ax.set_xlabel(x.capitalize())
+        ax.set_ylabel(ylabel.capitalize())
+        # ax.set_title(ylabel.capitalize())
         ax.grid(True)
         type_handles = [
             mlines.Line2D(
@@ -154,14 +158,18 @@ def _(compute_proportion, mlines, pd, plt):
             )
             for sampler, marker in sampler_markers.items()
         ]
-
-        # Combine and show
+    
         legend1 = ax.legend(
-            handles=type_handles + sampler_handles, title="Type (color),\nSampler (marker)", loc="upper left"
+            handles=type_handles + sampler_handles,
+            title="Type (color),\nSampler (marker)",
+            loc="upper left",
+            bbox_to_anchor=(1.05, 1.0),  # Outside the axes, to the right
+            borderaxespad=0.
         )
 
-        ax.add_artist(legend1)  # Keep both legends visible
+        # ax.add_artist(legend1) 
         plt.tight_layout()
+        plt.savefig(f"figures/{file_prefix}_{ylabel}")
         plt.show()
 
     def compute_and_merge_proportions(
@@ -197,14 +205,12 @@ def _(np, pd):
         data_delib[c] = data_delib[c].replace(-1, np.nan)
         data_control[c] = data_control[c] /data_control["n_voters"]
         data_delib[c] = data_delib[c] /data_delib["n_voters"]
-
-
     return c, data_control, data_delib, prox_cols, prox_voter_cols
 
 
 @app.cell
-def _(data_control):
-    data_control.describe()
+def _(data_delib):
+    data_delib.describe()
     return
 
 
@@ -237,89 +243,93 @@ def _(data_delib):
 
 
 @app.cell
-def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
-    # data_delib_51_5 = data_delib.loc[(data_delib[voter_str] == 11) & (data_delib[cand_str] == 5) & (data_delib[time_str] == 51.)].copy()
-    data_delib_51_5 = data_delib
-
-    cyclic_51_5 = compute_and_merge_proportions(
-        data_delib_51_5,
-        "cyclic_start",
-        "cyclic_end",
-        "cyclic_true",
-        "cyclic_proportion",
-        ["bias", "cand_sampler"],
-    )
+def _(data_control, data_delib, time_str):
+    data_delib_151 = data_delib.loc[data_delib[time_str] == 151].copy()
+    data_control_151 = data_control.loc[data_control[time_str] == 151].copy()
+    return data_control_151, data_delib_151
 
 
-    condorcet_51_5 = compute_and_merge_proportions(
-        data_delib_51_5,
-        "condorcet_start",
-        "condorcet_end",
-        "condorcet_true",
-        "condorcet_proportion",
-        ["bias", "cand_sampler"],
-    )
+@app.cell
+def _(
+    compute_and_merge_proportions,
+    compute_average,
+    data_control,
+    data_delib,
+    pd,
+    plot,
+    time_str,
+):
+    def generate_general_graphs(data, file_prefix):
+    
+        cyclic = compute_and_merge_proportions(
+            data_delib,
+            "cyclic_start",
+            "cyclic_end",
+            "cyclic_true",
+            "cyclic_proportion",
+            ["bias", "cand_sampler"],
+        )
+    
+    
+        condorcet = compute_and_merge_proportions(
+            data_delib,
+            "condorcet_start",
+            "condorcet_end",
+            "condorcet_true",
+            "condorcet_proportion",
+            ["bias", "cand_sampler"],
+        )
+    
+        proximity_to_sp_end = compute_average(
+            data_delib, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+        )
+        proximity_to_sp_true = compute_average(
+            data_delib, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+        )
+        proximity_to_sp_end["Type"] = "End"
+        proximity_to_sp_true["Type"] = "True"
+        df_combined = pd.concat([proximity_to_sp_end, proximity_to_sp_true])
+        proximity_to_sp = df_combined.rename(
+            columns={"proximity_to_start": "proximity_to_cand_sp"}
+        )
+    
+        proximity_to_voter_sp_end = compute_average(
+            data_delib, "proximity_to_voter_sp_end", "proximity_to_voter_sp", ["bias", "cand_sampler"]
+        )
+        proximity_to_voter_sp_true = compute_average(
+            data_delib, "proximity_to_voter_sp_true", "proximity_to_voter_sp", ["bias", "cand_sampler"]
+        )
+        proximity_to_voter_sp_end["Type"] = "End"
+        proximity_to_voter_sp_true["Type"] = "True"
+        df_combined = pd.concat([proximity_to_voter_sp_end, proximity_to_voter_sp_true])
+        proximity_to_voter_sp = df_combined.rename(
+            columns={"proximity_to_start": "proximity_to_voter_sp"}
+        )
+    
+        unique_profiles_end = compute_average(
+            data_delib, "unique_end", "unique", ["bias", "cand_sampler"]
+        )
+        unique_profiles_true = compute_average(
+            data_delib, "unique_true", "unique", ["bias", "cand_sampler"]
+        )
+        unique_profiles_end["Type"] = "End"
+        unique_profiles_true["Type"] = "True"
+        df_combined = pd.concat([unique_profiles_end, unique_profiles_true])
+        unique_profiles = df_combined.rename(
+            columns={"unique_start": "unique_profiles"}
+        )
+    
+        # === Plotting all variants in one figure ===
+        plot(cyclic, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles", file_prefix)
+        plot(proximity_to_sp, "bias", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles", file_prefix)
+        plot(proximity_to_voter_sp, "bias", "proximity_to_voter_sp", "Mean voter proximity to single peaked Profiles", file_prefix)
+        plot(condorcet, "bias", "condorcet_proportion", "Mean number of Condorcet winners", file_prefix)
+        plot(unique_profiles, "bias", "unique", r"\#Unique Preferences", file_prefix)
 
-    proximity_to_sp_end_51_5 = compute_average(
-        data_delib_51_5, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["bias", "cand_sampler"]
-    )
-    proximity_to_sp_true_51_5 = compute_average(
-        data_delib_51_5, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["bias", "cand_sampler"]
-    )
-    proximity_to_sp_end_51_5["Type"] = "End"
-    proximity_to_sp_true_51_5["Type"] = "True"
-    df_combined_51_5 = pd.concat([proximity_to_sp_end_51_5, proximity_to_sp_true_51_5])
-    proximity_to_sp_51_5 = df_combined_51_5.rename(
-        columns={"proximity_to_start": "proximity_to_cand_sp"}
-    )
 
-    proximity_to_voter_sp_end_51_5 = compute_average(
-        data_delib_51_5, "proximity_to_voter_sp_end", "proximity_to_voter_sp", ["bias", "cand_sampler"]
-    )
-    proximity_to_voter_sp_true_51_5 = compute_average(
-        data_delib_51_5, "proximity_to_voter_sp_true", "proximity_to_voter_sp", ["bias", "cand_sampler"]
-    )
-    proximity_to_voter_sp_end_51_5["Type"] = "End"
-    proximity_to_voter_sp_true_51_5["Type"] = "True"
-    df_combined_51_5 = pd.concat([proximity_to_voter_sp_end_51_5, proximity_to_voter_sp_true_51_5])
-    proximity_to_voter_sp_51_5 = df_combined_51_5.rename(
-        columns={"proximity_to_start": "proximity_to_voter_sp"}
-    )
-
-    unique_profiles_end_51_5 = compute_average(
-        data_delib_51_5, "unique_end", "unique", ["bias", "cand_sampler"]
-    )
-    unique_profiles_true_51_5 = compute_average(
-        data_delib_51_5, "unique_true", "unique", ["bias", "cand_sampler"]
-    )
-    unique_profiles_end_51_5["Type"] = "End"
-    unique_profiles_true_51_5["Type"] = "True"
-    df_combined_51_5 = pd.concat([unique_profiles_end_51_5, unique_profiles_true_51_5])
-    unique_profiles_51_5 = df_combined_51_5.rename(
-        columns={"unique_start": "unique_profiles"}
-    )
-
-    # === Plotting all variants in one figure ===
-    plot(cyclic_51_5, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles")
-    plot(proximity_to_sp_51_5, "bias", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles")
-    plot(proximity_to_voter_sp_51_5, "bias", "proximity_to_voter_sp", "Mean voter proximity to single peaked Profiles")
-    plot(condorcet_51_5, "bias", "condorcet_proportion", "Mean number of Condorcet winners")
-    plot(unique_profiles_51_5, "bias", "unique", r"\#Unique Preferences")
-    return (
-        condorcet_51_5,
-        cyclic_51_5,
-        data_delib_51_5,
-        df_combined_51_5,
-        proximity_to_sp_51_5,
-        proximity_to_sp_end_51_5,
-        proximity_to_sp_true_51_5,
-        proximity_to_voter_sp_51_5,
-        proximity_to_voter_sp_end_51_5,
-        proximity_to_voter_sp_true_51_5,
-        unique_profiles_51_5,
-        unique_profiles_end_51_5,
-        unique_profiles_true_51_5,
-    )
+    generate_general_graphs(data_delib.loc[data_delib[time_str] == 151], "delib")
+    generate_general_graphs(data_control.loc[data_control[time_str] == 151], "control")
+    return (generate_general_graphs,)
 
 
 @app.cell(hide_code=True)
@@ -374,7 +384,7 @@ def _(cand_str, data_control, mo, time_str, voter_str):
     return cand_dropdown_c, controls_control, time_dropdown_c, voter_dropdown_c
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(alt):
     def create_altair_chart(df, x_col, y_col, title):
         # Define color scale for different Type values
@@ -424,7 +434,7 @@ def _(alt):
     return (create_altair_chart,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(
     cand_dropdown,
     cand_str,
@@ -647,7 +657,7 @@ def _(
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -655,25 +665,6 @@ def _(mo):
         We now proceed to analyze fit of this model compared to the `final` data. Here `final` is the data of the voters in the second time measurement.
         """
     )
-    return
-
-
-@app.cell
-def _(bias_str, data_delib, measurements, mo, time_str):
-    def describe_data (data):
-        bool_cols = [x for x in data.columns if data[x].dtype == bool]
-        for c in bool_cols:
-            data[c] = data[c].astype(int)
-        grouped_time= data.groupby([time_str, bias_str])[measurements].agg(["mean", "sum"])
-        return mo.ui.dataframe(grouped_time, page_size=24)
-
-    describe_data(data_delib)
-    return (describe_data,)
-
-
-@app.cell
-def _(data_control, describe_data):
-    describe_data(data_control)
     return
 
 
@@ -696,7 +687,6 @@ def _(data_control, data_delib):
 
     summary_delib = diff_data_on_metrics(data_delib)
     summary_control = diff_data_on_metrics(data_control)
-    summary_delib
     return diff_data_on_metrics, normalize, summary_control, summary_delib
 
 
@@ -712,7 +702,7 @@ def _(bias_str, plt, summary_control, summary_delib):
             labels=lab,
             title="Time step",
             loc="upper right",
-            bbox_to_anchor=(1.24, 0.8),  # center it under the plot
+            bbox_to_anchor=(1.24, 1),  # center it under the plot
             ncol= 1,
         )
 
@@ -723,16 +713,57 @@ def _(bias_str, plt, summary_control, summary_delib):
 
 
 @app.cell
-def _(summary_control, summary_delib):
-    for i in range (3,8):
-        sub_s = summary_control.loc[summary_control["n_candidates"] == i].reset_index()
-        print(sub_s.iloc[sub_s["mean"].idxmin()].to_markdown())
+def _(data_delib_151, np, pd):
+    def bin_biases(data):
+        bias_bins = np.linspace(data["bias"].min(), data["bias"].max(), 15)
+        bins_index = np.digitize(data["bias"], bias_bins)
+        data["binned_bias"] = bias_bins[bins_index-1]
+        return data
 
-    print("----------------------")
-    for i in range (3,8,2):
-        sub_d = summary_delib.loc[summary_delib["n_candidates"] == i].reset_index()
-        print(sub_d.iloc[sub_d["mean"].idxmin()].to_markdown())
-    return i, sub_d, sub_s
+    def find_min_bias(df, metric_col):
+        # Group by bias and calculate mean of the metric
+        means = df.groupby(['binned_bias', 'knowledge'])[metric_col].mean()
+        # Find the bias value with the minimum mean metric value
+        return means.idxmin() if not means.empty else np.nan
+ 
+
+    def pivot_of_minimum_values(data, metrics):
+        # Create an empty DataFrame to store results
+        result_df = pd.DataFrame()
+    
+        # For each combination of cand_sampler and knowledge
+        for (sampler), group in data.groupby(['cand_sampler']):
+            row_data = {'cand_sampler': sampler}
+        
+            # For each metric, find the bias that minimizes it
+            for metric in metrics:
+                min_bias = find_min_bias(group, metric)
+                row_data[f'{metric.replace("_", " ")}'] = min_bias
+        
+            # Append to results
+            result_df = pd.concat([result_df, pd.DataFrame([row_data])], ignore_index=True)
+    
+        # Set the index for the final table
+        result_df = result_df.set_index(['cand_sampler'])
+    
+        # You can reshape it if you want a different format
+        # This puts metrics as columns and shows the optimal bias value
+        return result_df
+
+    m = ['proximity_to_voter_sp_absdiff', 'proximity_to_cand_sp_absdiff', 'total_absdiff']
+    pivot_of_minimum_values(bin_biases(data_delib_151), m)
+
+
+    
+
+    return bin_biases, find_min_bias, m, pivot_of_minimum_values
+
+
+@app.cell
+def _(bin_biases, data_control_151, m, pivot_of_minimum_values):
+
+    pivot_of_minimum_values(bin_biases(data_control_151), m)
+    return
 
 
 @app.cell(hide_code=True)
@@ -750,98 +781,91 @@ def _(mo):
 
 
 @app.cell
-def _(summary_delib):
-    # Step 1: Filter for time_steps == 151
-    df_151 = summary_delib[summary_delib["time_steps"] == 151]
-
-    # Step 2: For each group, find the row with the minimum 'mean'
-    idx_min = df_151.groupby(
-        ["n_candidates", "n_voters", "cand_sampler"]
-    )["mean"].idxmin()
-
-    # Step 3: Use the indices to get the full rows
-    min_rows = df_151.loc[idx_min].copy()
-
-    # Step 4: Pivot the dataframe so each 'cand_sampler' becomes columns for both 'mean' and 'bias'
-    pivoted = min_rows.pivot(
-        index=["n_candidates", "n_voters"],
-        columns="cand_sampler",
-        values=["mean", "bias"]
-    ).reset_index()
-
-    # Optional: flatten MultiIndex columns
-    pivoted.columns = ['_'.join(col).strip('_') for col in pivoted.columns.values]
-
-    print(pivoted.head(10))
-    return df_151, idx_min, min_rows, pivoted
-
-
-@app.cell
 def _(pd):
-    convergence_data = pd.read_csv("results/degroot_deliberation_100_convergence_groups.csv")
-    convergence_data["entrywise_distance"] = convergence_data["entrywise_distance"].apply(
-        lambda x: x if x != 0  else None
+
+    convergence_data_cred = pd.read_csv("results/degroot_deliberation_100_convergence_credibility.csv")
+    convergence_data_know = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge.csv")
+    convergence_data_cred_group = pd.read_csv("results/degroot_deliberation_100_convergence_credibility_grouped.csv")
+    convergence_data_know_group = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge_grouped.csv")
+    return (
+        convergence_data_cred,
+        convergence_data_cred_group,
+        convergence_data_know,
+        convergence_data_know_group,
     )
-    convergence_data = convergence_data.bfill()
-    convergence_data
-    return (convergence_data,)
 
 
 @app.cell
-def _(cand_str, convergence_data, sampler_str, time_str):
-    grouped_by_cand_and_sampler = convergence_data.groupby([cand_str, sampler_str, time_str]).agg("mean")
-    print(grouped_by_cand_and_sampler)
-    return (grouped_by_cand_and_sampler,)
-
-
-@app.cell
-def _(grouped_by_cand_and_sampler, np, plt):
-    df_reset = grouped_by_cand_and_sampler.reset_index()
-
-    # Unique values for styling
-    candidate_counts = sorted(df_reset['n_candidates'].unique())
-    sampler_styles = {'Sample': 'X', 'Voter': 's'}
-    colors = plt.cm.viridis_r(np.linspace(0, 1, len(candidate_counts)))
+def _(
+    cand_str,
+    convergence_data_cred,
+    convergence_data_cred_group,
+    convergence_data_know,
+    convergence_data_know_group,
+    np,
+    plt,
+    sampler_str,
+    time_str,
+):
 
     # Begin plotting
-    fig, ax = plt.subplots(3, 1, figsize=(15, 15), sharex=True)
+    fig, ax = plt.subplots(3, 4, figsize=(20, 15), sharex=True)
+    ax = ax.ravel()
+    for i, convergence_data in enumerate([convergence_data_cred,  convergence_data_know,convergence_data_cred_group,  convergence_data_know_group]):
 
-    # Plot each combination
-    for idx, n in enumerate(candidate_counts):
-        for sampler, marker in sampler_styles.items():
-            subset = df_reset[(df_reset['n_candidates'] == n) & (df_reset['cand_sampler'] == sampler)]
-            if not subset.empty:
-                ax[0].plot(subset['time_steps'], subset['ks_distance_true'], 
-                           label=f'{n} candidates, {sampler}', 
-                           marker=marker, color=colors[idx], linestyle='-')
-                ax[1].plot(subset['time_steps'], subset['cs_distance_true'], 
-                           label=f'{n} candidates, {sampler}', 
-                           marker=marker, color=colors[idx], linestyle='-')
-                ax[2].plot(subset['time_steps'], subset['entrywise_distance'], 
-                           label=f'{n} candidates, {sampler}', 
-                           marker=marker, color=colors[idx], linestyle='-')
-
+        grouped_by_cand_and_sampler = convergence_data.groupby([cand_str, sampler_str, time_str]).agg("mean")
+        df_reset = grouped_by_cand_and_sampler.reset_index()
+        df_reset = df_reset.loc[df_reset[time_str] < 27]
+        candidate_counts = sorted(df_reset['n_candidates'].unique())
+        # Unique values for styling
+        sampler_styles = {'Sample': 'X', 'Voter': 's'}
+        colors = plt.cm.viridis_r(np.linspace(0, 1, len(candidate_counts)))
+    
+        # Plot each combination
+        for idx, n in enumerate(candidate_counts):
+            for sampler, marker in sampler_styles.items():
+                subset = df_reset[(df_reset['n_candidates'] == n) & (df_reset['cand_sampler'] == sampler)]
+                if not subset.empty:
+                    ax[0+i].plot(subset['time_steps'], subset['ks_distance_true'], 
+                               label=f'{n} candidates, {sampler}', 
+                               marker=marker, color=colors[idx], linestyle='-')
+                    ax[4+i].plot(subset['time_steps'], subset['cs_distance_true'], 
+                               label=f'{n} candidates, {sampler}', 
+                               marker=marker, color=colors[idx], linestyle='-')
+                    ax[8+i].plot(subset['time_steps'], subset['entrywise_distance'], 
+                               label=f'{n} candidates, {sampler}', 
+                               marker=marker, color=colors[idx], linestyle='-')
+    ax[0].set_title('Uniform')
+    ax[1].set_title('Knowledge')
+    ax[2].set_title('Uniform Original Groups')
+    ax[3].set_title('Knowledge Original Groups')
+    
     # Labels and titles
     ax[0].set_ylabel('KS Distance')
-    ax[1].set_ylabel('CS Distance')
-    ax[1].set_xlabel('Time Steps')
-    ax[2].set_ylabel('Entrywise distance')
-    ax[2].set_xlabel('Time Steps')
+    ax[4].set_ylabel('CS Distance')
+    ax[8].set_ylabel('Entrywise distance')
+    ax[8].set_xlabel('Time Steps')
+    ax[9].set_xlabel('Time Steps')
+    ax[10].set_xlabel('Time Steps')
+    ax[11].set_xlabel('Time Steps')
 
     # Legend
     handles, labels = ax[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc='lower center', ncol=3,
-               bbox_to_anchor=(0.51, -0.05))
+               bbox_to_anchor=(0.51, -0.15))
 
-    # plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
     return (
         ax,
         candidate_counts,
         colors,
+        convergence_data,
         df_reset,
         fig,
+        grouped_by_cand_and_sampler,
         handles,
+        i,
         idx,
         labels,
         marker,
@@ -852,7 +876,7 @@ def _(grouped_by_cand_and_sampler, np, plt):
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -866,161 +890,6 @@ def _(mo):
 
 @app.cell
 def _():
-    return
-
-
-@app.cell
-def _(StandardScaler, az, np, plt, pm):
-    def preprocess_data(data):
-        data = data.copy()
-        data['cand_sampler_numeric'] = data['cand_sampler'].map({'Sample': 0, 'Voter': 1})
-        return data
-
-    def prepare_model_data(data):
-        model_data = data[['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric', 'total_absdiff']].copy()
-        grouped_data = model_data.groupby(
-            ['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric']
-        )['total_absdiff'].mean().reset_index()
-        return grouped_data
-
-    def scale_features(grouped_data):
-        scaler = StandardScaler()
-        X = grouped_data[['bias', 'n_voters', 'n_candidates', 'cand_sampler_numeric']].values
-        y = grouped_data['total_absdiff'].values
-        X_scaled = scaler.fit_transform(X)
-        return X_scaled, y, scaler
-
-    def build_and_run_model(X_scaled, y):
-        with pm.Model() as model:
-            intercept = pm.Normal('intercept', mu=0, sigma=1)
-            beta_bias = pm.TruncatedNormal('beta_bias', lower=0, upper=3, mu=0, sigma=1)
-            beta_n_voters = pm.Normal('beta_n_voters', mu=0, sigma=1)
-            beta_n_candidates = pm.Normal('beta_n_candidates', mu=0, sigma=1)
-            beta_sampler = pm.Bernoulli('beta_sampler', p=0.5)
-
-            beta_bias_voters = pm.Normal('beta_bias_voters', mu=0, sigma=0.5)
-            beta_bias_candidates = pm.Normal('beta_bias_candidates', mu=0, sigma=0.5)
-            beta_bias_sampler = pm.Normal('beta_bias_sampler', mu=0, sigma=0.5)
-
-            sigma = pm.HalfNormal('sigma', sigma=1)
-
-            mu = (
-                intercept +
-                beta_bias * X_scaled[:, 0] +
-                beta_n_voters * X_scaled[:, 1] +
-                beta_n_candidates * X_scaled[:, 2] +
-                beta_sampler * X_scaled[:, 3] +
-                beta_bias_voters * X_scaled[:, 0] * X_scaled[:, 1] +
-                beta_bias_candidates * X_scaled[:, 0] * X_scaled[:, 2] +
-                beta_bias_sampler * X_scaled[:, 0] * X_scaled[:, 3]
-            )
-
-            likelihood = pm.Normal('likelihood', mu=mu, sigma=sigma, observed=y)
-
-            trace = pm.sample(2000, tune=1000, return_inferencedata=True)
-
-        return trace
-
-
-    def analyze_trace(trace):
-        rc_custom = {
-            "font.size": 20,
-            "figure.figsize": [10, 8],
-            "axes.linewidth": 1,
-            "grid.linewidth": 1,
-            "grid.alpha": 0.3,
-            "image.cmap": "cividis",
-            "text.usetex": True,
-            "font.family": "Charter",
-        }
-
-        with plt.rc_context(rc_custom):
-            summary = az.summary(trace)
-
-            az.plot_trace(trace, var_names=['beta_bias', 'beta_n_voters', 'beta_n_candidates', 'beta_sampler'])
-            plt.tight_layout()
-            plt.show()
-
-
-            az.plot_pair(trace, figsize=(10, 10), kind="hexbin", var_names=['beta_bias', 'beta_n_voters', 'beta_n_candidates', 'beta_sampler'])
-            plt.show()
-            plt.tight_layout()
-            plt.savefig('figures/parameter_posteriors.pdf')
-            print("Model parameter summary:")
-            print(summary)
-
-        return summary
-
-    def compute_r_squared(trace, X_scaled, y):
-        y_pred = trace.posterior['intercept'].mean().item()
-        for i, param in enumerate(['beta_bias', 'beta_n_voters', 'beta_n_candidates', 'beta_sampler',
-                                   'beta_bias_voters', 'beta_bias_candidates', 'beta_bias_sampler']):
-            if i < 4:
-                y_pred += trace.posterior[param].mean().item() * X_scaled[:, i % 4]
-            else:
-                idx1 = 0
-                idx2 = i - 3
-                y_pred += trace.posterior[param].mean().item() * X_scaled[:, idx1] * X_scaled[:, idx2]
-
-        ss_total = np.sum((y - np.mean(y))**2)
-        ss_residual = np.sum((y - y_pred)**2)
-        r_squared = 1 - (ss_residual / ss_total)
-        print(f"R-squared: {r_squared:.4f}")
-        return r_squared
-
-    def make_predictor(trace, scaler):
-        def predict_absdiff(bias, n_voters, n_candidates, sampler_numeric):
-            X_new = np.array([[bias, n_voters, n_candidates, sampler_numeric]])
-            X_scaled = scaler.transform(X_new)
-            pred = (trace.posterior['intercept'].mean().item() +
-                    trace.posterior['beta_bias'].mean().item() * X_scaled[0, 0] +
-                    trace.posterior['beta_n_voters'].mean().item() * X_scaled[0, 1] +
-                    trace.posterior['beta_n_candidates'].mean().item() * X_scaled[0, 2] +
-                    trace.posterior['beta_sampler'].mean().item() * X_scaled[0, 3] +
-                    trace.posterior['beta_bias_voters'].mean().item() * X_scaled[0, 0] * X_scaled[0, 1] +
-                    trace.posterior['beta_bias_candidates'].mean().item() * X_scaled[0, 0] * X_scaled[0, 2] +
-                    trace.posterior['beta_bias_sampler'].mean().item() * X_scaled[0, 0] * X_scaled[0, 3])
-            return pred
-        return predict_absdiff
-    return (
-        analyze_trace,
-        build_and_run_model,
-        compute_r_squared,
-        make_predictor,
-        prepare_model_data,
-        preprocess_data,
-        scale_features,
-    )
-
-
-@app.cell
-def _(
-    analyze_trace,
-    build_and_run_model,
-    compute_r_squared,
-    data_delib,
-    make_predictor,
-    prepare_model_data,
-    preprocess_data,
-    scale_features,
-):
-    def bayesian_analysis(data):
-        data_cleaned = preprocess_data(data)
-        grouped = prepare_model_data(data_cleaned)
-        X_scaled, y, scaler = scale_features(grouped)
-        trace = build_and_run_model(X_scaled, y)
-        analyze_trace(trace)
-        compute_r_squared(trace, X_scaled, y)
-        predict_fn = make_predictor(trace, scaler)
-        pred = predict_fn(1.0, 12, 5, 0)
-
-    bayesian_analysis(data_delib)
-    return (bayesian_analysis,)
-
-
-@app.cell
-def _(bayesian_analysis, data_control):
-    bayesian_analysis(data_control)
     return
 
 

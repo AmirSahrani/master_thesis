@@ -4,6 +4,9 @@ open Graphs
 type rangeParameterFloat = { start : float; stop : float; step : float }
 [@@deriving of_yaml]
 
+type parameterBool = { should_randomize : bool; value : bool }
+[@@deriving of_yaml]
+
 type rangeParameterInt = { istart : int; istop : int; istep : int }
 [@@deriving of_yaml]
 
@@ -49,9 +52,9 @@ type degroot_yaml = {
   bias : rangeParameterFloat;
   eval : string;
   random : bool;
-  include_knowledge : bool;
+  include_knowledge : parameterBool;
   sparse : bool;
-  credibility : bool;
+  credibility : parameterBool;
   group : bool;
 }
 [@@deriving of_yaml]
@@ -101,8 +104,11 @@ let yaml_to_config_generator yaml_value =
         if res.random then
           List.init res.n_trials (fun _ ->
               [
-                `Bool (Random.bool ());
-                `Bool (Random.bool ());
+                (if res.include_knowledge.should_randomize then
+                   `Bool (Random.bool ())
+                 else `Bool res.include_knowledge.value);
+                (if res.credibility.should_randomize then `Bool (Random.bool ())
+                 else `Bool res.credibility.value);
                 sample_range (RangeInt res.n_voters) |> filter_odd;
                 sample_range (RangeInt res.n_candidates);
                 sample_range (RangeFloat res.bias);
@@ -114,7 +120,11 @@ let yaml_to_config_generator yaml_value =
               List.concat_map (fun x -> List.map (fun y -> y :: x) lst) acc)
             [ [] ] all_params_processed
           |> List.map (fun x ->
-                 [ `Bool res.include_knowledge; `Bool res.credibility ] @ x)
+                 [
+                   `Bool res.include_knowledge.value;
+                   `Bool res.credibility.value;
+                 ]
+                 @ x)
     in
 
     (* List.iter
