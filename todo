@@ -6,12 +6,17 @@ thesis
 			✗ Consider symbols for entries in matrix
 		Clean code base
 			✓ Remove ABM stuff
-			✗ Make nice interface for DeGroot
+			✓ Make nice interface for DeGroot
 		Write down stats
 		DeGroot Bias alternative
 			✗ Write that normal bias doesn't apply here
 			✗ Find different notion of bias, possibly different for voters?
-				Knowledge for voter too
+				✓ Knowledge for voter too
 				Ego, e.i. # incoming edges
-			Not strictly bias, but include meta/substantive agreement.
+			✓ Not strictly bias, but include meta/substantive agreement.
+		analysis
+			Means testing
+			Variance testing
+				Sensitivity analysis makes more sense here
+			✓ Convergence of trust?
 
