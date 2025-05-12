@@ -1,7 +1,8 @@
-file_out: "results/degroot_deliberation_100.csv"
+file_out: "results/sensivity.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
-n_trials: 10
+random: true
+n_trials: 1
 n_voters: 
   istart: 9
   istop: 15
@@ -11,13 +12,13 @@ n_candidates:
   istop: 7
   istep: 1
 condition: "1"
-sparse: false
 credibility: 
   should_randomize: false
   value: false 
 include_knowledge: 
   should_randomize: false
   value: true 
+sparse: false
 timesteps: 
   start: 1.0
   stop: 151.0
@@ -28,4 +29,7 @@ bias:
   step: 0.1
 cand_method: ["SampleVoters", "Voter"]
 eval: degroot
-group: false
+group: true 
+
+  # meta : parameterBool;
+  # substantive : parameterBool;

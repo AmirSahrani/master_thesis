@@ -420,6 +420,42 @@ let get_all_evals_degroot_convergence () =
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.csDistance p p')
                0. prof_start prof_end);
+        (fun _ _ _ trust_now trust_start ->
+          Owl.Mat.(trust_now - trust_start)
+          |> Owl.Mat.abs |> Owl.Mat.sum' |> string_of_float);
+      ] )
+
+let get_all_evals_sensitivity () =
+    ( [
+        "cyclic_end";
+        "condorcet_end";
+        "unique_end";
+        "proximity_to_voter_sp_end";
+        "proximity_to_cand_sp_end";
+        "cyclic_true";
+        "condorcet_true";
+        "unique_true";
+        "proximity_to_voter_sp_true";
+        "proximity_to_cand_sp_true";
+        "ks_distance_true";
+        "cs_distance_true";
+      ],
+      [
+        (fun _ prof_end _ _ _ -> string_of_bool @@ is_cyclic prof_end);
+        (fun _ prof_end _ _ _ -> string_of_bool @@ has_condorcet prof_end);
+        (fun _ prof_end _ _ _ -> string_of_int @@ n_unique_preferences prof_end);
+        (fun _ prof_end _ _ _ ->
+          string_of_int @@ num_voter_strongly_single_peaked prof_end);
+        (fun _ prof_end _ _ _ ->
+          string_of_int @@ num_cand_strongly_single_peaked prof_end);
+        (fun _ _ prof_true _ _ -> string_of_bool @@ is_cyclic prof_true);
+        (fun _ _ prof_true _ _ -> string_of_bool @@ has_condorcet prof_true);
+        (fun _ _ prof_true _ _ ->
+          string_of_int @@ n_unique_preferences prof_true);
+        (fun _ _ prof_true _ _ ->
+          string_of_int @@ num_voter_strongly_single_peaked prof_true);
+        (fun _ _ prof_true _ _ ->
+          string_of_int @@ num_cand_strongly_single_peaked prof_true);
         (fun _ prof prof_true _ _ ->
           string_of_float
           @@ List.fold_left2
@@ -430,7 +466,4 @@ let get_all_evals_degroot_convergence () =
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.csDistance p p')
                0. prof prof_true);
-        (fun _ _ _ trust_now trust_start ->
-          Owl.Mat.(trust_now - trust_start)
-          |> Owl.Mat.abs |> Owl.Mat.sum' |> string_of_float);
       ] )

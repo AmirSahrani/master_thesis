@@ -23,4 +23,5 @@ dependencies = [
     "pymc>=5.22.0",
     "arviz>=0.21.0",
     "numpyro>=0.18.0",
+    "pyqt6>=6.9.0",
 ]

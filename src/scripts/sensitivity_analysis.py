@@ -1,6 +1,27 @@
-from SALib.sample import saltelli
-from SALib.analyze import sobol
+from subprocess import run
 
+from numpy import indices
+from SALib.sample import saltelli
+from SALib import ProblemSpec
+from SALib.plotting.bar import plot as barplot
+from SALib.analyze import sobol
+import pandas as pd
+import matplotlib.pyplot as plt
+
+plt.rcParams.update(
+    {
+        "font.size": 20,
+        "figure.figsize": [10, 8],
+        "axes.linewidth": 1,
+        "axes.grid": True,
+        "grid.linewidth": 1,
+        "lines.color": "#008B72",
+        "grid.alpha": 0.3,
+        "image.cmap": "cividis",
+        "text.usetex": True,
+        "font.family": "Charter",
+    }
+)
 # seed = None;
 # pre_data;
 # post_data;
@@ -18,46 +39,65 @@ global sensitivity_vars
 global output_vars
 n_methods = 2
 sensitivity_vars = [
-    ("knowledge_bool", [0, 1]),
-    ("credibility_bool", [0, 1]),
-    ("grouped_bool", [0, 1]),
-    ("n_voters", [9, 101]),
-    ("n_candidates", [3, 7]),
-    ("timesteps", [1, 151]),
-    ("cand_mathod", [0, 1]),
-    # ("bias_methods", [0, n_methods - 1]),
-    ("bias_factors", [0, 2]),
+    ("Knowledge", [0, 1]),
+    ("Credibility", [0, 1]),
+    ("Meta", [0, 1]),
+    ("Substantive", [0, 1]),
+    ("Self Knowledge", [0, 1]),
+    ("Number of Voters", [9, 101]),
+    ("Number of Candidates", [3, 7]),
+    ("Timesteps", [0, 20]),
+    ("Bias Factor", [1, 2]),
+    ("Candidate Generator", [0, 1]),
 ]
 output_vars = [
-    "is_cyclic",
-    "ks_distance",
+    "proximity_to_voter_sp_end",
+    "proximity_to_cand_sp_end",
+    "ks_distance_true",
+    "cs_distance_true",
 ]
 
 
 def map_get_fst(lst: [tuple]):
-    return map(lambda x: x[0], lst)
+    return list(map(lambda x: x[0], lst))
 
 
 def map_get_scd(lst: [tuple]):
-    return map(lambda x: x[1], lst)
+    return list(map(lambda x: x[1], lst))
+
+
+def get_problem():
+
+    return ProblemSpec({
+        "num_vars": len(sensitivity_vars),
+        "names": map_get_fst(sensitivity_vars),
+        "bounds": list(map_get_scd(sensitivity_vars)),
+    })
 
 
 def get_analysis_inputs():
     # Define the model inputs
 
-    problem = {
-        "num_vars": len(sensitivity_vars),
-        "names": map_get_fst(sensitivity_vars),
-        "bounds": list(map_get_scd(sensitivity_vars)),
-        "outputs": output_vars,
-    }
-
     # Generate samples and run a dummy evaluation
-    param_values = saltelli.sample(problem, 4)
+    problem = get_problem()
+    param_values = saltelli.sample(problem, 1024)
     return list(map(tuple, param_values))
 
 
 def run_analysis(outputs, problem):
     # Perform Sobol sensitivity analysis
     sobol_indices = sobol.analyze(problem, outputs)
-    print(sobol_indices)
+    return sobol_indices
+
+
+if __name__ == "__main__":
+    data = pd.read_csv("results/sensivity.csv")
+    problem = get_problem()
+
+    for var in output_vars:
+        data_out = data[var].to_numpy().squeeze()
+        sobol_result = run_analysis(data_out, problem)
+        axes = sobol_result.plot()
+
+        plt.tight_layout()
+        plt.show()

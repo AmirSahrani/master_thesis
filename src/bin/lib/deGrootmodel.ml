@@ -30,6 +30,9 @@ type config = {
   knowledge_data : Owl.Mat.mat;
   knowledge_bool : bool;
   credibility_bool : bool;
+  meta_bool : bool;
+  substantive_bool : bool;
+  self_knowledge : bool;
   graph : GenericGraph.t;
   timesteps : float list;
   n_voters : int;
@@ -162,6 +165,14 @@ let add_self_bias adjacency_matrix factor =
         for i = 0 to rows - 1 do
           Owl.Mat.set adjacency_matrix i i
             (Owl.Mat.(sum' @@ row adjacency_matrix i) *. factor)
+        done;
+        adjacency_matrix
+
+let add_knowledge_bias adjacency_matrix knowledge =
+    let rows = Owl.Mat.row_num adjacency_matrix in
+        for i = 0 to rows - 1 do
+          Owl.Mat.set adjacency_matrix i i
+            (Owl.Mat.get knowledge 0 1 *. Owl.Mat.get adjacency_matrix i i)
         done;
         adjacency_matrix
 
@@ -308,7 +319,7 @@ let opinion_to_pref pref candidates =
         |> List.map (fun tup -> [ fst tup ])
 
 let create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
-    bias_factor =
+    bias_factor knowledge_bias =
     let trust_matrix = graph |> adjacency_matrix_from in
         trust_matrix |> fun m ->
         credibility_matrix m credibility_bool |> fun m ->
@@ -316,7 +327,11 @@ let create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
             if knowledge_bool then Owl.Mat.(m * knowledge_data) else m
         in
 
-        add_self_bias optional_mat bias_factor |> normalize_matrix
+        add_self_bias optional_mat bias_factor
+        |> (fun mat ->
+             if knowledge_bias then add_knowledge_bias mat knowledge_data
+             else optional_mat)
+        |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on
     the supplied input data, return the simulated final opinions, as well as the
@@ -327,7 +342,10 @@ let deGroot config =
       post_data;
       knowledge_data;
       knowledge_bool;
+      self_knowledge;
       credibility_bool;
+      meta_bool;
+      substantive_bool;
       graph;
       n_voters;
       timesteps;
@@ -345,7 +363,7 @@ let deGroot config =
     (* First we create the proper trust matrix*)
     let trust_matrix =
         create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
-          bias_factor
+          bias_factor self_knowledge
     in
 
     assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_matrix);
@@ -371,21 +389,32 @@ let deGroot config =
         (* let estimated_candidates = *)
         List.map
           (fun t ->
-            let trust = Owl.Mat.(trust_matrix **@ t) in
+            let trust = Owl.Mat.(trust_matrix **@ Float.round t) in
 
             assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust);
-            let final_opinion = Owl.Mat.(trust *@ pre_data) in
+            let subst_trust =
+                if substantive_bool then trust else Owl.Mat.eye n_voters
+            in
+            let meta_trust =
+                if meta_bool then trust else Owl.Mat.eye n_voters
+            in
+            let final_opinion = Owl.Mat.(subst_trust *@ pre_data) in
             let cand_noisy_2d =
                 Owl.Arr.reshape cand_noisy
                   [| n_voters; n_candidates * n_policies |]
             in
 
             (* Perform matrix multiplication *)
-            let final_est_2d = Owl.Mat.(trust *@ cand_noisy_2d) in
+            let final_est_2d = Owl.Mat.(meta_trust *@ cand_noisy_2d) in
+            let true_final_est_2d = Owl.Mat.(trust *@ cand_noisy_2d) in
 
             (* Reshape the result back to 3D *)
             let final_est =
                 Owl.Arr.reshape final_est_2d
+                  [| n_voters; n_candidates; n_policies |]
+            in
+            let final_est_true =
+                Owl.Arr.reshape true_final_est_2d
                   [| n_voters; n_candidates; n_policies |]
             in
 
@@ -424,7 +453,7 @@ let deGroot config =
                 List.mapi
                   (fun _ i ->
                     opinion_to_pref (Owl.Mat.row post_data i)
-                      (extract_candidate_policies i final_est))
+                      (extract_candidate_policies i final_est_true))
                   (List.init (Owl.Mat.row_num post_data) Fun.id)
             in
                 ( (final_opinion, post_data),

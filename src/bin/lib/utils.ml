@@ -8,7 +8,7 @@ type alternativeGenerators = Random | Voter | SampleVoters
 let filter_odd = function
     | `Int x ->
         if x mod 2 = 0 then `Int (x + [| -1; 1 |].(Random.int 1)) else `Int x
-    | _ -> `Int 1
+    | _ -> failwith "Not an interger"
 
 let experiments = function
     | "rad" -> `Rad
