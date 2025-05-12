@@ -10,7 +10,7 @@ let main () =
         match experiment_type with
         | `Rad -> rad_roy_bias_experiment ()
         | `DeGroot -> deGroot_experiment ()
-        | `ABM -> ()
+        | `Sensitivity -> sensitivity_analysis ()
         | `Testing -> test ()
 
 let () =

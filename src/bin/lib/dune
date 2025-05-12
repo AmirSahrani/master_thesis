@@ -3,4 +3,4 @@
  (public_name deliberation_model.lib)
  (libraries owl pyml ocamlgraph progress csv sqlite3 yaml parmap)
 (preprocess (pps ppx_deriving_yaml))
- (modules radmodel deGrootmodel ABMmodel utils graphs distances initpy evaluations experiments query))
+ (modules radmodel deGrootmodel utils graphs distances initpy evaluations experiments query))

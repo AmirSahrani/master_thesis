@@ -119,3 +119,11 @@ module WrappedEvals = struct
       Py.Module.get_function ev "get_max_num_voters_for_single_peakedness"
         [| profile |]
 end
+
+module WrappedSensitivity = struct
+  let sa = Py.Import.import_module "sensitivity_analysis"
+  let get_params () = Py.Module.get_function sa "get_analysis_inputs" [||]
+
+  let analyse problem values =
+      Py.Module.get_function sa "run_analysis" [| problem; values |]
+end

@@ -1,6 +1,7 @@
 type preference = int list list
 type profile = preference list
 type voter = { preference : preference; bias : float; announced : int }
+type timeRange = float list
 type spaces = KS | CS | DP
 type alternativeGenerators = Random | Voter | SampleVoters
 
@@ -12,7 +13,7 @@ let filter_odd = function
 let experiments = function
     | "rad" -> `Rad
     | "degroot" -> `DeGroot
-    | "abm" -> `ABM
+    | "sens" -> `Sensitivity
     | "test" -> `Testing
     | _ -> failwith "Provide valid experiment type"
 

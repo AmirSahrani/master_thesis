@@ -111,6 +111,9 @@ let yaml_to_config_generator yaml_value =
                  else `Bool res.credibility.value);
                 sample_range (RangeInt res.n_voters) |> filter_odd;
                 sample_range (RangeInt res.n_candidates);
+                `TimeRange
+                  (arange res.timesteps.start res.timesteps.stop
+                     res.timesteps.step);
                 sample_range (RangeFloat res.bias);
                 sample_range (RangeDiscrete res.cand_method);
               ])
@@ -140,7 +143,6 @@ let yaml_to_config_generator yaml_value =
       res.sparse,
       res.group,
       (if res.random then 1 else res.n_trials),
-      (fun x -> arange x.start x.stop x.step) res.timesteps,
       raw_product,
       evals )
 

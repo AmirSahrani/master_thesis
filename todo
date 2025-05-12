@@ -5,10 +5,12 @@ thesis
 			✗ define decision problems for DBVM and QAP
 			✗ Consider symbols for entries in matrix
 		Clean code base
-			✗ Remove ABM stuff
+			✓ Remove ABM stuff
 			✗ Make nice interface for DeGroot
 		Write down stats
 		DeGroot Bias alternative
 			✗ Write that normal bias doesn't apply here
 			✗ Find different notion of bias, possibly different for voters?
+				Knowledge for voter too
+				Ego, e.i. # incoming edges
 

@@ -212,19 +212,21 @@ type job = {
   knowledge_bool : bool;
   num_voters : int;
   num_candidates : int;
+  time : timeRange;
   bias : float;
   methd : alternativeGenerators;
   trial_id : int;
 }
 
-let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps ~evals
-    ~grouped ~sparse (job : job) : string list list =
+let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
+    ~sparse (job : job) : string list list =
     (* unwrap the job *)
     let {
       credibility_bool;
       knowledge_bool;
       num_voters;
       num_candidates;
+      time;
       bias;
       methd;
       trial_id;
@@ -237,7 +239,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps ~evals
     let out =
         run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
           ~knowledge_bool ~knowledge_scores ~graph ~num_voters ~num_candidates
-          ~timesteps ~methd ~bias ~grouped ~sparse
+          ~timesteps:time ~methd ~bias ~grouped ~sparse
     in
         List.mapi
           (fun j
@@ -248,7 +250,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps ~evals
               string_of_sampler methd;
               string_of_int num_voters;
               string_of_int num_candidates;
-              string_of_float (List.nth timesteps j);
+              string_of_float (List.nth time j);
               string_of_int trial_id;
               string_of_bool sparse;
               string_of_bool grouped;
@@ -262,7 +264,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps ~evals
           out
 
 let run_parallel_simulations product pre_data post_data knowledge_scores graph
-    timesteps n_trials evals grouped sparse =
+    n_trials evals grouped sparse =
     let jobs =
         product
         |> List.concat_map (function
@@ -270,6 +272,7 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
                  `Bool cred;
                  `Bool knowledge;
                  `Int v;
+                 `TimeRange timesteps;
                  `Int c;
                  `Float b;
                  `Method m;
@@ -280,6 +283,7 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
                        knowledge_bool = knowledge;
                        num_voters = v;
                        num_candidates = c;
+                       time = timesteps;
                        bias = b;
                        methd = m;
                        trial_id = t + 1;
@@ -305,8 +309,8 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
     (* 3. Worker: plain function over a single job *)
     let worker job =
         let result =
-            run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~timesteps
-              ~evals ~grouped ~sparse job
+            run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals
+              ~grouped ~sparse job
         in
             update_progress ();
             result
@@ -327,7 +331,6 @@ let deGroot_experiment () =
           sparse,
           group_bool,
           n_trials,
-          timesteps_range,
           product,
           get_evals ) =
         parse_yaml Sys.argv.(2) |> yaml_to_config_generator
@@ -383,7 +386,102 @@ let deGroot_experiment () =
     let total = List.length product in
     let results =
         run_parallel_simulations product pre_data post_data knowledge_data graph
-          timesteps_range n_trials evals group_bool sparse
+          n_trials evals group_bool sparse
+    in
+
+    Csv.output_all (Csv.to_channel oc) results;
+
+    (* Close CSV file *)
+    close_out oc;
+    ()
+
+let list_to_config = function
+    | [
+        knowledge_bool;
+        credibility_bool;
+        grouped_bool;
+        n_voters;
+        n_candidates;
+        timesteps;
+        cand_method;
+        bias_factors;
+      ] ->
+        [
+          `Bool (knowledge_bool > 0.5);
+          `Bool (credibility_bool > 0.5);
+          `Bool (grouped_bool > 0.5);
+          `Int (int_of_float n_voters);
+          `Int (int_of_float n_candidates);
+          `Float timesteps;
+          `Float cand_method;
+          `Float bias_factors;
+        ]
+    | _ -> failwith "wrong number of elements"
+
+let sensitivity_analysis () =
+    let group_bool = true in
+    let condition = "0" in
+    let data_loc = "data/a1r.db" in
+    let graph_loc = "graphs/soc-astro.edges" in
+    let file_out = "results/sens.csv" in
+    let sparse = false in
+    let titles, evals = Evaluations.get_all_evals_degroot () in
+    let n_trials = 1 in
+    let pyParams = WrappedSensitivity.get_params () in
+    let product =
+        (Py.List.to_list_map (Py.Tuple.to_list_map Py.Float.to_float)) pyParams
+        |> List.map list_to_config
+    in
+
+    let group =
+        if group_bool then Some (string_of_int @@ Random.int 33) else None
+    in
+    let pre_data, post_data =
+        load_data data_loc 10000 condition group questions_without_pk
+    in
+    let knowledge_data =
+        fst @@ load_data data_loc 10000 condition group pk_score
+    in
+
+    let edges =
+        if sparse then read_adjacency_matrix graph_loc
+        else
+          let voter_list = List.init 50 Fun.id in
+              List.map
+                (fun i -> List.map (fun j -> (i, j)) voter_list)
+                voter_list
+              |> List.flatten
+    in
+    let graph =
+        List.fold_left
+          (fun g (l, r) -> if l <> r then GenericGraph.add_edge g l r else g)
+          GenericGraph.empty edges
+    in
+
+    let oc = open_out file_out in
+
+    (* Prepare header row *)
+    Csv.output_all (Csv.to_channel oc)
+      [
+        [
+          "bias";
+          "cand_sampler";
+          "n_voters";
+          "n_candidates";
+          "time_steps";
+          "trial";
+          "sparse";
+          "grouped";
+          "credibility";
+          "knowledge";
+        ]
+        @ titles;
+      ];
+
+    let total = List.length product in
+    let results =
+        run_parallel_simulations product pre_data post_data knowledge_data graph
+          n_trials evals group_bool sparse
     in
 
     Csv.output_all (Csv.to_channel oc) results;

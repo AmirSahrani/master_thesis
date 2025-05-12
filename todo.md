@@ -4,17 +4,6 @@
         - [x] Setup generation parameters for experiments
         - [x] Create Csv writer
         - [x] Run experiments
-    - ABM
-        - [x] Decide Scheduling -> not really issue, we can "freeze" time anyway
-        - [ ] Updating functions
-            - [ ] Knowledge
-                - Should take into account the knowledge of people you are with
-            - [ ] Importance
-                - Maybe importance is decided by the strength of a position? e.g. a sort of normalized opinion vector?
-            - [ ] Trust
-                    - Asymtotically going to 1. Should grow relatively fast at first, results shoudl be that after a while there is uniform trust among all people in a group.
-        - [ ] Conversational Chain 
-            - random walker -> generate new trust matrix
 ## General
     - [x] Generate alterantives
         - [x] Random
@@ -24,15 +13,13 @@
     - [~] Handle orphans in TIES sampling
     - [x] Bias Factor
     - [x] Ability to select subset of questionnaire questions
-    - [ ] Simplifiy matrices to binary for voting mapping problem. If still np hard l1 and l2 norm does not make a difference + gives strong reason to believe l2 norm is actually np hard.
+    - [x] Simplifiy matrices to binary for voting mapping problem. If still np hard l1 and l2 norm does not make a difference + gives strong reason to believe l2 norm is actually np hard.
         - Popular matchings
-    - [ ] K-candidate deletion proximity to single peakedness (Only polynomial time algorithm)
+    - [x] K-candidate deletion proximity to single peakedness (Only polynomial time algorithm)
     - [ ] Analysis
         - General desciptive stats
         - Means testing
         - Variance testing
         - Convergence of trust?
-## Single peakedness
-    - k-maverick is np-complete, thus our fraction approach for rad is also hard. If we know the fraction we could decide on k, but deciding on k is hard, thus deciding the fraction must also be hard.
 
 

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.0"
+__generated_with = "0.11.31"
 app = marimo.App(width="full")
 
 
@@ -44,6 +44,7 @@ def _(np, plt):
             "font.size": 20,
             "figure.figsize": [10, 8],
             "axes.linewidth": 1,
+            "axes.grid"  : True,
             "grid.linewidth": 1,
             "grid.alpha": 0.3,
             "image.cmap": "cividis",
@@ -60,7 +61,7 @@ def _(np, plt):
         data[col_end] = data[col_end].astype(float)
 
         # Group by bias
-        aggregated_start = data(group)[col_start].mean()
+        aggregated_start = data.groupby(group)[col_start].mean()
         aggregated_end = data.groupby(group)[col_end].mean()
 
         # Compute proportion (avoid division by zero)
@@ -114,7 +115,8 @@ def _(compute_proportion, mlines, np, pd, plt):
 
         # Define colors for 'Type' — consistent ordering
         type_colors = {"Start": "#A93C93", "End": "#008B72", "Final": "#613F99", "True": "#613F99"}
-    
+        types_used = {}
+
         for sampler in df["cand_sampler"].unique():
             for typ in df["Type"].unique():
                 subset = df[(df["cand_sampler"] == sampler) & (df["Type"] == typ)]
@@ -122,6 +124,7 @@ def _(compute_proportion, mlines, np, pd, plt):
                 digitized = np.digitize(subset[x], bins)
                 bin_means = [subset[y][digitized == i].mean() for i in range(0, len(bins))]
                 if not subset.empty:
+                    types_used[typ] = type_colors[typ]
                     ax.plot(
                         bins,
                         bin_means,
@@ -142,7 +145,7 @@ def _(compute_proportion, mlines, np, pd, plt):
             mlines.Line2D(
                 [], [], color=color, marker="o", linestyle="-", label=typ
             )
-            for typ, color in type_colors.items()
+            for typ, color in types_used.items()
         ]
 
         # Legend for Sampler (marker)
@@ -158,7 +161,7 @@ def _(compute_proportion, mlines, np, pd, plt):
             )
             for sampler, marker in sampler_markers.items()
         ]
-    
+
         legend1 = ax.legend(
             handles=type_handles + sampler_handles,
             title="Type (color),\nSampler (marker)",
@@ -209,13 +212,13 @@ def _(np, pd):
 
 
 @app.cell
-def _(data_delib):
-    data_delib.describe()
+def _(data_control):
+    data_control.describe()
     return
 
 
 @app.cell
-def _(data_delib):
+def _(data_control, data_delib):
     voter_str = "n_voters"
     cand_str = "n_candidates"
     bias_str = "bias"
@@ -224,16 +227,17 @@ def _(data_delib):
     voter_df = {x: data_delib.loc[data_delib[voter_str] == x ] for x in data_delib[voter_str].unique()}
     cand_df = {x: data_delib.loc[data_delib[cand_str] == x ] for x in data_delib[cand_str].unique()}
     time_df = {x: data_delib.loc[data_delib[time_str] == x ] for x in data_delib[time_str].unique()}
-    measurements = ['cyclic_start', 'condorcet_start', 'unique_start',  'cyclic_end', 'condorcet_end', 'unique_end',  'cyclic_true', 'condorcet_true', 'unique_true' ]
-    print(voter_df.keys())
-    print(cand_df.keys())
-    print(time_df.keys())
-    print(measurements)
+    measurements_bool = ['cyclic_start', 'condorcet_start', 'unique_start',  'cyclic_end', 'condorcet_end', 'unique_end',  'cyclic_true', 'condorcet_true', 'unique_true' ]
+    for mb in measurements_bool:
+        data_delib[mb] = data_delib[mb].astype(int)
+        data_control[mb] = data_control[mb].astype(int)
+
     return (
         bias_str,
         cand_df,
         cand_str,
-        measurements,
+        mb,
+        measurements_bool,
         sampler_str,
         time_df,
         time_str,
@@ -260,7 +264,7 @@ def _(
     time_str,
 ):
     def generate_general_graphs(data, file_prefix):
-    
+
         cyclic = compute_and_merge_proportions(
             data_delib,
             "cyclic_start",
@@ -269,8 +273,8 @@ def _(
             "cyclic_proportion",
             ["bias", "cand_sampler"],
         )
-    
-    
+
+
         condorcet = compute_and_merge_proportions(
             data_delib,
             "condorcet_start",
@@ -279,7 +283,7 @@ def _(
             "condorcet_proportion",
             ["bias", "cand_sampler"],
         )
-    
+
         proximity_to_sp_end = compute_average(
             data_delib, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["bias", "cand_sampler"]
         )
@@ -292,7 +296,7 @@ def _(
         proximity_to_sp = df_combined.rename(
             columns={"proximity_to_start": "proximity_to_cand_sp"}
         )
-    
+
         proximity_to_voter_sp_end = compute_average(
             data_delib, "proximity_to_voter_sp_end", "proximity_to_voter_sp", ["bias", "cand_sampler"]
         )
@@ -305,7 +309,7 @@ def _(
         proximity_to_voter_sp = df_combined.rename(
             columns={"proximity_to_start": "proximity_to_voter_sp"}
         )
-    
+
         unique_profiles_end = compute_average(
             data_delib, "unique_end", "unique", ["bias", "cand_sampler"]
         )
@@ -318,7 +322,7 @@ def _(
         unique_profiles = df_combined.rename(
             columns={"unique_start": "unique_profiles"}
         )
-    
+
         # === Plotting all variants in one figure ===
         plot(cyclic, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles", file_prefix)
         plot(proximity_to_sp, "bias", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles", file_prefix)
@@ -669,13 +673,13 @@ def _(mo):
 
 
 @app.cell
-def _(data_control, data_delib):
+def _(data_control, data_delib, time_str):
     def normalize(df):
-        return (df - df.min() )/ df.max()
+        return (df - df.min() ) / df.max()
 
     # Compute differences for each metric
     def diff_data_on_metrics(df):
-        metrics = ['cyclic', 'condorcet', 'unique', 'proximity_to_cand_sp', 'proximity_to_voter_sp']
+        metrics = ['proximity_to_cand_sp', 'proximity_to_voter_sp']
         for m in metrics:
             df[f'{m}_diff'] = normalize(df[f'{m}_end']) - normalize(df[f'{m}_true'])
             df[f'{m}_absdiff'] = df[f'{m}_diff']**2
@@ -685,14 +689,14 @@ def _(data_control, data_delib):
         return df.groupby(['bias','cand_sampler','n_voters','n_candidates','time_steps']) \
                 ['total_absdiff'].agg(['mean','std']).reset_index()
 
-    summary_delib = diff_data_on_metrics(data_delib)
-    summary_control = diff_data_on_metrics(data_control)
+    summary_delib = diff_data_on_metrics(data_delib.loc[data_delib[time_str] < 52].copy())
+    summary_control = diff_data_on_metrics(data_control.loc[data_control[time_str] < 52].copy())
     return diff_data_on_metrics, normalize, summary_control, summary_delib
 
 
 @app.cell
 def _(bias_str, plt, summary_control, summary_delib):
-    def plot_summary(summary):
+    def plot_summary(summary,title):
         lab = [int(x) for x in summary["time_steps"].unique().tolist()]
         scatter = plt.scatter(summary[bias_str], summary["mean"], c=summary["time_steps"])
         plt.xlabel("Bias")
@@ -705,15 +709,17 @@ def _(bias_str, plt, summary_control, summary_delib):
             bbox_to_anchor=(1.24, 1),  # center it under the plot
             ncol= 1,
         )
-
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig(f"figures/{title}")
         plt.show()
-    plot_summary(summary_delib)
-    plot_summary(summary_control)
+    plot_summary(summary_delib, "error_scatter_delib.pdf")
+    plot_summary(summary_control, "error_scatter_control.pdf")
     return (plot_summary,)
 
 
 @app.cell
-def _(data_delib_151, np, pd):
+def _(data_delib, np, pd, time_str):
     def bin_biases(data):
         bias_bins = np.linspace(data["bias"].min(), data["bias"].max(), 15)
         bins_index = np.digitize(data["bias"], bias_bins)
@@ -722,47 +728,46 @@ def _(data_delib_151, np, pd):
 
     def find_min_bias(df, metric_col):
         # Group by bias and calculate mean of the metric
-        means = df.groupby(['binned_bias', 'knowledge'])[metric_col].mean()
+        means = df.groupby(['binned_bias', 'knowledge', time_str])[metric_col].mean()
         # Find the bias value with the minimum mean metric value
         return means.idxmin() if not means.empty else np.nan
- 
+
 
     def pivot_of_minimum_values(data, metrics):
         # Create an empty DataFrame to store results
         result_df = pd.DataFrame()
-    
+
         # For each combination of cand_sampler and knowledge
         for (sampler), group in data.groupby(['cand_sampler']):
             row_data = {'cand_sampler': sampler}
-        
+
             # For each metric, find the bias that minimizes it
             for metric in metrics:
                 min_bias = find_min_bias(group, metric)
                 row_data[f'{metric.replace("_", " ")}'] = min_bias
-        
+
             # Append to results
             result_df = pd.concat([result_df, pd.DataFrame([row_data])], ignore_index=True)
-    
+
         # Set the index for the final table
         result_df = result_df.set_index(['cand_sampler'])
-    
+
         # You can reshape it if you want a different format
         # This puts metrics as columns and shows the optimal bias value
         return result_df
 
     m = ['proximity_to_voter_sp_absdiff', 'proximity_to_cand_sp_absdiff', 'total_absdiff']
-    pivot_of_minimum_values(bin_biases(data_delib_151), m)
 
-
+    def to_tex(df: pd.DataFrame):
+        print(df.to_latex( multicolumn=True))
     
-
-    return bin_biases, find_min_bias, m, pivot_of_minimum_values
+    to_tex(pivot_of_minimum_values(bin_biases(data_delib), m))
+    return bin_biases, find_min_bias, m, pivot_of_minimum_values, to_tex
 
 
 @app.cell
-def _(bin_biases, data_control_151, m, pivot_of_minimum_values):
-
-    pivot_of_minimum_values(bin_biases(data_control_151), m)
+def _(bin_biases, data_control, m, pivot_of_minimum_values, to_tex):
+    to_tex(pivot_of_minimum_values(bin_biases(data_control), m))
     return
 
 
@@ -782,9 +787,8 @@ def _(mo):
 
 @app.cell
 def _(pd):
-
-    convergence_data_cred = pd.read_csv("results/degroot_deliberation_100_convergence_credibility.csv")
-    convergence_data_know = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge.csv")
+    convergence_data_cred = pd.read_csv("results/degroot_deliberation_trials_100_convergence_dense_knowledge.csv")
+    convergence_data_know = pd.read_csv("results/degroot_deliberation_trials_100_convergence_sparse_knowledge.csv")
     convergence_data_cred_group = pd.read_csv("results/degroot_deliberation_100_convergence_credibility_grouped.csv")
     convergence_data_know_group = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge_grouped.csv")
     return (
@@ -807,7 +811,6 @@ def _(
     sampler_str,
     time_str,
 ):
-
     # Begin plotting
     fig, ax = plt.subplots(3, 4, figsize=(20, 15), sharex=True)
     ax = ax.ravel()
@@ -820,7 +823,7 @@ def _(
         # Unique values for styling
         sampler_styles = {'Sample': 'X', 'Voter': 's'}
         colors = plt.cm.viridis_r(np.linspace(0, 1, len(candidate_counts)))
-    
+
         # Plot each combination
         for idx, n in enumerate(candidate_counts):
             for sampler, marker in sampler_styles.items():
@@ -835,11 +838,11 @@ def _(
                     ax[8+i].plot(subset['time_steps'], subset['entrywise_distance'], 
                                label=f'{n} candidates, {sampler}', 
                                marker=marker, color=colors[idx], linestyle='-')
-    ax[0].set_title('Uniform')
-    ax[1].set_title('Knowledge')
+    ax[0].set_title('Knowledge (Control, Dense)')
+    ax[1].set_title('Knowledge (Control, Sparse)')
     ax[2].set_title('Uniform Original Groups')
     ax[3].set_title('Knowledge Original Groups')
-    
+
     # Labels and titles
     ax[0].set_ylabel('KS Distance')
     ax[4].set_ylabel('CS Distance')
@@ -850,11 +853,12 @@ def _(
     ax[11].set_xlabel('Time Steps')
 
     # Legend
-    handles, labels = ax[0].get_legend_handles_labels()
+    handles, labels = ax[1].get_legend_handles_labels()
     fig.legend(handles, labels, loc='lower center', ncol=3,
                bbox_to_anchor=(0.51, -0.15))
 
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.tight_layout()
+    fig.savefig("figures/convergence_groups.pdf", bbox_inches='tight')
     plt.show()
     return (
         ax,
