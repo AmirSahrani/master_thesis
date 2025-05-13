@@ -159,7 +159,7 @@ let load_data loc limit_n cond group q =
 let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
     ~knowledge_bool ~meta_bool ~substantive_bool ~knowledge_scores ~graph
     ~num_voters ~num_candidates ~timesteps ~methd ~bias ~grouped ~sparse
-    ~self_knowledge =
+    ~self_knowledge ~self_ego =
     let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
     let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
     let num_voters = if not grouped then num_voters else max_idx in
@@ -201,6 +201,7 @@ let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
           meta_bool;
           substantive_bool;
           self_knowledge;
+          self_ego;
           graph = out_graph;
           n_voters = num_voters;
           n_candidates = num_candidates;
@@ -217,6 +218,7 @@ type job = {
   meta_bool : bool;
   substantive_bool : bool;
   self_knowledge : bool;
+  self_ego : bool;
   num_voters : int;
   num_candidates : int;
   time : timeRange;
@@ -234,6 +236,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
       meta_bool;
       substantive_bool;
       self_knowledge;
+      self_ego;
       num_voters;
       num_candidates;
       time;
@@ -250,7 +253,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
         run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
           ~knowledge_bool ~meta_bool ~substantive_bool ~knowledge_scores ~graph
           ~num_voters ~num_candidates ~timesteps:time ~methd ~bias ~grouped
-          ~sparse ~self_knowledge
+          ~sparse ~self_knowledge ~self_ego
     in
         List.mapi
           (fun j
@@ -267,6 +270,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
               string_of_bool grouped;
               string_of_bool credibility_bool;
               string_of_bool knowledge_bool;
+              string_of_bool self_ego;
               string_of_bool meta_bool;
               string_of_bool substantive_bool;
             ]
@@ -287,6 +291,7 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
                  `Bool meta;
                  `Bool substantive;
                  `Bool self_knowledge_bool;
+                 `Bool self_ego;
                  `Int v;
                  `Int c;
                  `TimeRange timesteps;
@@ -300,6 +305,7 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
                        meta_bool = meta;
                        substantive_bool = substantive;
                        self_knowledge = self_knowledge_bool;
+                       self_ego;
                        num_voters = v;
                        num_candidates = c;
                        time = timesteps;
@@ -318,12 +324,6 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
     (* 2. Progress tracking *)
     let mutex = Mutex.create () in
     let completed = ref 0 in
-    let update_progress () =
-        Mutex.lock mutex;
-        incr completed;
-        Printf.printf "\027[2K\r%d/%d done%!" !completed total;
-        Mutex.unlock mutex
-    in
 
     (* 3. Worker: plain function over a single job *)
     let worker job =
@@ -331,7 +331,6 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
             run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals
               ~grouped ~sparse job
         in
-            update_progress ();
             result
     in
 
@@ -386,6 +385,7 @@ let run_and_write data_loc graph_loc file_out sparse group_bool condition
           "grouped";
           "credibility";
           "knowledge";
+          "ego";
           "meta";
           "substantative";
         ]
@@ -413,6 +413,7 @@ let list_to_config = function
         meta_bool;
         substantive_bool;
         self_knowledge_bool;
+        self_ego;
         n_voters;
         n_candidates;
         timesteps;
@@ -425,6 +426,7 @@ let list_to_config = function
           `Bool (meta_bool > 0.5);
           `Bool (substantive_bool > 0.5);
           `Bool (self_knowledge_bool > 0.5);
+          `Bool (self_ego > 0.5);
           `Int (int_of_float n_voters) |> filter_odd;
           `Int (int_of_float n_candidates);
           `TimeRange [ timesteps ];
@@ -465,14 +467,14 @@ let sensitivity_analysis () =
         parse_yaml Sys.argv.(2) |> yaml_to_config_generator
     in
 
-    let pyParams = WrappedSensitivity.get_params () in
+    let pyParams = WrappedSensitivity.get_params (Py.Int.of_int n_trials) () in
     let product =
         (Py.List.to_list_map (Py.Tuple.to_list_map Py.Float.to_float)) pyParams
         |> List.map list_to_config
     in
     let _ =
-        run_and_write data_loc graph_loc file_out sparse group_bool condition
-          n_trials product
+        run_and_write data_loc graph_loc file_out sparse group_bool condition 1
+          product
           (Evaluations.get_all_evals_sensitivity ())
     in
         ()
@@ -482,8 +484,6 @@ let test () =
         Owl.Mat.of_arrays
           [| [| 0.; 1.; 1. |]; [| 1.; 0.; 0. |]; [| 0.; 1.; 0. |] |]
     in
-    let k = Owl.Mat.of_arrays [| [| 0.8; 0.3; 0.4 |] |] in
-    let n, m = Owl.Mat.shape k in
-
-    Printf.printf "K is a %d by %d matrix\n" n m;
-    print_mat Owl.Mat.(t * k)
+    let ego_mat = add_ego_bias t in
+        print_mat ego_mat;
+        ()

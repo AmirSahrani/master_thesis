@@ -33,6 +33,7 @@ type config = {
   meta_bool : bool;
   substantive_bool : bool;
   self_knowledge : bool;
+  self_ego : bool;
   graph : GenericGraph.t;
   timesteps : float list;
   n_voters : int;
@@ -56,6 +57,7 @@ type degroot_yaml = {
   eval : string;
   random : bool;
   include_knowledge : parameterBool;
+  include_ego : parameterBool;
   sparse : bool;
   credibility : parameterBool;
   group : bool;
@@ -175,6 +177,17 @@ let add_knowledge_bias adjacency_matrix knowledge =
             (Owl.Mat.get knowledge 0 1 *. Owl.Mat.get adjacency_matrix i i)
         done;
         adjacency_matrix
+
+let add_ego_bias adjacency_matrix =
+    let rows, _ = Owl.Mat.shape adjacency_matrix in
+
+    for i = 0 to rows - 1 do
+      let credibility = Owl.Mat.sum' @@ Owl.Mat.col adjacency_matrix i in
+
+      Owl.Mat.set adjacency_matrix i i credibility
+    done;
+
+    adjacency_matrix
 
 let randomize_matrix adjcency_matrix _ =
     let open Owl.Mat in
@@ -319,7 +332,7 @@ let opinion_to_pref pref candidates =
         |> List.map (fun tup -> [ fst tup ])
 
 let create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
-    bias_factor knowledge_bias =
+    bias_factor ego_bias knowledge_bias =
     let trust_matrix = graph |> adjacency_matrix_from in
         trust_matrix |> fun m ->
         credibility_matrix m credibility_bool |> fun m ->
@@ -328,6 +341,7 @@ let create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
         in
 
         add_self_bias optional_mat bias_factor
+        |> (fun mat -> if ego_bias then add_ego_bias mat else optional_mat)
         |> (fun mat ->
              if knowledge_bias then add_knowledge_bias mat knowledge_data
              else optional_mat)
@@ -343,6 +357,7 @@ let deGroot config =
       knowledge_data;
       knowledge_bool;
       self_knowledge;
+      self_ego;
       credibility_bool;
       meta_bool;
       substantive_bool;
@@ -363,7 +378,7 @@ let deGroot config =
     (* First we create the proper trust matrix*)
     let trust_matrix =
         create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
-          bias_factor self_knowledge
+          bias_factor self_ego self_knowledge
     in
 
     assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_matrix);

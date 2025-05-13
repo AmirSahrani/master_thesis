@@ -7,6 +7,7 @@ from SALib.plotting.bar import plot as barplot
 from SALib.analyze import sobol
 import pandas as pd
 import matplotlib.pyplot as plt
+from typing import Tuple, List
 
 plt.rcParams.update(
     {
@@ -44,10 +45,11 @@ sensitivity_vars = [
     ("Meta", [0, 1]),
     ("Substantive", [0, 1]),
     ("Self Knowledge", [0, 1]),
-    ("Number of Voters", [9, 101]),
+    ("Self Ego", [0, 1]),
+    ("Number of Voters", [3, 31]),
     ("Number of Candidates", [3, 7]),
     ("Timesteps", [0, 20]),
-    ("Bias Factor", [1, 2]),
+    ("Bias Factor", [0.01, 10]),
     ("Candidate Generator", [0, 1]),
 ]
 output_vars = [
@@ -58,11 +60,11 @@ output_vars = [
 ]
 
 
-def map_get_fst(lst: [tuple]):
+def map_get_fst(lst: [Tuple]):
     return list(map(lambda x: x[0], lst))
 
 
-def map_get_scd(lst: [tuple]):
+def map_get_scd(lst: [Tuple]):
     return list(map(lambda x: x[1], lst))
 
 
@@ -75,12 +77,12 @@ def get_problem():
     })
 
 
-def get_analysis_inputs():
+def get_analysis_inputs(n_samples):
     # Define the model inputs
 
     # Generate samples and run a dummy evaluation
     problem = get_problem()
-    param_values = saltelli.sample(problem, 1024)
+    param_values = saltelli.sample(problem, n_samples)
     return list(map(tuple, param_values))
 
 
@@ -91,7 +93,7 @@ def run_analysis(outputs, problem):
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("results/sensivity.csv")
+    data = pd.read_csv("results/sensivity_control.csv")
     problem = get_problem()
 
     for var in output_vars:

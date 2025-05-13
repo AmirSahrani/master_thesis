@@ -9,14 +9,38 @@ thesis
 			✓ Make nice interface for DeGroot
 		Write down stats
 		DeGroot Bias alternative
-			✗ Write that normal bias doesn't apply here
-			✗ Find different notion of bias, possibly different for voters?
+			Find different notion of bias, possibly different for voters?
 				✓ Knowledge for voter too
-				Ego, e.i. # incoming edges
+				✓ Ego, e.i. # incoming edges
 			✓ Not strictly bias, but include meta/substantive agreement.
 		analysis
 			Means testing
 			Variance testing
 				Sensitivity analysis makes more sense here
 			✓ Convergence of trust?
+		Model quirks
+			Voter distance is assumed to be \ell_1
+			Still no clear difference between control and delib
+				Size of the group
+				Sparse/Dense
+				Data set
+				Maybe the goal is not to actually have a difference between control and delib model, and simply show that the control group has little substantative arguement, as well as showing it is better modeled through a sparse graph
+			A lot of variables binary
+				Knowledge/Ego/Cred
+				Maybe we can make them [0,1]
+			Combination of different notions of bias a little arbitrary
+				We scale -> multiply -> add (cred, knowledge + bias + self_knowledge, ego)
+			Voter preference generation
+				Not very unreasonable method of generation
+					Might object that people place different importance on some topics
+					Might object that people don't look at it linearly or even quadratically, it might make most sense to look at some binary, e.g. people agrees if with some \delta from me
+					For larger number of candidate it might not makes sense to have a full preference profile.
+				"True" Preference misleading
+					We can model substantative agreement because we have the true opinions
+					We cannot really model meta-agreement since we lack full preference
+					Candidate in the data set do not reflect our candidates because the are not easily fit into our model
+			Edge based trust only for control group
+				Why would this not be true in person?
+				Maybe it is a good idea to also
+					introduce familiarity,at least this way there might be a narative
 
