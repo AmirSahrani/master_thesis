@@ -18,6 +18,8 @@ thesis
 			Variance testing
 				Sensitivity analysis makes more sense here
 			✓ Convergence of trust?
+			How well as candidate positions estimated
+			Use 26 most polarizing questions!
 		Model quirks
 			Voter distance is assumed to be \ell_1
 			Still no clear difference between control and delib
@@ -41,6 +43,6 @@ thesis
 					Candidate in the data set do not reflect our candidates because the are not easily fit into our model
 			Edge based trust only for control group
 				Why would this not be true in person?
-				Maybe it is a good idea to also
-					introduce familiarity,at least this way there might be a narative
+				Maybe it is a good idea to also introduce familiarity
+			Single peakedness is prevalent even with multiple issue dimensions?
 
