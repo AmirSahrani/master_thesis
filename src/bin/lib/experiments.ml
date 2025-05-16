@@ -341,14 +341,14 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
     (* 5. Flatten your list of lists *)
     List.flatten partials
 
-let run_and_write data_loc graph_loc file_out sparse group_bool condition
-    n_trials product evaluations =
+let run_and_write data_loc questions graph_loc file_out sparse group_bool
+    condition n_trials product evaluations =
     let titles, evals = evaluations in
     let group =
         if group_bool then Some (string_of_int @@ Random.int 33) else None
     in
     let pre_data, post_data =
-        load_data data_loc 10000 condition group questions_without_pk
+        load_data data_loc 10000 condition group questions
     in
     let knowledge_data =
         fst @@ load_data data_loc 10000 condition group pk_score
@@ -439,6 +439,7 @@ let deGroot_experiment () =
     let ( file_out,
           graph_loc,
           data_loc,
+          questions,
           condition,
           sparse,
           group_bool,
@@ -449,8 +450,8 @@ let deGroot_experiment () =
     in
 
     let _ =
-        run_and_write data_loc graph_loc file_out sparse group_bool condition
-          n_trials product (get_evals ())
+        run_and_write data_loc questions graph_loc file_out sparse group_bool
+          condition n_trials product (get_evals ())
     in
         ()
 
@@ -458,6 +459,7 @@ let sensitivity_analysis () =
     let ( file_out,
           graph_loc,
           data_loc,
+          questions,
           condition,
           sparse,
           group_bool,
@@ -473,8 +475,8 @@ let sensitivity_analysis () =
         |> List.map list_to_config
     in
     let _ =
-        run_and_write data_loc graph_loc file_out sparse group_bool condition 1
-          product
+        run_and_write data_loc questions graph_loc file_out sparse group_bool
+          condition 1 product
           (Evaluations.get_all_evals_sensitivity ())
     in
         ()

@@ -46,6 +46,7 @@ type config = {
 type degroot_yaml = {
   file_out : string;
   data_loc : string;
+  questions : string;
   graph : string;
   condition : string;
   n_trials : int;
@@ -104,7 +105,12 @@ let yaml_to_config_generator yaml_value =
         | "degroot_convergence" -> Evaluations.get_all_evals_degroot_convergence
         | _ -> failwith "invalid evals"
     in
-
+    let q =
+        match res.questions with
+        | "all" -> Query.questions_with_pk
+        | "Polarized" -> Query.polarizing_questions_with_pk
+        | _ -> failwith "Invalid question type"
+    in
     let raw_product =
         if res.random then
           List.init res.n_trials (fun _ ->
@@ -144,6 +150,7 @@ let yaml_to_config_generator yaml_value =
     ( res.file_out,
       res.graph,
       res.data_loc,
+      q,
       res.condition,
       res.sparse,
       res.group,
@@ -343,8 +350,8 @@ let create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
         add_self_bias optional_mat bias_factor
         |> (fun mat -> if ego_bias then add_ego_bias mat else optional_mat)
         |> (fun mat ->
-             if knowledge_bias then add_knowledge_bias mat knowledge_data
-             else optional_mat)
+        if knowledge_bias then add_knowledge_bias mat knowledge_data
+        else optional_mat)
         |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on

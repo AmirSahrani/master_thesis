@@ -1,15 +1,15 @@
 thesis
 	TODO
 		Finish up proof
-			✗ Combine theorems into 1
-			✗ define decision problems for DBVM and QAP
-			✗ Consider symbols for entries in matrix
+			✓ Combine theorems into 1
+			✓ define decision problems for DBVM and QAP
+			Consider symbols for entries in matrix
 		Clean code base
 			✓ Remove ABM stuff
 			✓ Make nice interface for DeGroot
 		Write down stats
 		DeGroot Bias alternative
-			Find different notion of bias, possibly different for voters?
+			✓ Find different notion of bias, possibly different for voters?
 				✓ Knowledge for voter too
 				✓ Ego, e.i. # incoming edges
 			✓ Not strictly bias, but include meta/substantive agreement.
@@ -38,9 +38,9 @@ thesis
 					Might object that people don't look at it linearly or even quadratically, it might make most sense to look at some binary, e.g. people agrees if with some \delta from me
 					For larger number of candidate it might not makes sense to have a full preference profile.
 				"True" Preference misleading
-					We can model substantative agreement because we have the true opinions
-					We cannot really model meta-agreement since we lack full preference
-					Candidate in the data set do not reflect our candidates because the are not easily fit into our model
+					✓ We can model substantative agreement because we have the true opinions
+					✓ We cannot really model meta-agreement since we lack full preference
+					✓ Candidate in the data set do not reflect our candidates because the are not easily fit into our model
 			Edge based trust only for control group
 				Why would this not be true in person?
 				Maybe it is a good idea to also introduce familiarity
