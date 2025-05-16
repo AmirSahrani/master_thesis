@@ -13,15 +13,13 @@ let knowledge_questions =
 
 let join_by_comma = String.concat ","
 let pk_score = "response_pk.score"
-let questions_with_pk = join_by_comma [ q6; q5; q4; q3; q2; q1; pk_score ]
+
+(* let questions_with_pk = join_by_comma [ q6; q5; q4; q3; q2; q1; pk_score ] *)
 let questions_without_pk = join_by_comma [ q6; q5; q4; q3; q2; q1 ]
 
 let polarizing_questions =
     " Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C, \
      Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G"
-
-let polarizing_questions_with_pk =
-    join_by_comma [ polarizing_questions; pk_score ]
 
 let inner_join table1 table2 column =
     Printf.sprintf "INNER JOIN %s ON %s.%s = %s.%s" table1 table2 column table1

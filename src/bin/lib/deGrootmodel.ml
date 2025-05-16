@@ -107,8 +107,8 @@ let yaml_to_config_generator yaml_value =
     in
     let q =
         match res.questions with
-        | "all" -> Query.questions_with_pk
-        | "Polarized" -> Query.polarizing_questions_with_pk
+        | "all" -> Query.questions_without_pk
+        | "Polarized" -> Query.polarizing_questions
         | _ -> failwith "Invalid question type"
     in
     let raw_product =
