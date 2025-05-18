@@ -5,6 +5,17 @@ type timeRange = float list
 type spaces = KS | CS | DP
 type alternativeGenerators = Random | Voter | SampleVoters
 
+type output = {
+  original_opinion : Owl.Mat.mat;
+  simulated_opinion : Owl.Mat.mat;
+  true_opinion : Owl.Mat.mat;
+  original_preferences : profile;
+  simulated_preferences : profile;
+  true_preferences : profile;
+  trust_start : Owl.Mat.mat;
+  trust_current : Owl.Mat.mat;
+}
+
 let filter_odd = function
     | `Int x ->
         if x mod 2 = 0 then `Int (x + [| -1; 1 |].(Random.int 1)) else `Int x
@@ -128,8 +139,8 @@ let print_shape mat =
     let n_row, n_cols = Owl.Mat.shape mat in
         Printf.printf "Matrix of shape %d %d\n%!" n_row n_cols
 
-let string_of_list lst convert =
-    Printf.sprintf "\"%s\"" (String.concat " > " (List.map convert lst))
+let string_of_list lst convert sep =
+    Printf.sprintf "\"%s\"" (String.concat sep (List.map convert lst))
 
 let string_of_list_pref lst convert =
     Printf.sprintf "%s"

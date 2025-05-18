@@ -65,15 +65,12 @@ def _(Enum):
         MULTIPLE_REPONSE = "-8"
 
     def from_value(value: int):
-        if value in {"98", "99", "998", "999"}:
-            return None
-        if value in {"77", "777"}:
-            return 11
-        elif value == " ":
-            return None
-        elif value == "-8":
-            return None
-        else:
+        if type(value) != int:
+            try:
+                value = float(value)
+            except:
+                return None
+        if value >= 0 and value <= 10:
             return int(value)
     return PK_correct_answers, Response, from_value
 
@@ -201,7 +198,7 @@ def _(connection_string, data, from_value, pk, pl):
         pl.mean_horizontal(pk_correct_questions_labels).alias("score")
     )
 
-    print(responses_pre)
+    print(responses_pre.fill_null(strategy="mean"))
 
     responses_pre.write_database(
         table_name="response_pre",

@@ -159,14 +159,16 @@ let load_data loc limit_n cond group q =
 let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
     ~knowledge_bool ~meta_bool ~substantive_bool ~knowledge_scores ~graph
     ~num_voters ~num_candidates ~timesteps ~methd ~bias ~grouped ~sparse
-    ~self_knowledge ~self_ego =
+    ~self_knowledge ~self_ego ~similarity_bool =
     let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
     let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
     let num_voters = if not grouped then num_voters else max_idx in
+
     let voter_indices = Array.sub indices 0 num_voters in
     let pre_data = Owl.Mat.rows pre_data voter_indices in
     let post_data = Owl.Mat.rows post_data voter_indices in
     let knowledge_data = Owl.Mat.rows knowledge_scores voter_indices in
+
     let out_graph = ties_sampling graph num_voters in
     let voter_mapping =
         if sparse then
@@ -202,6 +204,7 @@ let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
           substantive_bool;
           self_knowledge;
           self_ego;
+          similarity_bool;
           graph = out_graph;
           n_voters = num_voters;
           n_candidates = num_candidates;
@@ -219,6 +222,7 @@ type job = {
   substantive_bool : bool;
   self_knowledge : bool;
   self_ego : bool;
+  similarity_bool : bool;
   num_voters : int;
   num_candidates : int;
   time : timeRange;
@@ -237,6 +241,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
       substantive_bool;
       self_knowledge;
       self_ego;
+      similarity_bool;
       num_voters;
       num_candidates;
       time;
@@ -253,12 +258,10 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
         run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
           ~knowledge_bool ~meta_bool ~substantive_bool ~knowledge_scores ~graph
           ~num_voters ~num_candidates ~timesteps:time ~methd ~bias ~grouped
-          ~sparse ~self_knowledge ~self_ego
+          ~sparse ~self_knowledge ~self_ego ~similarity_bool
     in
         List.mapi
-          (fun j
-               ( (sim_opinion, true_opinion),
-                 (original_prof, sim_prof, true_prof, trust, trust_start) ) ->
+          (fun j experiment_results ->
             [
               string_of_float bias;
               string_of_sampler methd;
@@ -274,10 +277,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
               string_of_bool meta_bool;
               string_of_bool substantive_bool;
             ]
-            @ List.map
-                (fun eval ->
-                  eval original_prof sim_prof true_prof trust trust_start)
-                evals)
+            @ List.map (fun eval -> eval experiment_results) evals)
           out
 
 let run_parallel_simulations product pre_data post_data knowledge_scores graph
@@ -286,12 +286,13 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
         product
         |> List.concat_map (function
              | [
-                 `Bool cred;
                  `Bool knowledge;
+                 `Bool cred;
+                 `Bool self_ego;
+                 `Bool self_knowledge_bool;
+                 `Bool similarity_bool;
                  `Bool meta;
                  `Bool substantive;
-                 `Bool self_knowledge_bool;
-                 `Bool self_ego;
                  `Int v;
                  `Int c;
                  `TimeRange timesteps;
@@ -306,6 +307,7 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
                        substantive_bool = substantive;
                        self_knowledge = self_knowledge_bool;
                        self_ego;
+                       similarity_bool;
                        num_voters = v;
                        num_candidates = c;
                        time = timesteps;
@@ -386,6 +388,7 @@ let run_and_write data_loc questions graph_loc file_out sparse group_bool
           "credibility";
           "knowledge";
           "ego";
+          "similarity";
           "meta";
           "substantative";
         ]
@@ -414,6 +417,7 @@ let list_to_config = function
         substantive_bool;
         self_knowledge_bool;
         self_ego;
+        self_similarity;
         n_voters;
         n_candidates;
         timesteps;
@@ -427,6 +431,7 @@ let list_to_config = function
           `Bool (substantive_bool > 0.5);
           `Bool (self_knowledge_bool > 0.5);
           `Bool (self_ego > 0.5);
+          `Bool (self_similarity > 0.5);
           `Int (int_of_float n_voters) |> filter_odd;
           `Int (int_of_float n_candidates);
           `TimeRange [ timesteps ];

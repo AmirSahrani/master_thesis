@@ -376,28 +376,33 @@ let get_all_evals_degroot () =
         "proximity_to_cand_sp_true";
       ],
       [
-        (fun prof _ _ _ _ -> string_of_bool @@ is_cyclic prof);
-        (fun prof _ _ _ _ -> string_of_bool @@ has_condorcet prof);
-        (fun prof _ _ _ _ -> string_of_int @@ n_unique_preferences prof);
-        (fun prof _ _ _ _ ->
-          string_of_int @@ num_voter_strongly_single_peaked prof);
-        (fun prof _ _ _ _ ->
-          string_of_int @@ num_cand_strongly_single_peaked prof);
-        (fun _ prof_end _ _ _ -> string_of_bool @@ is_cyclic prof_end);
-        (fun _ prof_end _ _ _ -> string_of_bool @@ has_condorcet prof_end);
-        (fun _ prof_end _ _ _ -> string_of_int @@ n_unique_preferences prof_end);
-        (fun _ prof_end _ _ _ ->
-          string_of_int @@ num_voter_strongly_single_peaked prof_end);
-        (fun _ prof_end _ _ _ ->
-          string_of_int @@ num_cand_strongly_single_peaked prof_end);
-        (fun _ _ prof_true _ _ -> string_of_bool @@ is_cyclic prof_true);
-        (fun _ _ prof_true _ _ -> string_of_bool @@ has_condorcet prof_true);
-        (fun _ _ prof_true _ _ ->
-          string_of_int @@ n_unique_preferences prof_true);
-        (fun _ _ prof_true _ _ ->
-          string_of_int @@ num_voter_strongly_single_peaked prof_true);
-        (fun _ _ prof_true _ _ ->
-          string_of_int @@ num_cand_strongly_single_peaked prof_true);
+        (fun res -> string_of_bool @@ is_cyclic res.original_preferences);
+        (fun res -> string_of_bool @@ has_condorcet res.original_preferences);
+        (fun res ->
+          string_of_int @@ n_unique_preferences res.original_preferences);
+        (fun res ->
+          string_of_int
+          @@ num_voter_strongly_single_peaked res.original_preferences);
+        (fun res ->
+          string_of_int
+          @@ num_cand_strongly_single_peaked res.original_preferences);
+        (fun res -> string_of_bool @@ is_cyclic res.simulated_preferences);
+        (fun res -> string_of_bool @@ has_condorcet res.simulated_preferences);
+        (fun res ->
+          string_of_int @@ n_unique_preferences res.simulated_preferences);
+        (fun res ->
+          string_of_int
+          @@ num_voter_strongly_single_peaked res.simulated_preferences);
+        (fun res ->
+          string_of_int
+          @@ num_cand_strongly_single_peaked res.simulated_preferences);
+        (fun res -> string_of_bool @@ is_cyclic res.true_preferences);
+        (fun res -> string_of_bool @@ has_condorcet res.true_preferences);
+        (fun res -> string_of_int @@ n_unique_preferences res.true_preferences);
+        (fun res ->
+          string_of_int @@ num_voter_strongly_single_peaked res.true_preferences);
+        (fun res ->
+          string_of_int @@ num_cand_strongly_single_peaked res.true_preferences);
       ] )
 
 let get_all_evals_degroot_convergence () =
@@ -410,18 +415,18 @@ let get_all_evals_degroot_convergence () =
         "entrywise_distance";
       ],
       [
-        (fun prof_start prof_end _ _ _ ->
+        (fun res ->
           string_of_float
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.ksDistance p p')
-               0. prof_start prof_end);
-        (fun prof_start prof_end _ _ _ ->
+               0. res.original_preferences res.simulated_preferences);
+        (fun res ->
           string_of_float
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.csDistance p p')
-               0. prof_start prof_end);
-        (fun _ _ _ trust_now trust_start ->
-          Owl.Mat.(trust_now - trust_start)
+               0. res.original_preferences res.true_preferences);
+        (fun res ->
+          Owl.Mat.(res.trust_current - res.trust_start)
           |> Owl.Mat.abs |> Owl.Mat.sum' |> string_of_float);
       ] )
 
@@ -441,29 +446,48 @@ let get_all_evals_sensitivity () =
         "cs_distance_true";
       ],
       [
-        (fun _ prof_end _ _ _ -> string_of_bool @@ is_cyclic prof_end);
-        (fun _ prof_end _ _ _ -> string_of_bool @@ has_condorcet prof_end);
-        (fun _ prof_end _ _ _ -> string_of_int @@ n_unique_preferences prof_end);
-        (fun _ prof_end _ _ _ ->
-          string_of_int @@ num_voter_strongly_single_peaked prof_end);
-        (fun _ prof_end _ _ _ ->
-          string_of_int @@ num_cand_strongly_single_peaked prof_end);
-        (fun _ _ prof_true _ _ -> string_of_bool @@ is_cyclic prof_true);
-        (fun _ _ prof_true _ _ -> string_of_bool @@ has_condorcet prof_true);
-        (fun _ _ prof_true _ _ ->
-          string_of_int @@ n_unique_preferences prof_true);
-        (fun _ _ prof_true _ _ ->
-          string_of_int @@ num_voter_strongly_single_peaked prof_true);
-        (fun _ _ prof_true _ _ ->
-          string_of_int @@ num_cand_strongly_single_peaked prof_true);
-        (fun _ prof prof_true _ _ ->
+        (fun res -> string_of_bool @@ is_cyclic res.simulated_preferences);
+        (fun res -> string_of_bool @@ has_condorcet res.true_preferences);
+        (fun res ->
+          string_of_int @@ n_unique_preferences res.simulated_preferences);
+        (fun res ->
+          string_of_int
+          @@ num_voter_strongly_single_peaked res.simulated_preferences);
+        (fun res ->
+          string_of_int
+          @@ num_cand_strongly_single_peaked res.simulated_preferences);
+        (fun res -> string_of_bool @@ is_cyclic res.true_preferences);
+        (fun res -> string_of_bool @@ has_condorcet res.true_preferences);
+        (fun res -> string_of_int @@ n_unique_preferences res.true_preferences);
+        (fun res ->
+          string_of_int @@ num_voter_strongly_single_peaked res.true_preferences);
+        (fun res ->
+          string_of_int @@ num_cand_strongly_single_peaked res.true_preferences);
+        (fun res ->
           string_of_float
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.ksDistance p p')
-               0. prof prof_true);
-        (fun _ prof prof_true _ _ ->
+               0. res.simulated_preferences res.true_preferences);
+        (fun res ->
           string_of_float
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.csDistance p p')
-               0. prof prof_true);
+               0. res.simulated_preferences res.true_preferences);
+      ] )
+
+let get_all_individual_evals () =
+    ( [ "PBS_start"; "PBS_simulated"; "PBS_true" ],
+      [
+        (fun res ->
+          Owl.Mat.mean ~axis:1 res.original_opinion
+          |> Owl.Mat.to_array |> Array.to_list
+          |> fun a -> string_of_list a string_of_float ", ");
+        (fun res ->
+          Owl.Mat.mean ~axis:1 res.simulated_opinion
+          |> Owl.Mat.to_array |> Array.to_list
+          |> fun a -> string_of_list a string_of_float ", ");
+        (fun res ->
+          Owl.Mat.mean ~axis:1 res.true_opinion
+          |> Owl.Mat.to_array |> Array.to_list
+          |> fun a -> string_of_list a string_of_float ", ");
       ] )

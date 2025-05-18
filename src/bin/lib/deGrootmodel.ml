@@ -24,12 +24,16 @@ let sample_range = function
         `Method
           (alternativeGenerator_of @@ List.nth x (Random.int (List.length x)))
 
+let random_if_necessary param =
+    if param.should_randomize then `Bool (Random.bool ()) else `Bool param.value
+
 type config = {
   pre_data : Owl.Mat.mat;
   post_data : Owl.Mat.mat;
   knowledge_data : Owl.Mat.mat;
   knowledge_bool : bool;
   credibility_bool : bool;
+  similarity_bool : bool;
   meta_bool : bool;
   substantive_bool : bool;
   self_knowledge : bool;
@@ -59,6 +63,10 @@ type degroot_yaml = {
   random : bool;
   include_knowledge : parameterBool;
   include_ego : parameterBool;
+  include_self_knowledge : parameterBool;
+  include_similarity : parameterBool;
+  include_meta : parameterBool;
+  include_substantive : parameterBool;
   sparse : bool;
   credibility : parameterBool;
   group : bool;
@@ -103,23 +111,26 @@ let yaml_to_config_generator yaml_value =
         match res.eval |> String.lowercase_ascii with
         | "degroot" -> Evaluations.get_all_evals_degroot
         | "degroot_convergence" -> Evaluations.get_all_evals_degroot_convergence
+        | "pbs" -> Evaluations.get_all_individual_evals
         | _ -> failwith "invalid evals"
     in
     let q =
         match res.questions with
         | "all" -> Query.questions_without_pk
-        | "Polarized" -> Query.polarizing_questions
+        | "polarized" -> Query.polarizing_questions
         | _ -> failwith "Invalid question type"
     in
     let raw_product =
         if res.random then
           List.init res.n_trials (fun _ ->
               [
-                (if res.include_knowledge.should_randomize then
-                   `Bool (Random.bool ())
-                 else `Bool res.include_knowledge.value);
-                (if res.credibility.should_randomize then `Bool (Random.bool ())
-                 else `Bool res.credibility.value);
+                random_if_necessary res.include_knowledge;
+                random_if_necessary res.credibility;
+                random_if_necessary res.include_ego;
+                random_if_necessary res.include_self_knowledge;
+                random_if_necessary res.include_similarity;
+                random_if_necessary res.include_meta;
+                random_if_necessary res.include_substantive;
                 sample_range (RangeInt res.n_voters) |> filter_odd;
                 sample_range (RangeInt res.n_candidates);
                 `TimeRange
@@ -220,6 +231,24 @@ let credibility_matrix adjcency_matrix use_cred =
             done
           done;
           out_mat
+
+let scale_with_similarity trust opinions =
+    let rows, cols = Owl.Mat.shape trust in
+    let max_dist =
+        Owl.Mat.col_num opinions |> float_of_int
+        |> ( *. ) (Owl.Mat.max' opinions -. Owl.Mat.min' opinions)
+    in
+
+    for i = 0 to rows - 1 do
+      for j = 0 to cols - 1 do
+        let sim =
+            Owl.Mat.(row opinions i - row opinions j |> abs |> sum') /. max_dist
+        in
+        let t = Owl.Mat.get trust i j in
+            Owl.Mat.set trust i j (t *. sim)
+      done
+    done;
+    trust
 
 let abs_diff_sum mat mat2 = Owl.Mat.(mat - mat2) |> Owl.Mat.abs |> Owl.Mat.sum'
 
@@ -338,20 +367,25 @@ let opinion_to_pref pref candidates =
         |> List.sort (fun (_, d1) (_, d2) -> compare d1 d2)
         |> List.map (fun tup -> [ fst tup ])
 
-let create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
-    bias_factor ego_bias knowledge_bias =
+let create_trust_matrix pre_data graph credibility_bool knowledge_data
+    knowledge_bool bias_factor ego_bias knowledge_bias similarity =
     let trust_matrix = graph |> adjacency_matrix_from in
         trust_matrix |> fun m ->
-        credibility_matrix m credibility_bool |> fun m ->
+        let cred_mat = credibility_matrix m credibility_bool in
         let optional_mat =
-            if knowledge_bool then Owl.Mat.(m * knowledge_data) else m
+            if knowledge_bool then Owl.Mat.(cred_mat * knowledge_data)
+            else cred_mat
+        in
+        let optional_mat =
+            if similarity then scale_with_similarity optional_mat pre_data
+            else optional_mat
         in
 
         add_self_bias optional_mat bias_factor
         |> (fun mat -> if ego_bias then add_ego_bias mat else optional_mat)
         |> (fun mat ->
-        if knowledge_bias then add_knowledge_bias mat knowledge_data
-        else optional_mat)
+             if knowledge_bias then add_knowledge_bias mat knowledge_data
+             else optional_mat)
         |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on
@@ -366,6 +400,7 @@ let deGroot config =
       self_knowledge;
       self_ego;
       credibility_bool;
+      similarity_bool;
       meta_bool;
       substantive_bool;
       graph;
@@ -383,12 +418,12 @@ let deGroot config =
     let n_policies = Owl.Mat.col_num pre_data in
 
     (* First we create the proper trust matrix*)
-    let trust_matrix =
-        create_trust_matrix graph credibility_bool knowledge_data knowledge_bool
-          bias_factor self_ego self_knowledge
+    let trust_start =
+        create_trust_matrix pre_data graph credibility_bool knowledge_data
+          knowledge_bool bias_factor self_ego self_knowledge similarity_bool
     in
 
-    assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_matrix);
+    assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_start);
 
     (* list of mat *)
     let candidates =
@@ -411,16 +446,17 @@ let deGroot config =
         (* let estimated_candidates = *)
         List.map
           (fun t ->
-            let trust = Owl.Mat.(trust_matrix **@ Float.round t) in
+            let trust_current = Owl.Mat.(trust_start **@ Float.round t) in
 
-            assert (Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust);
+            assert (
+              Owl.Mat.for_all (fun x -> x >= 0.0 || x <= 1.0) trust_current);
             let subst_trust =
-                if substantive_bool then trust else Owl.Mat.eye n_voters
+                if substantive_bool then trust_current else Owl.Mat.eye n_voters
             in
             let meta_trust =
-                if meta_bool then trust else Owl.Mat.eye n_voters
+                if meta_bool then trust_current else Owl.Mat.eye n_voters
             in
-            let final_opinion = Owl.Mat.(subst_trust *@ pre_data) in
+            let simulated_opinion = Owl.Mat.(subst_trust *@ pre_data) in
             let cand_noisy_2d =
                 Owl.Arr.reshape cand_noisy
                   [| n_voters; n_candidates * n_policies |]
@@ -428,7 +464,7 @@ let deGroot config =
 
             (* Perform matrix multiplication *)
             let final_est_2d = Owl.Mat.(meta_trust *@ cand_noisy_2d) in
-            let true_final_est_2d = Owl.Mat.(trust *@ cand_noisy_2d) in
+            let true_final_est_2d = Owl.Mat.(trust_current *@ cand_noisy_2d) in
 
             (* Reshape the result back to 3D *)
             let final_est =
@@ -454,7 +490,7 @@ let deGroot config =
                         Owl.Mat.of_array policy_array 1 n_policies)
                 |> Array.to_list
             in
-            let original_prefs =
+            let original_preferences =
                 List.mapi
                   (fun _ i ->
                     opinion_to_pref (Owl.Mat.row pre_data i)
@@ -462,26 +498,30 @@ let deGroot config =
                   (List.init n_voters Fun.id)
             in
 
-            let simulated_prefs =
+            let simulated_preferences =
                 List.mapi
                   (fun _ i ->
                     opinion_to_pref
-                      (Owl.Mat.row final_opinion i)
+                      (Owl.Mat.row simulated_opinion i)
                       (extract_candidate_policies i final_est))
                   (List.init n_voters Fun.id)
             in
 
-            let true_prefs =
+            let true_preferences =
                 List.mapi
                   (fun _ i ->
                     opinion_to_pref (Owl.Mat.row post_data i)
                       (extract_candidate_policies i final_est_true))
                   (List.init (Owl.Mat.row_num post_data) Fun.id)
             in
-                ( (final_opinion, post_data),
-                  ( original_prefs,
-                    simulated_prefs,
-                    true_prefs,
-                    trust,
-                    trust_matrix ) ))
+                {
+                  original_opinion = pre_data;
+                  simulated_opinion;
+                  true_opinion = post_data;
+                  original_preferences;
+                  simulated_preferences;
+                  true_preferences;
+                  trust_start;
+                  trust_current;
+                })
           timesteps
