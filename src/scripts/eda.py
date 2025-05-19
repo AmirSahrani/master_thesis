@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.0"
+__generated_with = "0.11.31"
 app = marimo.App(width="full")
 
 
@@ -492,6 +492,11 @@ def _(conn, pl):
         group = group[0]
         print(f'group: {group} has {len(groups.filter(pl.col("GROUP") == group))} members')
     return group, groups
+
+
+@app.cell
+def _():
+    return
 
 
 if __name__ == "__main__":

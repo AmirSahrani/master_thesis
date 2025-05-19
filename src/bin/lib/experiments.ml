@@ -274,6 +274,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
               string_of_bool credibility_bool;
               string_of_bool knowledge_bool;
               string_of_bool self_ego;
+              string_of_bool similarity_bool;
               string_of_bool meta_bool;
               string_of_bool substantive_bool;
             ]

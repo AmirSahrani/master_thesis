@@ -17,6 +17,8 @@ def _():
     import arviz as az
     import pymc as pm
     from sklearn.preprocessing import StandardScaler
+    import sklearn
+    import statsmodels.api as sm
     from pymc import Model, Normal, sample
     return (
         Model,
@@ -31,6 +33,8 @@ def _():
         plt,
         pm,
         sample,
+        sklearn,
+        sm,
         sns,
         stats,
     )
@@ -231,7 +235,6 @@ def _(data_control, data_delib):
     for mb in measurements_bool:
         data_delib[mb] = data_delib[mb].astype(int)
         data_control[mb] = data_control[mb].astype(int)
-
     return (
         bias_str,
         cand_df,
@@ -760,7 +763,7 @@ def _(data_delib, np, pd, time_str):
 
     def to_tex(df: pd.DataFrame):
         print(df.to_latex( multicolumn=True))
-    
+
     to_tex(pivot_of_minimum_values(bin_biases(data_delib), m))
     return bin_biases, find_min_bias, m, pivot_of_minimum_values, to_tex
 
@@ -884,17 +887,102 @@ def _(
 def _(mo):
     mo.md(
         r"""
-        ## Parameter estimation
+        ## Opinion Replication
 
-        We now use `pymc` to estimate the most likely parameters for the deliberation and the control group, conditional on the number of voters and candidates, where the goal is to get the probability distribution of parameters that minimizes the `total_absdiff
+
+        We now proceed to compare the opinions of voters in the simulation to their true opinion after deliberation
         """
     )
     return
 
 
 @app.cell
-def _():
-    return
+def _(np, pd):
+    opinion_df = pd.read_csv("results/degroot_pbs_control.csv")
+    pbs_measures = ["PBS_start", "PBS_simulated", "PBS_true"]
+
+    for pbs in pbs_measures:
+        opinion_df[pbs] = opinion_df[pbs].apply(lambda x: list(map(np.float64,x.strip("\"\',").split(","))))
+
+    opinion_df = opinion_df.explode(pbs_measures)
+
+    for pbs in pbs_measures:
+        opinion_df[pbs] = opinion_df[pbs].astype(np.float64)
+
+
+    opinion_df["PBS_error"] = abs(opinion_df["PBS_simulated"]- opinion_df["PBS_true"])
+    opinion_df
+    return opinion_df, pbs, pbs_measures
+
+
+@app.cell
+def _(np, opinion_df, pd, sklearn, sm, time_str):
+    opinion_df.columns
+
+    independent_variables = ['bias', 'sparse',  'credibility', 'knowledge', 'ego', 'similarity']
+
+    opinion_group = opinion_df.loc[opinion_df[time_str] > 150].groupby(independent_variables).mean(numeric_only=True)
+
+    xs = opinion_group.index.to_numpy()
+    x = np.array([np.array(x) for x in xs])
+    y = opinion_group["PBS_error"]
+
+    poly = sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)
+    X_poly = poly.fit_transform(x)
+    feature_names = poly.get_feature_names_out(input_features=[independent_variables[i] for i in range(x.shape[1])])
+
+    # Create DataFrame for X_poly with column names
+    X_poly_df = pd.DataFrame(X_poly, columns=feature_names, index=y.index)
+
+    model = sm.OLS(y, X_poly_df).fit()
+    print(model.summary())
+
+    # To predict:
+    y_pred = model.predict(X_poly)
+    return (
+        X_poly,
+        X_poly_df,
+        feature_names,
+        independent_variables,
+        model,
+        opinion_group,
+        poly,
+        x,
+        xs,
+        y,
+        y_pred,
+    )
+
+
+@app.cell
+def _(np, opinion_df, plt, time_str):
+    opinion_plotting_data = opinion_df.loc[opinion_df[time_str] == 1 & (opinion_df["substantative"] == True)]
+    pbs_start = opinion_plotting_data["PBS_start"]
+    pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
+    pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
+    bins = np.linspace(0,10,20)
+    digitized_start = np.digitize(pbs_start, bins)
+
+    bin_means_start = [pbs_start[digitized_start == i].mean() for i in range(0, len(bins))]
+    bin_means_sim = [pbs_sim[digitized_start == i].mean() for i in range(0, len(bins))]
+    bin_means_true = [pbs_true[digitized_start == i].mean() for i in range(0, len(bins))]
+    plt.scatter(pbs_start, pbs_sim, alpha=0.01)
+    plt.scatter(bin_means_start,  bin_means_sim)
+    plt.plot([bin_means_start[3], bin_means_start[-3]], [bin_means_sim[3], bin_means_sim[-3]], "-", color='orange', alpha=0.4)
+    plt.scatter(bin_means_start, bin_means_true)
+    plt.plot([bin_means_start[3], bin_means_start[-3]], [bin_means_true[3], bin_means_true[-3]], "-", color='green', alpha=0.4)
+    plt.show()
+    return (
+        bin_means_sim,
+        bin_means_start,
+        bin_means_true,
+        bins,
+        digitized_start,
+        opinion_plotting_data,
+        pbs_sim,
+        pbs_start,
+        pbs_true,
+    )
 
 
 if __name__ == "__main__":
