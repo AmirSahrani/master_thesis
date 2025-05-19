@@ -29,16 +29,16 @@ include_ego:
   should_randomize: true
   value: true 
 include_meta: 
-  should_randomize: true
-  value: true 
+  should_randomize: false
+  value: false
 include_substantive: 
-  should_randomize: true
+  should_randomize: false
   value: true 
 sparse: false
 timesteps: 
   start: 1.0
-  stop: 151.0
-  step: 25.0
+  stop: 25
+  step: 1.0
 bias:
   start: 0.8
   stop: 1.5

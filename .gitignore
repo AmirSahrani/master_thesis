@@ -10,3 +10,6 @@ _build/
 # General
 *.log
 temporary_data/
+
+# Preventing large files from being synced
+results/

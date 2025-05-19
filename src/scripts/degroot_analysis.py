@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -58,6 +58,9 @@ def _(np, plt):
     )
 
 
+    sim_color = "#008B72"
+    true_color = "#613F99"
+    start_color = "#A93C93"
 
     def compute_proportion(data, col_start, col_end, new_col, group):
         # Ensure 'cyclic_start' and 'cyclic_end' are numeric
@@ -102,7 +105,14 @@ def _(np, plt):
 
         # Convert Series to DataFrame and reset index
         return agg_prop.reset_index(name=new_col)
-    return compute_average, compute_percentage_change, compute_proportion
+    return (
+        compute_average,
+        compute_percentage_change,
+        compute_proportion,
+        sim_color,
+        start_color,
+        true_color,
+    )
 
 
 @app.cell
@@ -116,7 +126,6 @@ def _(compute_proportion, mlines, np, pd, plt):
             sampler: marker_styles[i % len(marker_styles)]
             for i, sampler in enumerate(df["cand_sampler"].unique())
         }
-
         # Define colors for 'Type' — consistent ordering
         type_colors = {"Start": "#A93C93", "End": "#008B72", "Final": "#613F99", "True": "#613F99"}
         types_used = {}
@@ -898,7 +907,7 @@ def _(mo):
 
 @app.cell
 def _(np, pd):
-    opinion_df = pd.read_csv("results/degroot_pbs_control.csv")
+    opinion_df = pd.read_csv("results/degroot_pbs.csv")
     pbs_measures = ["PBS_start", "PBS_simulated", "PBS_true"]
 
     for pbs in pbs_measures:
@@ -921,7 +930,7 @@ def _(np, opinion_df, pd, sklearn, sm, time_str):
 
     independent_variables = ['bias', 'sparse',  'credibility', 'knowledge', 'ego', 'similarity']
 
-    opinion_group = opinion_df.loc[opinion_df[time_str] > 150].groupby(independent_variables).mean(numeric_only=True)
+    opinion_group = opinion_df.loc[opinion_df[time_str] > 15].groupby(independent_variables).mean(numeric_only=True)
 
     xs = opinion_group.index.to_numpy()
     x = np.array([np.array(x) for x in xs])
@@ -937,8 +946,7 @@ def _(np, opinion_df, pd, sklearn, sm, time_str):
     model = sm.OLS(y, X_poly_df).fit()
     print(model.summary())
 
-    # To predict:
-    y_pred = model.predict(X_poly)
+
     return (
         X_poly,
         X_poly_df,
@@ -950,13 +958,13 @@ def _(np, opinion_df, pd, sklearn, sm, time_str):
         x,
         xs,
         y,
-        y_pred,
     )
 
 
 @app.cell
-def _(np, opinion_df, plt, time_str):
-    opinion_plotting_data = opinion_df.loc[opinion_df[time_str] == 1 & (opinion_df["substantative"] == True)]
+def _(np, opinion_df, plt, sim_color, time_str, true_color):
+    opinion_plotting_data = opinion_df.sample(n=10000)
+    opinion_plotting_data = opinion_plotting_data.loc[opinion_plotting_data[time_str] > 10]
     pbs_start = opinion_plotting_data["PBS_start"]
     pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
     pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
@@ -966,11 +974,13 @@ def _(np, opinion_df, plt, time_str):
     bin_means_start = [pbs_start[digitized_start == i].mean() for i in range(0, len(bins))]
     bin_means_sim = [pbs_sim[digitized_start == i].mean() for i in range(0, len(bins))]
     bin_means_true = [pbs_true[digitized_start == i].mean() for i in range(0, len(bins))]
-    plt.scatter(pbs_start, pbs_sim, alpha=0.01)
-    plt.scatter(bin_means_start,  bin_means_sim)
-    plt.plot([bin_means_start[3], bin_means_start[-3]], [bin_means_sim[3], bin_means_sim[-3]], "-", color='orange', alpha=0.4)
-    plt.scatter(bin_means_start, bin_means_true)
-    plt.plot([bin_means_start[3], bin_means_start[-3]], [bin_means_true[3], bin_means_true[-3]], "-", color='green', alpha=0.4)
+    plt.scatter(pbs_start, pbs_sim, alpha=0.008, color=sim_color, s=3)
+    plt.scatter(pbs_start, pbs_true, alpha=0.008, color=true_color, s=3)
+    plt.scatter(bin_means_start,  bin_means_sim, color=sim_color)
+    plt.scatter(bin_means_start, bin_means_true, color=true_color)
+
+    plt.xlabel("PBS Scores at t=0")
+    plt.ylabel("Change in PBS score")
     plt.show()
     return (
         bin_means_sim,
@@ -983,6 +993,16 @@ def _(np, opinion_df, plt, time_str):
         pbs_start,
         pbs_true,
     )
+
+
+@app.cell
+def _(opinion_df, plt, time_str):
+    avg_error = opinion_df.groupby(time_str).mean(numeric_only=True)["PBS_error"]
+    plt.scatter(avg_error.index, avg_error, color="black",alpha=0.4)
+    plt.ylabel("Error in Prediction of PBS")
+    plt.xlabel("Time")
+    plt.show()
+    return (avg_error,)
 
 
 if __name__ == "__main__":

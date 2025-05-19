@@ -6,7 +6,7 @@ random: true
 n_trials: 10000
 n_voters: 
   istart: 9
-  istop: 15
+  istop: 30
   istep: 2
 n_candidates: 
   istart: 3
@@ -29,16 +29,16 @@ include_ego:
   should_randomize: true
   value: true 
 include_meta: 
-  should_randomize: true
-  value: true 
+  should_randomize: false
+  value: false
 include_substantive: 
-  should_randomize: true
-  value: true 
+  should_randomize: false
+  value: true
 sparse: false
 timesteps: 
-  start: 1.0
-  stop: 151.0
-  step: 25.0
+  start: 0.0
+  stop: 25
+  step: 1.0
 bias:
   start: 0.8
   stop: 1.5
