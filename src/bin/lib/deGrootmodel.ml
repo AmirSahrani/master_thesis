@@ -192,7 +192,7 @@ let add_knowledge_bias adjacency_matrix knowledge =
     let rows = Owl.Mat.row_num adjacency_matrix in
         for i = 0 to rows - 1 do
           Owl.Mat.set adjacency_matrix i i
-            (Owl.Mat.get knowledge 0 1 *. Owl.Mat.get adjacency_matrix i i)
+            (Owl.Mat.get knowledge 0 0 *. Owl.Mat.get adjacency_matrix i i)
         done;
         adjacency_matrix
 

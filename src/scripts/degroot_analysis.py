@@ -19,6 +19,8 @@ def _():
     from sklearn.preprocessing import StandardScaler
     import sklearn
     import statsmodels.api as sm
+    import pyabc
+    from datetime import timedelta
     from pymc import Model, Normal, sample
     return (
         Model,
@@ -32,11 +34,13 @@ def _():
         pd,
         plt,
         pm,
+        pyabc,
         sample,
         sklearn,
         sm,
         sns,
         stats,
+        timedelta,
     )
 
 
@@ -934,7 +938,7 @@ def _(np, opinion_df, pd, sklearn, sm, time_str):
 
     xs = opinion_group.index.to_numpy()
     x = np.array([np.array(x) for x in xs])
-    y = opinion_group["PBS_error"]
+    y = opinion_group["PBS_simulated"]
 
     poly = sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)
     X_poly = poly.fit_transform(x)
@@ -945,8 +949,6 @@ def _(np, opinion_df, pd, sklearn, sm, time_str):
 
     model = sm.OLS(y, X_poly_df).fit()
     print(model.summary())
-
-
     return (
         X_poly,
         X_poly_df,
@@ -1003,6 +1005,53 @@ def _(opinion_df, plt, time_str):
     plt.xlabel("Time")
     plt.show()
     return (avg_error,)
+
+
+@app.cell
+def _():
+    # def pbs_model(params):
+    #     mask = pd.Series(True, index=opinion_df.index)
+    #     for k, v in params.items():
+    #         mask &= opinion_df[k] == v
+    #     simulated = opinion_df[mask]["PBS_simulated"]
+
+    #     return {"data": simulated.reset_index(drop=True)}
+
+    # def d(x, x0):
+    #     return (x["data"] - x0["data"]).abs().mean()
+
+    # # Prior
+    # prior = pyabc.Distribution(
+    #     knowledge=pyabc.RV("bernoulli", 0.5),
+    #     credibility=pyabc.RV("bernoulli", 0.5),
+    #     ego=pyabc.RV("bernoulli", 0.5),
+    #     similarity=pyabc.RV("bernoulli", 0.5)
+    # )
+    # # ABC-SMC setup
+    # abc = pyabc.ABCSMC(pbs_model, prior, d, population_size=1000)
+
+    # observed = {"data": opinion_df["PBS_true"].reset_index(drop=True)}
+
+    # abc.new("sqlite:///data/abc.db", observed)
+    # history = abc.run(max_walltime=timedelta(minutes=1))
+    return
+
+
+@app.cell
+def _(ax, bar_val, history, lower_lim, pyabc):
+    # Please adapt this: lower_lim, upper_lim, parameter
+    for t in range(history.max_t + 1):
+        df, w = history.get_distribution(m=0, t=t)
+        pyabc.visualization.plot_kde_1d(
+            df,
+            w,
+            xmin=lower_lim[0],
+            xmax=bar_val[1],
+            x="knowledge",
+            ax=ax,
+            label="PDF t={}".format(t),
+        )
+    return df, t, w
 
 
 if __name__ == "__main__":

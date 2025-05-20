@@ -357,7 +357,7 @@ let get_all_evals_rad () =
         (fun prof _ -> string_of_int @@ num_voter_strongly_single_peaked prof);
       ] )
 
-let get_all_evals_degroot () =
+let get_all_evals_degroot =
     ( [
         "cyclic_start";
         "condorcet_start";
@@ -405,7 +405,7 @@ let get_all_evals_degroot () =
           string_of_int @@ num_cand_strongly_single_peaked res.true_preferences);
       ] )
 
-let get_all_evals_degroot_convergence () =
+let get_all_evals_degroot_convergence =
     (* fun args should be: profile_start profile_simulation profile_final trust_matrix_t trust_matrix_start*)
     ( [
         "ks_distance_start";
@@ -430,7 +430,7 @@ let get_all_evals_degroot_convergence () =
           |> Owl.Mat.abs |> Owl.Mat.sum' |> string_of_float);
       ] )
 
-let get_all_evals_sensitivity () =
+let get_all_evals_sensitivity =
     ( [
         "cyclic_end";
         "condorcet_end";
@@ -475,7 +475,7 @@ let get_all_evals_sensitivity () =
                0. res.simulated_preferences res.true_preferences);
       ] )
 
-let get_all_individual_evals () =
+let get_all_individual_evals =
     ( [ "PBS_start"; "PBS_simulated"; "PBS_true" ],
       [
         (fun res ->

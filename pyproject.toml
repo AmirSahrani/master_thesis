@@ -24,4 +24,6 @@ dependencies = [
     "arviz>=0.21.0",
     "numpyro>=0.18.0",
     "pyqt6>=6.9.0",
+    "dash>=3.0.4",
+    "dash-bootstrap-components>=2.0.2",
 ]

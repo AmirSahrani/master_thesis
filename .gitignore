@@ -12,4 +12,4 @@ _build/
 temporary_data/
 
 # Preventing large files from being synced
-results/
+results/*

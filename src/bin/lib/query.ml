@@ -12,14 +12,15 @@ let knowledge_questions =
      response_pk.PK5, response_pk.PK6, response_pk.PK7"
 
 let join_by_comma = String.concat ","
-let pk_score = "response_pk.score"
+let pk_score = "voter_info.ID, response_pk.score"
 
 (* let questions_with_pk = join_by_comma [ q6; q5; q4; q3; q2; q1; pk_score ] *)
-let questions_without_pk = join_by_comma [ q6; q5; q4; q3; q2; q1 ]
+let questions_without_pk =
+    join_by_comma [ "voter_info.ID"; q6; q5; q4; q3; q2; q1 ]
 
 let polarizing_questions =
-    " Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C, \
-     Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G"
+    "voter_info.ID, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, \
+     Q4A, Q4B, Q4C, Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G"
 
 let inner_join table1 table2 column =
     Printf.sprintf "INNER JOIN %s ON %s.%s = %s.%s" table1 table2 column table1
@@ -84,9 +85,10 @@ let extract_query_data db query =
               (Sqlite3.Rc.to_string error);
             []
 
-let get_voters_opinions db columns table joins condition limit =
-    let query = query_of columns table joins condition limit in
+let get_query columns table joins condition limit =
+    query_of columns table joins condition limit
 
+let get_voters_opinions db query =
     let response = extract_query_data db query in
         (* Printf.printf "Number of rows of data: %d\n" (List.length response); *)
         response
@@ -95,7 +97,9 @@ let get_voters_opinions db columns table joins condition limit =
         |> List.map (fun row ->
                row
                |> List.map (function
-                    | Some x -> float_of_string x
+                    | Some x ->
+                        if String.length (String.trim x) = 0 then -1.
+                        else float_of_string x
                     | None -> failwith "Unexpected None")
                |> Array.of_list)
         |> Array.of_list

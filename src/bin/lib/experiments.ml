@@ -8,6 +8,7 @@ open Initpy
 open Distances
 open Graphs
 open Pyops
+open Owl_types_common
 
 [@@@ocaml.warning "-26-27"]
 
@@ -108,7 +109,7 @@ let rad_roy_bias_experiment () =
     (* Finalize Python *)
     Py.finalize ()
 
-let load_data loc limit_n cond group q =
+let load_data loc limit_n cond q =
     let db = open_db loc in
     let table_pre = tables `Response_pre in
     let table_post = tables `Response_post in
@@ -123,24 +124,20 @@ let load_data loc limit_n cond group q =
         inner_join (tables `Response_pk) table_post (voter_info `ID)
     in
     let limit_str = limit limit_n in
-    let where_condition cond_value group_value =
+    let where_condition cond_value =
         join_where
-          (condition_sub voter_info_tbl (voter_info `Condition) (comp `Equal)
-             cond_value
-          ::
-          (match group_value with
-          | Some v ->
-              [
-                condition_sub voter_info_tbl (voter_info `Group) (comp `Equal) v;
-              ]
-          | None -> []))
+          [
+            condition_sub voter_info_tbl (voter_info `Condition) (comp `Equal)
+              cond_value;
+          ]
     in
 
     let get_data table join where lim =
-        get_voters_opinions db q table join where lim |> Owl.Mat.of_arrays
+        let query = get_query q table join where lim in
+            get_voters_opinions db query |> Owl.Mat.of_arrays
     in
 
-    let where = where_condition cond group in
+    let where = where_condition cond in
         ( get_data table_pre [ join_pre; join_pk_pre ] where limit_str,
           get_data table_post [ join_post; join_pk_post ] where limit_str )
 
@@ -160,14 +157,110 @@ let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
     ~knowledge_bool ~meta_bool ~substantive_bool ~knowledge_scores ~graph
     ~num_voters ~num_candidates ~timesteps ~methd ~bias ~grouped ~sparse
     ~self_knowledge ~self_ego ~similarity_bool =
-    let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
-    let indices = Owl.Stats.shuffle (Array.init max_idx Fun.id) in
-    let num_voters = if not grouped then num_voters else max_idx in
+    let groups =
+        if grouped then
+          let db = open_db "data/a1r.db" in
+          let query =
+              "\n\
+               SELECT voter_info.ID, voter_info.\"GROUP\"\n\
+               FROM voter_info\n\
+               INNER JOIN response_post ON response_post.ID = voter_info.ID\n\
+               WHERE voter_info.CONDITION = 1 AND COALESCE(Q6J, Q6I, Q6H, Q6G, \
+               Q6F, Q6E, Q6D,  Q5B, Q5A, Q4J, Q4I, Q4H, Q4G, Q4F, Q4E, Q4D, \
+               Q4C, Q4B, Q4A, Q3H, Q3G, Q3F, Q3E, Q3B, Q2A, Q1 ) is not Null;\n\
+              \              "
+          in
+              get_voters_opinions db query |> Owl.Mat.of_arrays
+        else Owl.Mat.empty 1 1
+    in
 
-    let voter_indices = Array.sub indices 0 num_voters in
-    let pre_data = Owl.Mat.rows pre_data voter_indices in
-    let post_data = Owl.Mat.rows post_data voter_indices in
-    let knowledge_data = Owl.Mat.rows knowledge_scores voter_indices in
+    let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
+    let indices =
+        if grouped then (
+          let group_id = Random.int 33 + 1 in
+              Printf.printf "selected group: %d\n" group_id;
+              Array.init max_idx Fun.id |> Array.to_list
+              |> List.filter_map (fun i ->
+                     if int_of_float (Owl.Mat.get groups i 1) = group_id then
+                       Some (int_of_float (Owl.Mat.get groups i 0))
+                     else None)
+              |> Array.of_list)
+        else
+          let all_ids =
+              Owl.Stats.shuffle
+                (Owl.Mat.get_slice [ []; [ 0; 1 ] ] post_data
+                |> Owl.Mat.to_array |> Array.map int_of_float)
+          in
+              Array.sub all_ids 0 num_voters
+    in
+
+    let num_voters = if not grouped then num_voters else Array.length indices in
+
+    let pre_data_ids =
+        Owl.Mat.to_arrays pre_data
+        |> Array.map (fun row -> int_of_float row.(0))
+        |> Array.to_list |> List.sort_uniq compare
+    in
+
+    let post_data_ids =
+        Owl.Mat.to_arrays post_data
+        |> Array.map (fun row -> int_of_float row.(0))
+        |> Array.to_list |> List.sort_uniq compare
+    in
+
+    let knowledge_ids =
+        Owl.Mat.to_arrays knowledge_scores
+        |> Array.map (fun row -> int_of_float row.(0))
+        |> Array.to_list |> List.sort_uniq compare
+    in
+
+    (* Find intersection of all three ID lists - IDs that exist in all three matrices *)
+    let id_set =
+        List.filter
+          (fun id ->
+            List.mem id post_data_ids && List.mem id knowledge_ids
+            && List.mem id pre_data_ids)
+          (Array.to_list indices)
+    in
+    let num_voters = List.length id_set in
+
+    let pre_data_rows =
+        Owl.Mat.filter_rows
+          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) id_set)
+          pre_data
+        |> Array.to_list
+    in
+    let pre_data =
+        Owl.Mat.get_fancy
+          [ L pre_data_rows; R [ 1; Owl.Mat.col_num pre_data - 1 ] ]
+          pre_data
+    in
+
+    let post_data_rows =
+        Owl.Mat.filter_rows
+          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) id_set)
+          post_data
+        |> Array.to_list
+    in
+    let post_data =
+        Owl.Mat.get_fancy
+          [ L post_data_rows; R [ 1; Owl.Mat.col_num post_data - 1 ] ]
+          post_data
+    in
+
+    let knowledge_data_rows =
+        Owl.Mat.filter_rows
+          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) id_set)
+          knowledge_scores
+        |> Array.to_list
+    in
+    let knowledge_data =
+        Owl.Mat.get_fancy
+          [
+            L knowledge_data_rows; R [ 1; Owl.Mat.col_num knowledge_scores - 1 ];
+          ]
+          knowledge_scores
+    in
 
     let out_graph = ties_sampling graph num_voters in
     let voter_mapping =
@@ -340,38 +433,12 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
     (* 4. Fire up Parmap: one process per core, mapping over jobs *)
     let partials = Parmap.parmap ~ncores:cores worker (Parmap.L jobs) in
 
+    (* let partials = List.map worker jobs in *)
     Printf.printf "\nSimulations complete!\n%!";
     (* 5. Flatten your list of lists *)
     List.flatten partials
 
-let run_and_write data_loc questions graph_loc file_out sparse group_bool
-    condition n_trials product evaluations =
-    let titles, evals = evaluations in
-    let group =
-        if group_bool then Some (string_of_int @@ Random.int 33) else None
-    in
-    let pre_data, post_data =
-        load_data data_loc 10000 condition group questions
-    in
-    let knowledge_data =
-        fst @@ load_data data_loc 10000 condition group pk_score
-    in
-
-    let edges =
-        if sparse then read_adjacency_matrix graph_loc
-        else
-          let voter_list = List.init 50 Fun.id in
-              List.map
-                (fun i -> List.map (fun j -> (i, j)) voter_list)
-                voter_list
-              |> List.flatten
-    in
-    let graph =
-        List.fold_left
-          (fun g (l, r) -> if l <> r then GenericGraph.add_edge g l r else g)
-          GenericGraph.empty edges
-    in
-
+let write file_out titles results =
     let oc = open_out file_out in
 
     (* Prepare header row *)
@@ -396,17 +463,44 @@ let run_and_write data_loc questions graph_loc file_out sparse group_bool
         @ titles;
       ];
 
-    let total = List.length product in
+    Csv.output_all (Csv.to_channel oc) results;
+    (* Close CSV file *)
+    close_out oc
+
+let run data_loc questions graph_loc sparse group_bool condition n_trials evals
+    product =
+    let pre_data, post_data = load_data data_loc 10000 condition questions in
+    let knowledge_data = fst @@ load_data data_loc 10000 condition pk_score in
+
+    let edges =
+        if sparse then read_adjacency_matrix graph_loc
+        else
+          let voter_list = List.init 50 Fun.id in
+              List.map
+                (fun i -> List.map (fun j -> (i, j)) voter_list)
+                voter_list
+              |> List.flatten
+    in
+    let graph =
+        List.fold_left
+          (fun g (l, r) -> if l <> r then GenericGraph.add_edge g l r else g)
+          GenericGraph.empty edges
+    in
     let results =
         run_parallel_simulations product pre_data post_data knowledge_data graph
           n_trials evals group_bool sparse
     in
+        results
 
-    Csv.output_all (Csv.to_channel oc) results;
-
-    (* Close CSV file *)
-    close_out oc;
-    ()
+let run_and_write data_loc questions graph_loc file_out sparse group_bool
+    condition n_trials evaluations product =
+    let titles, evals = evaluations in
+    let results =
+        run data_loc questions graph_loc sparse group_bool condition n_trials
+          evals product
+    in
+        write file_out titles results;
+        ()
 
 let method_of_float f = if f > 0.5 then SampleVoters else Voter
 
@@ -457,7 +551,7 @@ let deGroot_experiment () =
 
     let _ =
         run_and_write data_loc questions graph_loc file_out sparse group_bool
-          condition n_trials product (get_evals ())
+          condition n_trials get_evals product
     in
         ()
 
@@ -482,8 +576,7 @@ let sensitivity_analysis () =
     in
     let _ =
         run_and_write data_loc questions graph_loc file_out sparse group_bool
-          condition 1 product
-          (Evaluations.get_all_evals_sensitivity ())
+          condition 1 Evaluations.get_all_evals_sensitivity product
     in
         ()
 
