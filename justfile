@@ -7,8 +7,8 @@ test:
 run type file:
 	dune exec deliberation_model {{type}} {{file}} --root="src/bin/" --instrument-with ocamlearlybird
 
-run_all type:
-	find configs/* -maxdepth 1 -type f | xargs -n 1 just run {{type}} 
+run_all pattern type:
+	find {{pattern}} -maxdepth 1 -type f | xargs -n 1 just run {{type}} 
 
 sync:
 	uv sync

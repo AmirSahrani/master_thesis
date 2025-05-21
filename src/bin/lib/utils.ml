@@ -259,6 +259,7 @@ let parse_pyVoters pv =
     Py.List.to_list_map parse_tuple pv |> List.map tupleToVoters
 
 let parse_yaml file =
+    Printf.printf "Parsing: %s\n" file;
     let ic = open_in file in
     let contents = In_channel.input_lines ic |> String.concat "\n" in
 

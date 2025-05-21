@@ -407,24 +407,18 @@ let get_all_evals_degroot =
 
 let get_all_evals_degroot_convergence =
     (* fun args should be: profile_start profile_simulation profile_final trust_matrix_t trust_matrix_start*)
-    ( [
-        "ks_distance_start";
-        "cs_distance_start";
-        "ks_distance_true";
-        "cs_distance_true";
-        "entrywise_distance";
-      ],
+    ( [ "ks_distance_true"; "cs_distance_true"; "entrywise_distance" ],
       [
         (fun res ->
           string_of_float
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.ksDistance p p')
-               0. res.original_preferences res.simulated_preferences);
+               0. res.simulated_preferences res.true_preferences);
         (fun res ->
           string_of_float
           @@ List.fold_left2
                (fun sum p p' -> sum +. Distances.csDistance p p')
-               0. res.original_preferences res.true_preferences);
+               0. res.simulated_preferences res.true_preferences);
         (fun res ->
           Owl.Mat.(res.trust_current - res.trust_start)
           |> Owl.Mat.abs |> Owl.Mat.sum' |> string_of_float);

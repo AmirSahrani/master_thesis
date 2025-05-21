@@ -1,4 +1,4 @@
-file_out: "results/degroot_deliberation_100_convergence_knowledge_grouped.csv"
+file_out: "results/degroot_deliberation_100_convergence_similarity.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 questions: polarized
@@ -26,23 +26,23 @@ eval: degroot_convergence
 sparse: false
 credibility: 
   should_randomize: false
-  value: true
+  value: false 
 include_similarity: 
   should_randomize: false
-  value: false 
+  value: true 
 include_knowledge: 
   should_randomize: false
-  value: true 
-include_self_knowledge: 
-  should_randomize: true
-  value: true 
-include_ego: 
-  should_randomize: true
-  value: true 
-include_meta: 
-  should_randomize: true 
   value: false
-include_substantive: 
-  should_randomize: true 
+include_self_knowledge: 
+  should_randomize: false
+  value: false 
+include_ego: 
+  should_randomize: false
+  value: false 
+include_meta: 
+  should_randomize: false
   value: true
-group: true
+include_substantive: 
+  should_randomize: false
+  value: true
+group: false

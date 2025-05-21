@@ -137,7 +137,7 @@ def _(compute_proportion, mlines, np, pd, plt):
         for sampler in df["cand_sampler"].unique():
             for typ in df["Type"].unique():
                 subset = df[(df["cand_sampler"] == sampler) & (df["Type"] == typ)]
-                bins = np.linspace(subset[x].min(), subset[x].max(), 10)
+                bins = np.linspace(subset[x].min(), subset[x].max(), 7)
                 digitized = np.digitize(subset[x], bins)
                 bin_means = [subset[y][digitized == i].mean() for i in range(0, len(bins))]
                 if not subset.empty:
@@ -287,7 +287,7 @@ def _(
             "cyclic_end",
             "cyclic_true",
             "cyclic_proportion",
-            ["bias", "cand_sampler"],
+            ["time_steps", "cand_sampler"],
         )
 
 
@@ -297,14 +297,14 @@ def _(
             "condorcet_end",
             "condorcet_true",
             "condorcet_proportion",
-            ["bias", "cand_sampler"],
+            ["time_steps", "cand_sampler"],
         )
 
         proximity_to_sp_end = compute_average(
-            data_delib, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+            data_delib, "proximity_to_cand_sp_end", "proximity_to_cand_sp", ["time_steps", "cand_sampler"]
         )
         proximity_to_sp_true = compute_average(
-            data_delib, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["bias", "cand_sampler"]
+            data_delib, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["time_steps", "cand_sampler"]
         )
         proximity_to_sp_end["Type"] = "End"
         proximity_to_sp_true["Type"] = "True"
@@ -314,10 +314,10 @@ def _(
         )
 
         proximity_to_voter_sp_end = compute_average(
-            data_delib, "proximity_to_voter_sp_end", "proximity_to_voter_sp", ["bias", "cand_sampler"]
+            data_delib, "proximity_to_voter_sp_end", "proximity_to_voter_sp", ["time_steps", "cand_sampler"]
         )
         proximity_to_voter_sp_true = compute_average(
-            data_delib, "proximity_to_voter_sp_true", "proximity_to_voter_sp", ["bias", "cand_sampler"]
+            data_delib, "proximity_to_voter_sp_true", "proximity_to_voter_sp", ["time_steps", "cand_sampler"]
         )
         proximity_to_voter_sp_end["Type"] = "End"
         proximity_to_voter_sp_true["Type"] = "True"
@@ -327,10 +327,10 @@ def _(
         )
 
         unique_profiles_end = compute_average(
-            data_delib, "unique_end", "unique", ["bias", "cand_sampler"]
+            data_delib, "unique_end", "unique", ["time_steps", "cand_sampler"]
         )
         unique_profiles_true = compute_average(
-            data_delib, "unique_true", "unique", ["bias", "cand_sampler"]
+            data_delib, "unique_true", "unique", ["time_steps", "cand_sampler"]
         )
         unique_profiles_end["Type"] = "End"
         unique_profiles_true["Type"] = "True"
@@ -340,11 +340,11 @@ def _(
         )
 
         # === Plotting all variants in one figure ===
-        plot(cyclic, "bias", "cyclic_proportion", "Mean Number of Cyclic Profiles", file_prefix)
-        plot(proximity_to_sp, "bias", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles", file_prefix)
-        plot(proximity_to_voter_sp, "bias", "proximity_to_voter_sp", "Mean voter proximity to single peaked Profiles", file_prefix)
-        plot(condorcet, "bias", "condorcet_proportion", "Mean number of Condorcet winners", file_prefix)
-        plot(unique_profiles, "bias", "unique", r"\#Unique Preferences", file_prefix)
+        plot(cyclic, "time_steps", "cyclic_proportion", "Mean Number of Cyclic Profiles", file_prefix)
+        plot(proximity_to_sp, "time_steps", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles", file_prefix)
+        plot(proximity_to_voter_sp, "time_steps", "proximity_to_voter_sp", "Mean voter proximity to single peaked Profiles", file_prefix)
+        plot(condorcet, "time_steps", "condorcet_proportion", "Mean number of Condorcet winners", file_prefix)
+        plot(unique_profiles, "time_steps", "unique", r"\#Unique Preferences", file_prefix)
 
 
     generate_general_graphs(data_delib.loc[data_delib[time_str] == 151], "delib")
@@ -803,25 +803,25 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    convergence_data_cred = pd.read_csv("results/degroot_deliberation_trials_100_convergence_dense_knowledge.csv")
-    convergence_data_know = pd.read_csv("results/degroot_deliberation_trials_100_convergence_sparse_knowledge.csv")
-    convergence_data_cred_group = pd.read_csv("results/degroot_deliberation_100_convergence_credibility_grouped.csv")
+    convergence_data_simi = pd.read_csv("results/degroot_deliberation_100_convergence_similarity.csv")
+    convergence_data_know = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge.csv")
+    convergence_data_simi_group = pd.read_csv("results/degroot_deliberation_100_convergence_similarity_grouped.csv")
     convergence_data_know_group = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge_grouped.csv")
     return (
-        convergence_data_cred,
-        convergence_data_cred_group,
         convergence_data_know,
         convergence_data_know_group,
+        convergence_data_simi,
+        convergence_data_simi_group,
     )
 
 
 @app.cell
 def _(
     cand_str,
-    convergence_data_cred,
-    convergence_data_cred_group,
     convergence_data_know,
     convergence_data_know_group,
+    convergence_data_simi,
+    convergence_data_simi_group,
     np,
     plt,
     sampler_str,
@@ -830,11 +830,11 @@ def _(
     # Begin plotting
     fig, ax = plt.subplots(3, 4, figsize=(20, 15), sharex=True)
     ax = ax.ravel()
-    for i, convergence_data in enumerate([convergence_data_cred,  convergence_data_know,convergence_data_cred_group,  convergence_data_know_group]):
+    for i, convergence_data in enumerate([convergence_data_simi,  convergence_data_know, convergence_data_simi_group,  convergence_data_know_group]):
 
         grouped_by_cand_and_sampler = convergence_data.groupby([cand_str, sampler_str, time_str]).agg("mean")
         df_reset = grouped_by_cand_and_sampler.reset_index()
-        df_reset = df_reset.loc[df_reset[time_str] < 27]
+        df_reset = df_reset.loc[df_reset[time_str] > 1]
         candidate_counts = sorted(df_reset['n_candidates'].unique())
         # Unique values for styling
         sampler_styles = {'Sample': 'X', 'Voter': 's'}
@@ -854,9 +854,9 @@ def _(
                     ax[8+i].plot(subset['time_steps'], subset['entrywise_distance'], 
                                label=f'{n} candidates, {sampler}', 
                                marker=marker, color=colors[idx], linestyle='-')
-    ax[0].set_title('Knowledge (Control, Dense)')
-    ax[1].set_title('Knowledge (Control, Sparse)')
-    ax[2].set_title('Uniform Original Groups')
+    ax[0].set_title('Similarity')
+    ax[1].set_title('Knowledge')
+    ax[2].set_title('Original')
     ax[3].set_title('Knowledge Original Groups')
 
     # Labels and titles
@@ -916,16 +916,16 @@ def _(np, pd):
     pbs_measures = ["PBS_start", "PBS_simulated", "PBS_true"]
 
     def get_exploded_df(opinion_df):
-    
+
         for pbs in pbs_measures:
             opinion_df[pbs] = opinion_df[pbs].apply(lambda x: list(map(np.float64,x.strip("\"\',").split(","))))
-    
+
         opinion_df = opinion_df.explode(pbs_measures)
-    
+
         for pbs in pbs_measures:
             opinion_df[pbs] = opinion_df[pbs].astype(np.float64)
-    
-    
+
+
         opinion_df["PBS_error"] = pow(opinion_df["PBS_simulated"] - opinion_df["PBS_true"], 2)
         return opinion_df
 
@@ -937,22 +937,22 @@ def _(np, pd):
 
 @app.cell
 def _(np, opinion_control_df, opinion_delib_df, pd, sklearn, sm, time_str):
-    independent_variables = ['bias', 'sparse',  'credibility', 'knowledge', 'ego', 'similarity']
+    independent_variables = ['bias',  'credibility', 'knowledge', 'ego', 'similarity']
     def fit_regression(opinion_df):
-    
+
         opinion_group = opinion_df.loc[opinion_df[time_str]> 0].groupby(independent_variables).mean(numeric_only=True)
-    
+
         xs = opinion_group.index.to_numpy()
         x = np.array([np.array(x) for x in xs])
         y = opinion_group["PBS_simulated"]
-    
+
         poly = sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)
         X_poly = poly.fit_transform(x)
         feature_names = poly.get_feature_names_out(input_features=[independent_variables[i] for i in range(x.shape[1])])
-    
+
         # Create DataFrame for X_poly with column names
         X_poly_df = pd.DataFrame(X_poly, columns=feature_names, index=y.index)
-    
+
         model = sm.OLS(y, X_poly_df).fit()
         print(model.summary())
 
@@ -1003,6 +1003,8 @@ def _(
             ax.set_ylim((-3,3))
             ax.grid(True)
 
+
+    all_zero_delib = opinion_delib_df.loc[(opinion_delib_df["knowledge"] == 0) &(opinion_delib_df["similarity"] == 0) &(opinion_delib_df["ego"] == 0)]
     # Usage
     figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
     axes = axes.ravel()
@@ -1012,7 +1014,7 @@ def _(
     axes[5].set_ylabel("Control")
     plt.tight_layout()
     plt.show()
-    return axes, figure_opinion, plot_change_in_opinion
+    return all_zero_delib, axes, figure_opinion, plot_change_in_opinion
 
 
 @app.cell
@@ -1022,15 +1024,15 @@ def _(opinion_control_df, opinion_delib_df, plt, time_str):
         for indep in independent_variables:
             avg_error = opinion_df.loc[opinion_df[indep] == 1].groupby(time_str).mean(numeric_only=True)["PBS_error"]
             ax.scatter(avg_error.index, avg_error,alpha=0.4, label=indep)
-        ax.set_xlabel("Time")
-        # plt.ylabel("Error in Prediction of PBS")
-        # plt.xlabel("Time")
+        ax.set_xlabel("time")
+        # plt.ylabel("error in prediction of pbs")
+        # plt.xlabel("time")
         # plt.show()
     figure_errors, axes_err = plt.subplots(1,2, figsize=(16,8))
     plot_errors(opinion_delib_df, axes_err[0])
     plot_errors(opinion_control_df, axes_err[1])
 
-    axes_err[0].set_ylabel("PBS Error")
+    axes_err[0].set_ylabel("pbs error")
     plt.legend()
     plt.show()
     return axes_err, figure_errors, plot_errors
@@ -1051,17 +1053,17 @@ def _(np, opinion_control_df, opinion_delib_df, plt, time_str):
                 pbs_start = opinion_plotting_data["PBS_start"]
                 pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
                 pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
-        
+
                 digitized_start = np.digitize(pbs_start, bins, right=True)
                 bin_means_sim = np.array([pbs_sim[digitized_start == i].mean() for i in range(1, len(bins))])
                 bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
                 time_errors.append(np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean())
-    
+
             ax.scatter(times, time_errors, alpha=0.4, label=indep)
             ax.set_xlabel("Time")
             ax.grid(True)
-    
-    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(16,8))
+
+    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(18,8))
     plot_errors_binned(opinion_delib_df, axes_err_bin[0])
     plot_errors_binned(opinion_control_df, axes_err_bin[1])
     axes_err_bin[0].set_ylabel("PBS Error")
@@ -1072,50 +1074,43 @@ def _(np, opinion_control_df, opinion_delib_df, plt, time_str):
 
 
 @app.cell
-def _():
-    # def pbs_model(params):
-    #     mask = pd.Series(True, index=opinion_df.index)
-    #     for k, v in params.items():
-    #         mask &= opinion_df[k] == v
-    #     simulated = opinion_df[mask]["PBS_simulated"]
+def _(opinion_control_df, opinion_delib_df, plt, sim_color, sns):
+    def plot_errors_bias(opinion_df, prefix):
+        independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
+        for indep in independent_variables:
+            data = opinion_df.loc[opinion_df[indep] == 1]
+            ax = sns.jointplot(
+                data=data,
+                x="bias",
+                y="PBS_error",
+                kind="reg",
+                label=indep,
+                color=sim_color
+            )
+            plt.ylabel("PBS Error")
+            plt.xlabel("Bias")
+            plt.savefig("figures/"+prefix+indep+"bias_error.pdf")
+    
+    print("Delib:")
+    plot_errors_bias(opinion_delib_df, "delib")
+    plt.show()
 
-    #     return {"data": simulated.reset_index(drop=True)}
+    print("Control:")
+    plot_errors_bias(opinion_control_df, "control")
+    plt.show()
 
-    # def d(x, x0):
-    #     return (x["data"] - x0["data"]).abs().mean()
-
-    # # Prior
-    # prior = pyabc.Distribution(
-    #     knowledge=pyabc.RV("bernoulli", 0.5),
-    #     credibility=pyabc.RV("bernoulli", 0.5),
-    #     ego=pyabc.RV("bernoulli", 0.5),
-    #     similarity=pyabc.RV("bernoulli", 0.5)
-    # )
-    # # ABC-SMC setup
-    # abc = pyabc.ABCSMC(pbs_model, prior, d, population_size=1000)
-
-    # observed = {"data": opinion_df["PBS_true"].reset_index(drop=True)}
-
-    # abc.new("sqlite:///data/abc.db", observed)
-    # history = abc.run(max_walltime=timedelta(minutes=1))
-    return
+    return (plot_errors_bias,)
 
 
 @app.cell
-def _():
-    # Please adapt this: lower_lim, upper_lim, parameter
-    # for t in range(history.max_t + 1):
-    #     df, w = history.get_distribution(m=0, t=t)
-    #     pyabc.visualization.plot_kde_1d(
-    #         df,
-    #         w,
-    #         xmin=lower_lim[0],
-    #         xmax=bar_val[1],
-    #         x="knowledge",
-    #         ax=ax,
-    #         label="PDF t={}".format(t),
-    #     )
-    return
+def _(independent_variables, np, opinion_control_df, opinion_delib_df):
+    for indep in independent_variables:
+        print(indep)
+        print( np.corrcoef(opinion_delib_df[indep], opinion_delib_df["PBS_error"]))
+        print("----------")
+        print( np.corrcoef(opinion_control_df[indep], opinion_control_df["PBS_error"]))
+        print("==========")
+    return (indep,)
 
 
 if __name__ == "__main__":
