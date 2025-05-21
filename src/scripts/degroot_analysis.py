@@ -911,100 +911,164 @@ def _(mo):
 
 @app.cell
 def _(np, pd):
-    opinion_df = pd.read_csv("results/degroot_pbs.csv")
+    opinion_delib_df = pd.read_csv("results/degroot_pbs.csv")
+    opinion_control_df = pd.read_csv("results/degroot_pbs_control.csv")
     pbs_measures = ["PBS_start", "PBS_simulated", "PBS_true"]
 
-    for pbs in pbs_measures:
-        opinion_df[pbs] = opinion_df[pbs].apply(lambda x: list(map(np.float64,x.strip("\"\',").split(","))))
+    def get_exploded_df(opinion_df):
+    
+        for pbs in pbs_measures:
+            opinion_df[pbs] = opinion_df[pbs].apply(lambda x: list(map(np.float64,x.strip("\"\',").split(","))))
+    
+        opinion_df = opinion_df.explode(pbs_measures)
+    
+        for pbs in pbs_measures:
+            opinion_df[pbs] = opinion_df[pbs].astype(np.float64)
+    
+    
+        opinion_df["PBS_error"] = pow(opinion_df["PBS_simulated"] - opinion_df["PBS_true"], 2)
+        return opinion_df
 
-    opinion_df = opinion_df.explode(pbs_measures)
-
-    for pbs in pbs_measures:
-        opinion_df[pbs] = opinion_df[pbs].astype(np.float64)
-
-
-    opinion_df["PBS_error"] = abs(opinion_df["PBS_simulated"]- opinion_df["PBS_true"])
-    opinion_df
-    return opinion_df, pbs, pbs_measures
+    opinion_delib_df = get_exploded_df(opinion_delib_df)
+    opinion_control_df = get_exploded_df(opinion_control_df)
+    opinion_control_df
+    return get_exploded_df, opinion_control_df, opinion_delib_df, pbs_measures
 
 
 @app.cell
-def _(np, opinion_df, pd, sklearn, sm, time_str):
-    opinion_df.columns
-
+def _(np, opinion_control_df, opinion_delib_df, pd, sklearn, sm, time_str):
     independent_variables = ['bias', 'sparse',  'credibility', 'knowledge', 'ego', 'similarity']
+    def fit_regression(opinion_df):
+    
+        opinion_group = opinion_df.loc[opinion_df[time_str]> 0].groupby(independent_variables).mean(numeric_only=True)
+    
+        xs = opinion_group.index.to_numpy()
+        x = np.array([np.array(x) for x in xs])
+        y = opinion_group["PBS_simulated"]
+    
+        poly = sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)
+        X_poly = poly.fit_transform(x)
+        feature_names = poly.get_feature_names_out(input_features=[independent_variables[i] for i in range(x.shape[1])])
+    
+        # Create DataFrame for X_poly with column names
+        X_poly_df = pd.DataFrame(X_poly, columns=feature_names, index=y.index)
+    
+        model = sm.OLS(y, X_poly_df).fit()
+        print(model.summary())
 
-    opinion_group = opinion_df.loc[opinion_df[time_str] > 15].groupby(independent_variables).mean(numeric_only=True)
-
-    xs = opinion_group.index.to_numpy()
-    x = np.array([np.array(x) for x in xs])
-    y = opinion_group["PBS_simulated"]
-
-    poly = sklearn.preprocessing.PolynomialFeatures(degree=2, include_bias=False)
-    X_poly = poly.fit_transform(x)
-    feature_names = poly.get_feature_names_out(input_features=[independent_variables[i] for i in range(x.shape[1])])
-
-    # Create DataFrame for X_poly with column names
-    X_poly_df = pd.DataFrame(X_poly, columns=feature_names, index=y.index)
-
-    model = sm.OLS(y, X_poly_df).fit()
-    print(model.summary())
-    return (
-        X_poly,
-        X_poly_df,
-        feature_names,
-        independent_variables,
-        model,
-        opinion_group,
-        poly,
-        x,
-        xs,
-        y,
-    )
+    fit_regression(opinion_delib_df)
+    fit_regression(opinion_control_df)
+    return fit_regression, independent_variables
 
 
 @app.cell
-def _(np, opinion_df, plt, sim_color, time_str, true_color):
-    opinion_plotting_data = opinion_df.sample(n=10000)
-    opinion_plotting_data = opinion_plotting_data.loc[opinion_plotting_data[time_str] > 10]
-    pbs_start = opinion_plotting_data["PBS_start"]
-    pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
-    pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
-    bins = np.linspace(0,10,20)
-    digitized_start = np.digitize(pbs_start, bins)
+def _(
+    np,
+    opinion_control_df,
+    opinion_delib_df,
+    plt,
+    sim_color,
+    time_str,
+    true_color,
+):
+    def plot_change_in_opinion(opinion_df, axes):
+        times = opinion_df[time_str].unique()
+        times = np.sort(times)  # ensure consistency
+        bins = np.linspace(0, 10, 20)
 
-    bin_means_start = [pbs_start[digitized_start == i].mean() for i in range(0, len(bins))]
-    bin_means_sim = [pbs_sim[digitized_start == i].mean() for i in range(0, len(bins))]
-    bin_means_true = [pbs_true[digitized_start == i].mean() for i in range(0, len(bins))]
-    plt.scatter(pbs_start, pbs_sim, alpha=0.008, color=sim_color, s=3)
-    plt.scatter(pbs_start, pbs_true, alpha=0.008, color=true_color, s=3)
-    plt.scatter(bin_means_start,  bin_means_sim, color=sim_color)
-    plt.scatter(bin_means_start, bin_means_true, color=true_color)
+        for i, ax in enumerate(axes):
+            time_val = times[i]  # skip every other time point
+            filtered = opinion_df[np.isclose(opinion_df[time_str], time_val)]
+            if len(filtered) == 0:
+                continue
 
-    plt.xlabel("PBS Scores at t=0")
-    plt.ylabel("Change in PBS score")
+            opinion_plotting_data = filtered.sample(n=min(100000, len(filtered)))
+
+            pbs_start = opinion_plotting_data["PBS_start"]
+            pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
+            pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
+
+            digitized_start = np.digitize(pbs_start, bins, right=True)
+            bin_means_start = np.array([pbs_start[digitized_start == i].mean() for i in range(1, len(bins))])
+            bin_means_sim = np.array([pbs_sim[digitized_start == i].mean() for i in range(1, len(bins))])
+            bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
+
+            ax.scatter(pbs_start, pbs_sim, alpha=0.008, color=sim_color, s=3, label="Simulated")
+            ax.scatter(pbs_start, pbs_true, alpha=0.008, color=true_color, s=3, label="True")
+            ax.scatter(bin_means_start, bin_means_sim, color=sim_color, label="Binned Sim")
+            ax.scatter(bin_means_start, bin_means_true, color=true_color, label="Binned True")
+
+            ax.set_xlabel(f"t = {time_val:.2f}")
+            ax.set_title(f"Mean Absolute Error: {np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean():.2f}")
+            ax.set_ylim((-3,3))
+            ax.grid(True)
+
+    # Usage
+    figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
+    axes = axes.ravel()
+    plot_change_in_opinion(opinion_delib_df, axes[:4])
+    plot_change_in_opinion(opinion_control_df[opinion_control_df["ego"] == 1], axes[4:])
+    axes[0].set_ylabel("Deliberation")
+    axes[5].set_ylabel("Control")
+    plt.tight_layout()
     plt.show()
-    return (
-        bin_means_sim,
-        bin_means_start,
-        bin_means_true,
-        bins,
-        digitized_start,
-        opinion_plotting_data,
-        pbs_sim,
-        pbs_start,
-        pbs_true,
-    )
+    return axes, figure_opinion, plot_change_in_opinion
 
 
 @app.cell
-def _(opinion_df, plt, time_str):
-    avg_error = opinion_df.groupby(time_str).mean(numeric_only=True)["PBS_error"]
-    plt.scatter(avg_error.index, avg_error, color="black",alpha=0.4)
-    plt.ylabel("Error in Prediction of PBS")
-    plt.xlabel("Time")
+def _(opinion_control_df, opinion_delib_df, plt, time_str):
+    def plot_errors(opinion_df, ax):
+        independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
+        for indep in independent_variables:
+            avg_error = opinion_df.loc[opinion_df[indep] == 1].groupby(time_str).mean(numeric_only=True)["PBS_error"]
+            ax.scatter(avg_error.index, avg_error,alpha=0.4, label=indep)
+        ax.set_xlabel("Time")
+        # plt.ylabel("Error in Prediction of PBS")
+        # plt.xlabel("Time")
+        # plt.show()
+    figure_errors, axes_err = plt.subplots(1,2, figsize=(16,8))
+    plot_errors(opinion_delib_df, axes_err[0])
+    plot_errors(opinion_control_df, axes_err[1])
+
+    axes_err[0].set_ylabel("PBS Error")
+    plt.legend()
     plt.show()
-    return (avg_error,)
+    return axes_err, figure_errors, plot_errors
+
+
+@app.cell
+def _(np, opinion_control_df, opinion_delib_df, plt, time_str):
+    def plot_errors_binned(opinion_df, ax):
+        bins = np.linspace(0, 10, 20)
+
+        independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
+        for indep in independent_variables:
+            time_errors = []
+            times = opinion_df[time_str].unique()
+            times.sort()
+            for time in times:
+                opinion_plotting_data = opinion_df.loc[(opinion_df[indep] == 1) & (opinion_df[time_str] == time)]
+                pbs_start = opinion_plotting_data["PBS_start"]
+                pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
+                pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
+        
+                digitized_start = np.digitize(pbs_start, bins, right=True)
+                bin_means_sim = np.array([pbs_sim[digitized_start == i].mean() for i in range(1, len(bins))])
+                bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
+                time_errors.append(np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean())
+    
+            ax.scatter(times, time_errors, alpha=0.4, label=indep)
+            ax.set_xlabel("Time")
+            ax.grid(True)
+    
+    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(16,8))
+    plot_errors_binned(opinion_delib_df, axes_err_bin[0])
+    plot_errors_binned(opinion_control_df, axes_err_bin[1])
+    axes_err_bin[0].set_ylabel("PBS Error")
+
+    plt.legend()
+    plt.show()
+    return axes_err_bin, figure_errors_bin, plot_errors_binned
 
 
 @app.cell
@@ -1038,20 +1102,20 @@ def _():
 
 
 @app.cell
-def _(ax, bar_val, history, lower_lim, pyabc):
+def _():
     # Please adapt this: lower_lim, upper_lim, parameter
-    for t in range(history.max_t + 1):
-        df, w = history.get_distribution(m=0, t=t)
-        pyabc.visualization.plot_kde_1d(
-            df,
-            w,
-            xmin=lower_lim[0],
-            xmax=bar_val[1],
-            x="knowledge",
-            ax=ax,
-            label="PDF t={}".format(t),
-        )
-    return df, t, w
+    # for t in range(history.max_t + 1):
+    #     df, w = history.get_distribution(m=0, t=t)
+    #     pyabc.visualization.plot_kde_1d(
+    #         df,
+    #         w,
+    #         xmin=lower_lim[0],
+    #         xmax=bar_val[1],
+    #         x="knowledge",
+    #         ax=ax,
+    #         label="PDF t={}".format(t),
+    #     )
+    return
 
 
 if __name__ == "__main__":

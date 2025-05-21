@@ -174,28 +174,6 @@ let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
         else Owl.Mat.empty 1 1
     in
 
-    let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
-    let indices =
-        if grouped then (
-          let group_id = Random.int 33 + 1 in
-              Printf.printf "selected group: %d\n" group_id;
-              Array.init max_idx Fun.id |> Array.to_list
-              |> List.filter_map (fun i ->
-                     if int_of_float (Owl.Mat.get groups i 1) = group_id then
-                       Some (int_of_float (Owl.Mat.get groups i 0))
-                     else None)
-              |> Array.of_list)
-        else
-          let all_ids =
-              Owl.Stats.shuffle
-                (Owl.Mat.get_slice [ []; [ 0; 1 ] ] post_data
-                |> Owl.Mat.to_array |> Array.map int_of_float)
-          in
-              Array.sub all_ids 0 num_voters
-    in
-
-    let num_voters = if not grouped then num_voters else Array.length indices in
-
     let pre_data_ids =
         Owl.Mat.to_arrays pre_data
         |> Array.map (fun row -> int_of_float row.(0))
@@ -213,55 +191,80 @@ let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
         |> Array.map (fun row -> int_of_float row.(0))
         |> Array.to_list |> List.sort_uniq compare
     in
-
-    (* Find intersection of all three ID lists - IDs that exist in all three matrices *)
-    let id_set =
+    let filter_indx indices =
         List.filter
           (fun id ->
-            List.mem id post_data_ids && List.mem id knowledge_ids
-            && List.mem id pre_data_ids)
-          (Array.to_list indices)
+            List.for_all
+              (fun ids -> List.mem id ids)
+              [ post_data_ids; pre_data_ids; knowledge_ids ])
+          indices
     in
-    let num_voters = List.length id_set in
+
+    let max_idx = min (Owl.Mat.row_num pre_data) (Owl.Mat.row_num post_data) in
+
+    let indices =
+        if grouped then
+          let group_id = Random.int 33 + 1 in
+              Array.init max_idx Fun.id |> Array.to_list
+              |> List.filter_map (fun i ->
+                     if int_of_float (Owl.Mat.get groups i 1) = group_id then
+                       Some (int_of_float (Owl.Mat.get groups i 0))
+                     else None)
+              |> filter_indx
+        else
+          Owl.Stats.shuffle
+            (Owl.Mat.get_slice [ []; [ 0; 1 ] ] pre_data
+            |> Owl.Mat.to_array |> Array.map int_of_float)
+          |> Array.to_list |> List.sort_uniq compare |> filter_indx
+          |> Array.of_list
+          |> fun arr -> Array.sub arr 0 num_voters |> Array.to_list
+    in
+
+    (* Find intersection of all three ID lists - IDs that exist in all three matrices *)
+    let num_voters = List.length indices in
 
     let pre_data_rows =
         Owl.Mat.filter_rows
-          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) id_set)
+          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) indices)
           pre_data
         |> Array.to_list
     in
     let pre_data =
-        Owl.Mat.get_fancy
-          [ L pre_data_rows; R [ 1; Owl.Mat.col_num pre_data - 1 ] ]
-          pre_data
+        Owl.Mat.get_fancy [ L pre_data_rows; R [ 1; -1 ] ] pre_data
     in
 
     let post_data_rows =
         Owl.Mat.filter_rows
-          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) id_set)
+          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) indices)
           post_data
         |> Array.to_list
     in
     let post_data =
-        Owl.Mat.get_fancy
-          [ L post_data_rows; R [ 1; Owl.Mat.col_num post_data - 1 ] ]
-          post_data
+        Owl.Mat.get_fancy [ L post_data_rows; R [ 1; -1 ] ] post_data
     in
 
     let knowledge_data_rows =
         Owl.Mat.filter_rows
-          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) id_set)
+          (fun row -> List.mem (int_of_float (Owl.Mat.get row 0 0)) indices)
           knowledge_scores
         |> Array.to_list
     in
     let knowledge_data =
         Owl.Mat.get_fancy
-          [
-            L knowledge_data_rows; R [ 1; Owl.Mat.col_num knowledge_scores - 1 ];
-          ]
+          [ L knowledge_data_rows; R [ 1; -1 ] ]
           knowledge_scores
     in
 
+    (* let pr, pc = Owl.Mat.shape pre_data in
+       let por, poc = Owl.Mat.shape post_data in
+       let kr, kc = Owl.Mat.shape knowledge_data in
+           Printf.printf
+             "Matrix shapes: \n\
+              Pre: (%d, %d)\n\
+              Post: (%d,%d)\n\
+              Know(%d, %d)\n\
+              Number of voters: %d\n"
+             pr pc por poc kr kc num_voters; *)
     let out_graph = ties_sampling graph num_voters in
     let voter_mapping =
         if sparse then
@@ -284,6 +287,8 @@ let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
     in
     let pre_data = apply_bijection pre_data b in
     let post_data = apply_bijection post_data b in
+
+    assert (not (Owl.Mat.equal pre_data post_data));
 
     let conf =
         {
@@ -432,11 +437,10 @@ let run_parallel_simulations product pre_data post_data knowledge_scores graph
 
     (* 4. Fire up Parmap: one process per core, mapping over jobs *)
     let partials = Parmap.parmap ~ncores:cores worker (Parmap.L jobs) in
-
-    (* let partials = List.map worker jobs in *)
-    Printf.printf "\nSimulations complete!\n%!";
-    (* 5. Flatten your list of lists *)
-    List.flatten partials
+        (* let partials = List.map worker jobs in *)
+        Printf.printf "\nSimulations complete!\n%!";
+        (* 5. Flatten your list of lists *)
+        List.flatten partials
 
 let write file_out titles results =
     let oc = open_out file_out in
