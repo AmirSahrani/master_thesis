@@ -1,10 +1,12 @@
 file_out: "results/degroot_deliberation_100.csv"
 data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
-n_trials: 10
+random: true
+questions: polarized
+n_trials: 100
 n_voters: 
   istart: 9
-  istop: 15
+  istop: 30
   istep: 2
 n_candidates: 
   istart: 3
@@ -15,17 +17,32 @@ sparse: false
 credibility: 
   should_randomize: false
   value: false 
-include_knowledge: 
+include_similarity: 
   should_randomize: false
+  value: false
+include_knowledge: 
+  should_randomize: true
   value: true 
+include_self_knowledge: 
+  should_randomize: false
+  value: false
+include_ego: 
+  should_randomize: true
+  value: true 
+include_meta: 
+  should_randomize: false
+  value: true
+include_substantive: 
+  should_randomize: false
+  value: true
 timesteps: 
-  start: 1.0
-  stop: 151.0
-  step: 25.0
+  start: 0.0
+  stop: 10.0
+  step: 1.0
 bias:
-  start: 0.8
-  stop: 1.5
+  start: 3.0
+  stop: 3.0
   step: 0.1
 cand_method: ["SampleVoters", "Voter"]
 eval: degroot
-group: false
+group: true

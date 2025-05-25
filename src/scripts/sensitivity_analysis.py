@@ -42,10 +42,11 @@ n_methods = 2
 sensitivity_vars = [
     ("Knowledge", [0, 1]),
     ("Credibility", [0, 1]),
-    ("Meta", [0, 1]),
-    ("Substantive", [0, 1]),
+    ("Meta", [0.9, 1]),
+    ("Substantive", [0.9, 1]),
     ("Self Knowledge", [0, 1]),
     ("Self Ego", [0, 1]),
+    ("Similarity", [0, 1]),
     ("Number of Voters", [3, 31]),
     ("Number of Candidates", [3, 7]),
     ("Timesteps", [0, 20]),
@@ -53,10 +54,7 @@ sensitivity_vars = [
     ("Candidate Generator", [0, 1]),
 ]
 output_vars = [
-    "proximity_to_voter_sp_end",
-    "proximity_to_cand_sp_end",
-    "ks_distance_true",
-    "cs_distance_true",
+    "PB_score",
 ]
 
 
@@ -93,7 +91,7 @@ def run_analysis(outputs, problem):
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("results/sensivity_control.csv")
+    data = pd.read_csv("results/sensivity.csv")
     problem = get_problem()
 
     for var in output_vars:
