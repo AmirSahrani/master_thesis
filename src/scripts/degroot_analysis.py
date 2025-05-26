@@ -140,6 +140,7 @@ def _(compute_proportion, mlines, np, pd, plt):
                 bins = np.linspace(subset[x].min(), subset[x].max(), len(subset[x]))
                 digitized = np.digitize(subset[x], bins)
                 bin_means = [subset[y][digitized == i].mean() for i in range(0, len(bins))]
+                marker = sampler_markers[sampler]
                 if not subset.empty:
                     types_used[typ] = type_colors[typ]
                     ax.plot(
@@ -147,7 +148,7 @@ def _(compute_proportion, mlines, np, pd, plt):
                         bin_means,
                         label=f"{typ} / {sampler}",
                         color=type_colors.get(typ, "black"),
-                        marker=sampler_markers[sampler],
+                        marker=marker,
                         markersize=10,
                         linestyle="--",
                         linewidth=1,
@@ -629,7 +630,7 @@ def _(np, pd):
 
 @app.cell
 def _(np, opinion_control_df, opinion_delib_df, pd, sklearn, sm, time_str):
-    independent_variables = ['bias',  'credibility', 'knowledge', 'ego', 'similarity']
+    independent_variables = ['bias',  'credibility', 'knowledge', 'ego', 'similarity', 'selfknowledge']
     def fit_regression(opinion_df):
 
         opinion_group = opinion_df.loc[opinion_df[time_str]> 0].groupby(independent_variables).mean(numeric_only=True)
@@ -758,20 +759,29 @@ def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
     axes_change = axes_change.ravel()
     plot_change_in_opinion(all_zero_delib, axes_change[:4])
     axes_change[0].set_ylabel("$\\Delta$PBS score")
+    # Usage
+    figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
+    axes = axes.ravel()
+    plot_change_in_opinion(opinion_delib_df.loc[opinion_delib_df["selfknowledge"] == 0], axes[:4])
+    plot_change_in_opinion(opinion_control_df[opinion_control_df["ego"] == 1], axes[4:])
+    axes[0].set_ylabel("Deliberation")
+    axes[4].set_ylabel("Control")
     plt.tight_layout()
     plt.savefig("figures/change_pbs_scores.png")
     plt.show()
-    return axes_change, figure_opinion_change, plot_change_in_opinion
+    return axes, figure_opinion, plot_change_in_opinion
 
 
 @app.cell
-def _(time_str):
+def _(opinion_delib_df, time_str):
+    opinion_delib_df["uniform"] = ~opinion_delib_df[["credibility", "knowledge", "ego", "similarity"]].any(axis=1)
+
     def plot_errors(opinion_df, ax):
-        independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
+        independent_variables = ['credibility', 'knowledge', 'selfknowledge', 'ego', 'similarity','uniform']
         for indep in independent_variables:
             avg_error = opinion_df.loc[opinion_df[indep] == 1].groupby(time_str).mean(numeric_only=True)["PBS_error"]
-            ax.plot(avg_error.index, avg_error, "o-", alpha=0.4, label=indep)
-        ax.set_xlabel("time")
+            ax.plot(avg_error.index, avg_error, "o-",alpha=0.3, label=indep)
+        ax.set_xlabel("Time")
     return (plot_errors,)
 
 
@@ -780,7 +790,7 @@ def _(np, opinion_delib_df, plot_errors, plt, time_str):
     def plot_errors_binned(opinion_df, ax):
         bins = np.linspace(0, 10, 100)
 
-        independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
+        independent_variables = ['credibility', 'knowledge', 'selfknowledge', 'ego', 'similarity','uniform']
         for indep in independent_variables:
             time_errors = []
             times = opinion_df[time_str].unique()
@@ -796,11 +806,11 @@ def _(np, opinion_delib_df, plot_errors, plt, time_str):
                 bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
                 time_errors.append(np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean())
 
-            ax.plot(times, time_errors,"o-" , alpha=0.4, label=indep)
+            ax.plot(times, time_errors,"o-", alpha=0.3, label=indep.capitalize())
             ax.set_xlabel("Time")
             ax.grid(True)
 
-    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(18,6))
+    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(18,8))
     plot_errors(opinion_delib_df, axes_err_bin[0])
     plot_errors_binned(opinion_delib_df, axes_err_bin[1])
     axes_err_bin[0].set_ylabel("PBS Error")

@@ -3,7 +3,7 @@ data_loc: "data/a1r.db"
 graph: "graphs/soc-astro.edges"
 questions: polarized
 random: true 
-n_trials: 1000
+n_trials: 5000
 n_voters: 
   istart: 9
   istop: 30

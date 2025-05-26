@@ -428,9 +428,10 @@ let get_all_evals_sensitivity =
     ( [ "PBS_simulated" ],
       [
         (fun res ->
-          Owl.Mat.mean ~axis:1 res.simulated_opinion
-          |> Owl.Mat.to_array |> Array.to_list
-          |> fun a -> string_of_list a string_of_float ", ");
+          Owl.Mat.(
+            mean ~axis:1 res.simulated_opinion
+            - Owl.Mat.mean ~axis:1 res.true_opinion)
+          |> Owl.Mat.mean' |> Float.abs |> string_of_float);
       ] )
 (* ( [
      "cyclic_end";

@@ -54,7 +54,7 @@ sensitivity_vars = [
     ("Candidate Generator", [0, 1]),
 ]
 output_vars = [
-    "PB_score",
+    "PBS_simulated",
 ]
 
 
