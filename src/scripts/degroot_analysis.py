@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -629,7 +629,7 @@ def _(np, pd):
 
 
 @app.cell
-def _(np, opinion_control_df, opinion_delib_df, pd, sklearn, sm, time_str):
+def _(np, opinion_delib_df, pd, sklearn, sm, time_str):
     independent_variables = ['bias',  'credibility', 'knowledge', 'ego', 'similarity', 'selfknowledge']
     def fit_regression(opinion_df):
 
@@ -650,7 +650,7 @@ def _(np, opinion_control_df, opinion_delib_df, pd, sklearn, sm, time_str):
         print(model.summary())
 
     fit_regression(opinion_delib_df)
-    fit_regression(opinion_control_df)
+    # fit_regression(opinion_control_df)
     return fit_regression, independent_variables
 
 
@@ -704,8 +704,8 @@ def _(
     axes = axes.ravel()
     plot_opinion(all_zero_delib, axes[:4])
     plot_opinion(opinion_control_df.loc[opinion_control_df["ego"] == 1], axes[4:])
-    axes[0].set_ylabel("PBS score")
-    axes[4].set_ylabel("PBS Score")
+    axes[0].set_ylabel("Deliberation\n PBS")
+    axes[4].set_ylabel("Control\n PBS")
     plt.tight_layout()
     plt.savefig("figures/pbs_scores.png")
     plt.show()
@@ -755,21 +755,13 @@ def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
 
 
     # Usage
-    figure_opinion_change, axes_change = plt.subplots(1, 4, figsize=(20, 5))
+    figure_opinion_change, axes_change = plt.subplots(1, 4, figsize=(24, 5))
     axes_change = axes_change.ravel()
     plot_change_in_opinion(all_zero_delib, axes_change[:4])
     axes_change[0].set_ylabel("$\\Delta$PBS score")
-    # Usage
-    figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
-    axes = axes.ravel()
-    plot_change_in_opinion(opinion_delib_df.loc[opinion_delib_df["selfknowledge"] == 0], axes[:4])
-    plot_change_in_opinion(opinion_control_df[opinion_control_df["ego"] == 1], axes[4:])
-    axes[0].set_ylabel("Deliberation")
-    axes[4].set_ylabel("Control")
-    plt.tight_layout()
     plt.savefig("figures/change_pbs_scores.png")
     plt.show()
-    return axes, figure_opinion, plot_change_in_opinion
+    return axes_change, figure_opinion_change, plot_change_in_opinion
 
 
 @app.cell
@@ -822,34 +814,13 @@ def _(np, opinion_delib_df, plot_errors, plt, time_str):
 
 
 @app.cell
-def _(indep, opinion_delib_df, plt, sim_color, sns):
-    def plot_errors_bias(opinion_df, prefix):
-        data = opinion_df
-        ax = sns.jointplot(
-            data=data,
-            x="bias",
-            y="PBS_error",
-            kind="reg",
-            label=indep,
-            color=sim_color
-        )
-        plt.ylabel("PBS Error")
-        plt.xlabel("Bias")
-        plt.savefig("figures/"+prefix+"_bias_error.png")
-
-    print("Delib:")
-    plot_errors_bias(opinion_delib_df, "delib")
-    plt.show()
-    return (plot_errors_bias,)
-
-
-@app.cell
 def _(np, opinion_delib_df, pd, plt, time_str):
     # Filter the DataFrame
-    filtered_df = opinion_delib_df[opinion_delib_df["PBS_error"] < 10]
+    # filtered_df = opinion_delib_df[opinion_delib_df["selfknowledge"]==0]
+    filtered_df = opinion_delib_df
 
     # Create bins of width 0.5 for bias
-    bin_edges = np.arange(filtered_df["bias"].min(), filtered_df["bias"].max() + 0.5, 0.5)
+    bin_edges = np.arange(filtered_df["bias"].min(), filtered_df["bias"].max() + 0.2, 0.2)
     filtered_df["bias_bin"] = pd.cut(filtered_df["bias"], bins=bin_edges)
 
     # Group, aggregate, and pivot
@@ -873,15 +844,16 @@ def _(np, opinion_delib_df, pd, plt, time_str):
     ax_imshow.set_xticks(range(0,im_show_bias_time_df.columns.shape[0],3))
     ax_imshow.set_xticklabels(im_show_bias_time_df.columns[::3], rotation=90)
 
-    # label_step_size = im_show_bias_time_df.index.shape[0] // 1
-    # ax_imshow.set_yticks(range(0, im_show_bias_time_df.index.shape[0], label_step_size))
-    # ax_imshow.set_yticklabels([f"{bias:.2f}" for bias in im_show_bias_time_df.index[::label_step_size]])
+    label_step_size = im_show_bias_time_df.index.shape[0]  // 10
+    ax_imshow.set_yticks(range(0, im_show_bias_time_df.index.shape[0], label_step_size))
+    ax_imshow.set_yticklabels([f"{bias.left:.2f}" for bias in im_show_bias_time_df.index[::label_step_size]])
 
     # Labels
     ax_imshow.set_xlabel("Time")
     ax_imshow.set_ylabel("Bias")
 
     plt.tight_layout()
+    plt.savefig("figures/bias_time_imshow.png")
     plt.show()
     return (
         ax_imshow,
@@ -890,18 +862,8 @@ def _(np, opinion_delib_df, pd, plt, time_str):
         fig_imshow,
         filtered_df,
         im_show_bias_time_df,
+        label_step_size,
     )
-
-
-@app.cell
-def _(independent_variables, np, opinion_control_df, opinion_delib_df):
-    for indep in independent_variables:
-        print(indep)
-        print( np.corrcoef(opinion_delib_df[indep], opinion_delib_df["PBS_error"]))
-        print("----------")
-        print( np.corrcoef(opinion_control_df[indep], opinion_control_df["PBS_error"]))
-        print("==========")
-    return (indep,)
 
 
 if __name__ == "__main__":
