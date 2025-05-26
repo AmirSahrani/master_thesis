@@ -19,7 +19,7 @@ thesis
 				Sensitivity analysis makes more sense here
 			✓ Convergence of trust?
 			How well as candidate positions estimated
-			Use 26 most polarizing questions!
+			✓ Use 26 most polarizing questions!
 		Model quirks
 			Voter distance is assumed to be \ell_1
 			Still no clear difference between control and delib
@@ -27,6 +27,7 @@ thesis
 				Sparse/Dense
 				Data set
 				Maybe the goal is not to actually have a difference between control and delib model, and simply show that the control group has little substantative arguement, as well as showing it is better modeled through a sparse graph
+					The data shows no change, thus it is likely best modeled through no model :)
 			A lot of variables binary
 				Knowledge/Ego/Cred
 				Maybe we can make them [0,1]
@@ -46,4 +47,5 @@ thesis
 				Maybe it is a good idea to also introduce familiarity
 			Single peakedness is prevalent even with multiple issue dimensions?
 			everything is now measured on the entire population, it would be good to run simulations for individuals to see thing such as their PBS and the changes there of.
+			Voters cannot discover new opinions, e.g. extreme groups stay extreme
 

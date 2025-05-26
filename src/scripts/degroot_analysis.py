@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.0"
+__generated_with = "0.11.31"
 app = marimo.App(width="full")
 
 
@@ -339,7 +339,7 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
 
 
     generate_general_graphs(data_delib, "delib")
-    # generate_general_graphs(data_control.loc[data_control[time_str] == 151], "control")
+    # generate_general_graphs(data_control, "control")
     return (generate_general_graphs,)
 
 
@@ -421,8 +421,8 @@ def _(bias_str, plt, summary_control, summary_delib):
         plt.tight_layout()
         plt.savefig(f"figures/{title}")
         plt.show()
-    plot_summary(summary_delib, "error_scatter_delib.pdf")
-    plot_summary(summary_control, "error_scatter_control.pdf")
+    plot_summary(summary_delib, "error_scatter_delib.png")
+    plot_summary(summary_control, "error_scatter_control.png")
     return (plot_summary,)
 
 
@@ -566,7 +566,7 @@ def _(
                bbox_to_anchor=(0.51, -0.15))
 
     plt.tight_layout()
-    fig.savefig("figures/convergence_groups.pdf", bbox_inches='tight')
+    fig.savefig("figures/convergence_groups.png", bbox_inches='tight')
     plt.show()
     return (
         ax,
@@ -623,7 +623,7 @@ def _(np, pd):
 
     opinion_delib_df = get_exploded_df(opinion_delib_df)
     opinion_control_df = get_exploded_df(opinion_control_df)
-    opinion_control_df
+    opinion_delib_df
     return get_exploded_df, opinion_control_df, opinion_delib_df, pbs_measures
 
 
@@ -658,15 +658,15 @@ def _(
     np,
     opinion_control_df,
     opinion_delib_df,
+    pd,
     plt,
     sim_color,
     time_str,
     true_color,
 ):
-    def plot_change_in_opinion(opinion_df, axes):
+    def plot_opinion(opinion_df, axes):
         times = opinion_df[time_str].unique()
         times = np.sort(times)  # ensure consistency
-        bins = np.linspace(0, 10, 20)
 
         for i, ax in enumerate(axes):
             time_val = times[i]  # skip every other time point
@@ -675,18 +675,75 @@ def _(
                 continue
 
             opinion_plotting_data = filtered.sample(n=min(100000, len(filtered)))
+            _, bins = pd.cut(opinion_plotting_data["PBS_start"], 80, retbins=True)
+
 
             pbs_start = opinion_plotting_data["PBS_start"]
-            pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
-            pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
-
+            pbs_sim = opinion_plotting_data["PBS_simulated"]
+            pbs_true = opinion_plotting_data["PBS_true"]
             digitized_start = np.digitize(pbs_start, bins, right=True)
             bin_means_start = np.array([pbs_start[digitized_start == i].mean() for i in range(1, len(bins))])
             bin_means_sim = np.array([pbs_sim[digitized_start == i].mean() for i in range(1, len(bins))])
             bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
 
-            ax.scatter(pbs_start, pbs_sim, alpha=0.008, color=sim_color, s=3, label="Simulated")
-            ax.scatter(pbs_start, pbs_true, alpha=0.008, color=true_color, s=3, label="True")
+            ax.scatter(pbs_start, pbs_sim, alpha=0.1, color=sim_color, s=3, label="Simulated")
+            ax.scatter(pbs_start, pbs_true, alpha=0.05, color=true_color, s=3, label="True")
+            ax.scatter(bin_means_start, bin_means_sim, color=sim_color, label="Binned Sim")
+            ax.scatter(bin_means_start, bin_means_true, color=true_color, label="Binned True")
+
+            ax.set_xlabel(f"t = {time_val:.2f}")
+            ax.set_title(f"Mean Absolute Error: {np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean():.2f}")
+            ax.set_ylim((0,10))
+            ax.grid(True)
+
+
+    all_zero_delib = opinion_delib_df.loc[(opinion_delib_df["knowledge"] == 0) &(opinion_delib_df["similarity"] == 0) &(opinion_delib_df["ego"] == 0) & (opinion_delib_df["credibility"] == 1)]
+    # Usage
+    figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
+    axes = axes.ravel()
+    plot_opinion(all_zero_delib, axes[:4])
+    plot_opinion(opinion_control_df.loc[opinion_control_df["ego"] == 1], axes[4:])
+    axes[0].set_ylabel("PBS score")
+    axes[4].set_ylabel("PBS Score")
+    plt.tight_layout()
+    plt.savefig("figures/pbs_scores.png")
+    plt.show()
+    return all_zero_delib, axes, figure_opinion, plot_opinion
+
+
+@app.cell
+def _(opinion_delib_df):
+    opinion_delib_df
+    return
+
+
+@app.cell
+def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
+    def plot_change_in_opinion(opinion_df, axes):
+        times = opinion_df[time_str].unique()
+        times = np.sort(times)  # ensure consistency
+
+        for i, ax in enumerate(axes):
+            time_val = times[i]  # skip every other time point
+            filtered = opinion_df[np.isclose(opinion_df[time_str], time_val)]
+            if len(filtered) == 0:
+                continue
+
+            opinion_plotting_data = filtered.sample(n=min(100000, len(filtered)))
+            _, bins = pd.cut(opinion_plotting_data["PBS_start"], 80, retbins=True)
+
+            # Prepare data
+            pbs_start = opinion_plotting_data["PBS_start"]
+            pbs_sim = opinion_plotting_data["PBS_simulated"] - pbs_start
+            pbs_true = opinion_plotting_data["PBS_true"] - pbs_start
+
+            # Use bin_edges with np.digitize
+            digitized_start = np.digitize(pbs_start, bins, right=True)
+            bin_means_start = np.array([pbs_start[digitized_start == i].mean(skipna=True) for i in range(1, len(bins))])
+            bin_means_sim = np.array([pbs_sim[digitized_start == i].mean(skipna=True) for i in range(1, len(bins))])
+            bin_means_true = np.array([pbs_true[digitized_start == i].mean(skipna=True) for i in range(1, len(bins))])
+            ax.scatter(pbs_start, pbs_sim, alpha=0.05, color=sim_color, s=3, label="Simulated")
+            ax.scatter(pbs_start, pbs_true, alpha=0.05, color=true_color, s=3, label="True")
             ax.scatter(bin_means_start, bin_means_sim, color=sim_color, label="Binned Sim")
             ax.scatter(bin_means_start, bin_means_true, color=true_color, label="Binned True")
 
@@ -696,44 +753,32 @@ def _(
             ax.grid(True)
 
 
-    all_zero_delib = opinion_delib_df.loc[(opinion_delib_df["knowledge"] == 0) &(opinion_delib_df["similarity"] == 0) &(opinion_delib_df["ego"] == 0)]
     # Usage
-    figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
-    axes = axes.ravel()
-    plot_change_in_opinion(opinion_delib_df, axes[:4])
-    plot_change_in_opinion(opinion_control_df[opinion_control_df["ego"] == 1], axes[4:])
-    axes[0].set_ylabel("Deliberation")
-    axes[5].set_ylabel("Control")
+    figure_opinion_change, axes_change = plt.subplots(1, 4, figsize=(20, 5))
+    axes_change = axes_change.ravel()
+    plot_change_in_opinion(all_zero_delib, axes_change[:4])
+    axes_change[0].set_ylabel("$\\Delta$PBS score")
     plt.tight_layout()
+    plt.savefig("figures/change_pbs_scores.png")
     plt.show()
-    return all_zero_delib, axes, figure_opinion, plot_change_in_opinion
+    return axes_change, figure_opinion_change, plot_change_in_opinion
 
 
 @app.cell
-def _(opinion_control_df, opinion_delib_df, plt, time_str):
+def _(time_str):
     def plot_errors(opinion_df, ax):
         independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
         for indep in independent_variables:
             avg_error = opinion_df.loc[opinion_df[indep] == 1].groupby(time_str).mean(numeric_only=True)["PBS_error"]
-            ax.scatter(avg_error.index, avg_error,alpha=0.4, label=indep)
+            ax.plot(avg_error.index, avg_error, "o-", alpha=0.4, label=indep)
         ax.set_xlabel("time")
-        # plt.ylabel("error in prediction of pbs")
-        # plt.xlabel("time")
-        # plt.show()
-    figure_errors, axes_err = plt.subplots(1,2, figsize=(16,8))
-    plot_errors(opinion_delib_df, axes_err[0])
-    plot_errors(opinion_control_df, axes_err[1])
-
-    axes_err[0].set_ylabel("pbs error")
-    plt.legend()
-    plt.show()
-    return axes_err, figure_errors, plot_errors
+    return (plot_errors,)
 
 
 @app.cell
-def _(np, opinion_control_df, opinion_delib_df, plt, time_str):
+def _(np, opinion_delib_df, plot_errors, plt, time_str):
     def plot_errors_binned(opinion_df, ax):
-        bins = np.linspace(0, 10, 20)
+        bins = np.linspace(0, 10, 100)
 
         independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
         for indep in independent_variables:
@@ -751,46 +796,91 @@ def _(np, opinion_control_df, opinion_delib_df, plt, time_str):
                 bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
                 time_errors.append(np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean())
 
-            ax.scatter(times, time_errors, alpha=0.4, label=indep)
+            ax.plot(times, time_errors,"o-" , alpha=0.4, label=indep)
             ax.set_xlabel("Time")
             ax.grid(True)
 
-    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(18,8))
-    plot_errors_binned(opinion_delib_df, axes_err_bin[0])
-    plot_errors_binned(opinion_control_df, axes_err_bin[1])
+    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(18,6))
+    plot_errors(opinion_delib_df, axes_err_bin[0])
+    plot_errors_binned(opinion_delib_df, axes_err_bin[1])
     axes_err_bin[0].set_ylabel("PBS Error")
 
     plt.legend()
+    plt.savefig("figures/errors_binned.png")
     plt.show()
     return axes_err_bin, figure_errors_bin, plot_errors_binned
 
 
 @app.cell
-def _(opinion_control_df, opinion_delib_df, plt, sim_color, sns):
+def _(indep, opinion_delib_df, plt, sim_color, sns):
     def plot_errors_bias(opinion_df, prefix):
-        independent_variables = ['credibility', 'knowledge', 'ego', 'similarity']
-        for indep in independent_variables:
-            data = opinion_df.loc[opinion_df[indep] == 1]
-            ax = sns.jointplot(
-                data=data,
-                x="bias",
-                y="PBS_error",
-                kind="reg",
-                label=indep,
-                color=sim_color
-            )
-            plt.ylabel("PBS Error")
-            plt.xlabel("Bias")
-            plt.savefig("figures/"+prefix+indep+"bias_error.pdf")
+        data = opinion_df
+        ax = sns.jointplot(
+            data=data,
+            x="bias",
+            y="PBS_error",
+            kind="reg",
+            label=indep,
+            color=sim_color
+        )
+        plt.ylabel("PBS Error")
+        plt.xlabel("Bias")
+        plt.savefig("figures/"+prefix+"_bias_error.png")
 
     print("Delib:")
     plot_errors_bias(opinion_delib_df, "delib")
     plt.show()
-
-    print("Control:")
-    plot_errors_bias(opinion_control_df, "control")
-    plt.show()
     return (plot_errors_bias,)
+
+
+@app.cell
+def _(np, opinion_delib_df, pd, plt, time_str):
+    # Filter the DataFrame
+    filtered_df = opinion_delib_df[opinion_delib_df["PBS_error"] < 10]
+
+    # Create bins of width 0.5 for bias
+    bin_edges = np.arange(filtered_df["bias"].min(), filtered_df["bias"].max() + 0.5, 0.5)
+    filtered_df["bias_bin"] = pd.cut(filtered_df["bias"], bins=bin_edges)
+
+    # Group, aggregate, and pivot
+    im_show_bias_time_df = (
+        filtered_df
+        .groupby(["bias_bin", time_str])
+        .mean(numeric_only=True)
+        .reset_index()
+        .pivot(index="bias_bin", columns=time_str, values="PBS_error")
+    )
+    # Create the fig_imshowure
+    fig_imshow, ax_imshow = plt.subplots(figsize=(8, 8))  # Square figure
+
+    # Show the heatmap
+    cax_imshow = ax_imshow.imshow(im_show_bias_time_df.values, aspect='auto', origin='lower')
+
+    # Add colorbar
+    fig_imshow.colorbar(cax_imshow, ax=ax_imshow, label="PBS error")
+
+    # Set ax_imshowis ticks
+    ax_imshow.set_xticks(range(0,im_show_bias_time_df.columns.shape[0],3))
+    ax_imshow.set_xticklabels(im_show_bias_time_df.columns[::3], rotation=90)
+
+    # label_step_size = im_show_bias_time_df.index.shape[0] // 1
+    # ax_imshow.set_yticks(range(0, im_show_bias_time_df.index.shape[0], label_step_size))
+    # ax_imshow.set_yticklabels([f"{bias:.2f}" for bias in im_show_bias_time_df.index[::label_step_size]])
+
+    # Labels
+    ax_imshow.set_xlabel("Time")
+    ax_imshow.set_ylabel("Bias")
+
+    plt.tight_layout()
+    plt.show()
+    return (
+        ax_imshow,
+        bin_edges,
+        cax_imshow,
+        fig_imshow,
+        filtered_df,
+        im_show_bias_time_df,
+    )
 
 
 @app.cell
