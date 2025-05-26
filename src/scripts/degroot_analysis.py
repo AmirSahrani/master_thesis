@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.0"
+__generated_with = "0.11.31"
 app = marimo.App(width="full")
 
 
@@ -448,7 +448,7 @@ def _(
         # Plot each combination
         ax[0+i].plot(grouped_by_cand_and_sampler.index, grouped_by_cand_and_sampler['entrywise_distance'], 
                      linestyle='--', color=sim_color)
-    
+
     ax[0].set_title('Similarity')
     ax[1].set_title('Knowledge')
     ax[2].set_title('Similarity, Original Groups')
@@ -650,6 +650,7 @@ def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
     axes_change = axes_change.ravel()
     plot_change_in_opinion(all_zero_delib, axes_change[:4])
     axes_change[0].set_ylabel("$\\Delta$PBS score")
+    plt.tight_layout()
     plt.savefig("figures/change_pbs_scores.png")
     plt.show()
     return axes_change, figure_opinion_change, plot_change_in_opinion
