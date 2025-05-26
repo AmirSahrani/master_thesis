@@ -120,7 +120,7 @@ def _(np, plt):
 
 
 @app.cell
-def _(compute_proportion, mlines, np, pd, plt):
+def _(compute_proportion, j, mlines, np, pd, plt):
     def plot(df, x, y, ylabel, file_prefix):
         fig, ax = plt.subplots(figsize=(12,8))
 
@@ -189,7 +189,7 @@ def _(compute_proportion, mlines, np, pd, plt):
 
         # ax.add_artist(legend1) 
         plt.tight_layout()
-        plt.savefig(f"figures/{file_prefix}_{ylabel}")
+        j.savefig(f"figures/{file_prefix}_{ylabel}")
         plt.show()
 
     def compute_and_merge_proportions(
@@ -263,10 +263,9 @@ def _(data_control, data_delib):
 
 
 @app.cell
-def _(data_control, data_delib, time_str):
-    data_delib_151 = data_delib.loc[data_delib[time_str] == 151].copy()
-    data_control_151 = data_control.loc[data_control[time_str] == 151].copy()
-    return data_control_151, data_delib_151
+def _(data_delib):
+    data_delib
+    return
 
 
 @app.cell
@@ -345,32 +344,6 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
 
 
 @app.cell(hide_code=True)
-def _(cand_str, data_delib, mo, time_str, voter_str):
-    # Create UI controls
-    voter_dropdown = mo.ui.dropdown(
-        options={str(v): v for v in sorted(data_delib[voter_str].unique())},
-        value="9",
-        label="Number of Voters"
-    )
-
-    cand_dropdown = mo.ui.dropdown(
-        options={str(c): c for c in sorted(data_delib[cand_str].unique())},
-        value="7",
-        label="Number of Candidates"
-    )
-
-    time_dropdown = mo.ui.dropdown(
-        options={str(t): t for t in sorted(data_delib[time_str].unique())},
-        value="1.0",
-        label="Time Value"
-    )
-
-    # Display UI controls
-    controls = mo.hstack([voter_dropdown, cand_dropdown, time_dropdown])
-    return cand_dropdown, controls, time_dropdown, voter_dropdown
-
-
-@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         r"""
@@ -427,59 +400,6 @@ def _(bias_str, plt, summary_control, summary_delib):
     return (plot_summary,)
 
 
-@app.cell
-def _(data_delib, np, pd, time_str):
-    def bin_biases(data):
-        bias_bins = np.linspace(data["bias"].min(), data["bias"].max(), 15)
-        bins_index = np.digitize(data["bias"], bias_bins)
-        data["binned_bias"] = bias_bins[bins_index-1]
-        return data
-
-    def find_min_bias(df, metric_col):
-        # Group by bias and calculate mean of the metric
-        means = df.groupby(['binned_bias', 'knowledge', time_str])[metric_col].mean()
-        # Find the bias value with the minimum mean metric value
-        return means.idxmin() if not means.empty else np.nan
-
-
-    def pivot_of_minimum_values(data, metrics):
-        # Create an empty DataFrame to store results
-        result_df = pd.DataFrame()
-
-        # For each combination of cand_sampler and knowledge
-        for (sampler), group in data.groupby(['cand_sampler']):
-            row_data = {'cand_sampler': sampler}
-
-            # For each metric, find the bias that minimizes it
-            for metric in metrics:
-                min_bias = find_min_bias(group, metric)
-                row_data[f'{metric.replace("_", " ")}'] = min_bias
-
-            # Append to results
-            result_df = pd.concat([result_df, pd.DataFrame([row_data])], ignore_index=True)
-
-        # Set the index for the final table
-        result_df = result_df.set_index(['cand_sampler'])
-
-        # You can reshape it if you want a different format
-        # This puts metrics as columns and shows the optimal bias value
-        return result_df
-
-    m = ['proximity_to_voter_sp_absdiff', 'proximity_to_cand_sp_absdiff', 'total_absdiff']
-
-    def to_tex(df: pd.DataFrame):
-        print(df.to_latex( multicolumn=True))
-
-    to_tex(pivot_of_minimum_values(bin_biases(data_delib), m))
-    return bin_biases, find_min_bias, m, pivot_of_minimum_values, to_tex
-
-
-@app.cell
-def _(bin_biases, data_control, m, pivot_of_minimum_values, to_tex):
-    to_tex(pivot_of_minimum_values(bin_biases(data_control), m))
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(
@@ -510,56 +430,36 @@ def _(pd):
 
 @app.cell
 def _(
-    cand_str,
     convergence_data_know,
     convergence_data_know_group,
     convergence_data_simi,
     convergence_data_simi_group,
-    np,
     plt,
-    sampler_str,
+    sim_color,
     time_str,
 ):
     # Begin plotting
-    fig, ax = plt.subplots(3, 4, figsize=(20, 15), sharex=True)
+    fig, ax = plt.subplots(1, 4, figsize=(20, 5), sharex=True)
     ax = ax.ravel()
     for i, convergence_data in enumerate([convergence_data_simi,  convergence_data_know, convergence_data_simi_group,  convergence_data_know_group]):
 
-        grouped_by_cand_and_sampler = convergence_data.groupby([cand_str, sampler_str, time_str]).agg("mean")
-        df_reset = grouped_by_cand_and_sampler.reset_index()
-        df_reset = df_reset.loc[df_reset[time_str] > 1]
-        candidate_counts = sorted(df_reset['n_candidates'].unique())
-        # Unique values for styling
-        sampler_styles = {'Sample': 'X', 'Voter': 's'}
-        colors = plt.cm.viridis_r(np.linspace(0, 1, len(candidate_counts)))
+        grouped_by_cand_and_sampler = convergence_data.loc[convergence_data[time_str] > 1].groupby([time_str]).mean(numeric_only=True)
 
         # Plot each combination
-        for idx, n in enumerate(candidate_counts):
-            for sampler, marker in sampler_styles.items():
-                subset = df_reset[(df_reset['n_candidates'] == n) & (df_reset['cand_sampler'] == sampler)]
-                if not subset.empty:
-                    ax[0+i].plot(subset['time_steps'], subset['ks_distance_true'], 
-                               label=f'{n} candidates, {sampler}', 
-                               marker=marker, color=colors[idx], linestyle='-')
-                    ax[4+i].plot(subset['time_steps'], subset['cs_distance_true'], 
-                               label=f'{n} candidates, {sampler}', 
-                               marker=marker, color=colors[idx], linestyle='-')
-                    ax[8+i].plot(subset['time_steps'], subset['entrywise_distance'], 
-                               label=f'{n} candidates, {sampler}', 
-                               marker=marker, color=colors[idx], linestyle='-')
+        ax[0+i].plot(grouped_by_cand_and_sampler.index, grouped_by_cand_and_sampler['entrywise_distance'], 
+                     linestyle='--', color=sim_color)
+    
     ax[0].set_title('Similarity')
     ax[1].set_title('Knowledge')
-    ax[2].set_title('Original')
-    ax[3].set_title('Knowledge Original Groups')
+    ax[2].set_title('Similarity, Original Groups')
+    ax[3].set_title('Knowledge, Original Groups')
 
     # Labels and titles
-    ax[0].set_ylabel('KS Distance')
-    ax[4].set_ylabel('CS Distance')
-    ax[8].set_ylabel('Entrywise distance')
-    ax[8].set_xlabel('Time Steps')
-    ax[9].set_xlabel('Time Steps')
-    ax[10].set_xlabel('Time Steps')
-    ax[11].set_xlabel('Time Steps')
+    ax[0].set_ylabel('$\ell_1$-norm to Starting Trust')
+    ax[0].set_xlabel('Time Steps')
+    ax[1].set_xlabel('Time Steps')
+    ax[2].set_xlabel('Time Steps')
+    ax[3].set_xlabel('Time Steps')
 
     # Legend
     handles, labels = ax[1].get_legend_handles_labels()
@@ -571,21 +471,12 @@ def _(
     plt.show()
     return (
         ax,
-        candidate_counts,
-        colors,
         convergence_data,
-        df_reset,
         fig,
         grouped_by_cand_and_sampler,
         handles,
         i,
-        idx,
         labels,
-        marker,
-        n,
-        sampler,
-        sampler_styles,
-        subset,
     )
 
 
@@ -698,7 +589,7 @@ def _(
             ax.grid(True)
 
 
-    all_zero_delib = opinion_delib_df.loc[(opinion_delib_df["knowledge"] == 0) &(opinion_delib_df["similarity"] == 0) &(opinion_delib_df["ego"] == 0) & (opinion_delib_df["credibility"] == 1)]
+    all_zero_delib = opinion_delib_df.loc[(opinion_delib_df["selfknowledge"] == 0)]
     # Usage
     figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
     axes = axes.ravel()
