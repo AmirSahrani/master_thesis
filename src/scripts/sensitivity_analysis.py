@@ -41,17 +41,12 @@ global output_vars
 n_methods = 2
 sensitivity_vars = [
     ("Knowledge", [0, 1]),
-    ("Credibility", [0, 1]),
-    ("Meta", [0.9, 1]),
-    ("Substantive", [0.9, 1]),
     ("Self Knowledge", [0, 1]),
     ("Self Ego", [0, 1]),
     ("Similarity", [0, 1]),
     ("Number of Voters", [3, 31]),
-    ("Number of Candidates", [3, 7]),
     ("Timesteps", [0, 20]),
     ("Bias Factor", [0.01, 10]),
-    ("Candidate Generator", [0, 1]),
 ]
 output_vars = [
     "PBS_simulated",
@@ -76,12 +71,32 @@ def get_problem():
 
 
 def get_analysis_inputs(n_samples):
-    # Define the model inputs
 
     # Generate samples and run a dummy evaluation
     problem = get_problem()
     param_values = saltelli.sample(problem, n_samples)
-    return list(map(tuple, param_values))
+    effective_n = param_values.shape[0]
+
+    all_vars = {
+        "Knowledge": [],
+        "Credibility": [0]*effective_n,
+        "Meta": [0]*effective_n,
+        "Substantive": [1]*effective_n,
+        "Self Knowledge": [],
+        "Self Ego": [],
+        "Similarity": [],
+        "Number of Voters": [],
+        "Number of Candidates": [1]*effective_n,
+        "Timesteps": [1]*effective_n,
+        "Bias Factor": [],
+        "Candidate Generator": [1]*effective_n,
+    }
+    for i, (var, samples) in enumerate(sensitivity_vars):
+        all_vars[var] = param_values.T[i]
+
+    param_values = pd.DataFrame.from_dict(all_vars)
+
+    return list(map(tuple, param_values.to_numpy()))
 
 
 def run_analysis(outputs, problem):
@@ -96,8 +111,10 @@ if __name__ == "__main__":
 
     for var in output_vars:
         data_out = data[var].to_numpy().squeeze()
-        sobol_result = run_analysis(data_out, problem)
-        axes = sobol_result.plot()
+        st, s1, s2 = run_analysis(data_out, problem).to_df()
+        print(s1)
+        print(s2)
+        print(st)
 
-        plt.tight_layout()
-        plt.show()
+        # plt.tight_layout()
+        # plt.show()
