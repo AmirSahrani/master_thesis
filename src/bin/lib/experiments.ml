@@ -516,8 +516,8 @@ let list_to_config = function
         credibility_bool;
         meta_bool;
         substantive_bool;
-        self_knowledge_bool;
         self_ego;
+        self_knowledge_bool;
         self_similarity;
         n_voters;
         n_candidates;
@@ -530,8 +530,8 @@ let list_to_config = function
           `Bool (credibility_bool > 0.5);
           `Bool (meta_bool > 0.5);
           `Bool (substantive_bool > 0.5);
-          `Bool (self_knowledge_bool > 0.5);
           `Bool (self_ego > 0.5);
+          `Bool (self_knowledge_bool > 0.5);
           `Bool (self_similarity > 0.5);
           `Int (int_of_float n_voters) |> filter_odd;
           `Int (int_of_float n_candidates);

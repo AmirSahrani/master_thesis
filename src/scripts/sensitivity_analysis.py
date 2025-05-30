@@ -80,11 +80,11 @@ def get_analysis_inputs(n_samples):
 
     all_vars = {
         "Knowledge": [],
-        "Credibility": [0] * effective_n,
-        "Meta": [0] * effective_n,
-        "Substantive": [1] * effective_n,
+        "Credibility": [0]*effective_n,
+        "Meta": [0]*effective_n,
+        "Substantive": [1]*effective_n,
+        "Self Ego": [],
         "Self Knowledge": [],
-        "Ego": [],
         "Similarity": [],
         "Number of Voters": [],
         "Number of Candidates": [1] * effective_n,
