@@ -120,9 +120,9 @@ def _(np, plt):
 
 
 @app.cell
-def _(compute_proportion, j, mlines, np, pd, plt):
+def _(compute_proportion, mlines, np, pd, plt):
     def plot(df, x, y, ylabel, file_prefix):
-        fig, ax = plt.subplots(figsize=(12,8))
+        fig, ax = plt.subplots(figsize=(10,7))
 
         # Define markers for each sampler (cycling if needed)
         marker_styles = ["o", "X", "^", "D", "v", "P", "X", "*"]
@@ -131,7 +131,7 @@ def _(compute_proportion, j, mlines, np, pd, plt):
             for i, sampler in enumerate(df["cand_sampler"].unique())
         }
         # Define colors for 'Type' — consistent ordering
-        type_colors = {"Start": "#A93C93", "End": "#008B72", "Final": "#613F99", "True": "#613F99"}
+        type_colors = {"Start": "#A93C93", "Simulated": "#008B72", "Final": "#613F99", "True": "#613F99"}
         types_used = {}
 
         for sampler in df["cand_sampler"].unique():
@@ -189,7 +189,7 @@ def _(compute_proportion, j, mlines, np, pd, plt):
 
         # ax.add_artist(legend1) 
         plt.tight_layout()
-        j.savefig(f"figures/{file_prefix}_{ylabel}")
+        plt.savefig(f"figures/{file_prefix}_{ylabel}")
         plt.show()
 
     def compute_and_merge_proportions(
@@ -199,10 +199,9 @@ def _(compute_proportion, j, mlines, np, pd, plt):
         df_end = compute_proportion(data, start_col, end_col, name, group_by)
         df_true = compute_proportion(data, start_col, true_col, name, group_by)
 
-        df_start["Type"] = "Start"
-        df_end["Type"] = "End"
-        df_true["Type"] = "Final"
-        df_combined = pd.concat([df_start, df_end, df_true])
+        df_end["Type"] = "Simulated"
+        df_true["Type"] = "True"
+        df_combined = pd.concat([df_end, df_true])
 
         return df_combined
     return compute_and_merge_proportions, plot
@@ -297,7 +296,7 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
         proximity_to_sp_true = compute_average(
             data_delib, "proximity_to_cand_sp_true", "proximity_to_cand_sp", ["time_steps", "cand_sampler"]
         )
-        proximity_to_sp_end["Type"] = "End"
+        proximity_to_sp_end["Type"] = "Simulated"
         proximity_to_sp_true["Type"] = "True"
         df_combined = pd.concat([proximity_to_sp_end, proximity_to_sp_true])
         proximity_to_sp = df_combined.rename(
@@ -310,7 +309,7 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
         proximity_to_voter_sp_true = compute_average(
             data_delib, "proximity_to_voter_sp_true", "proximity_to_voter_sp", ["time_steps", "cand_sampler"]
         )
-        proximity_to_voter_sp_end["Type"] = "End"
+        proximity_to_voter_sp_end["Type"] = "Simulated"
         proximity_to_voter_sp_true["Type"] = "True"
         df_combined = pd.concat([proximity_to_voter_sp_end, proximity_to_voter_sp_true])
         proximity_to_voter_sp = df_combined.rename(
@@ -323,7 +322,7 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
         unique_profiles_true = compute_average(
             data_delib, "unique_true", "unique", ["time_steps", "cand_sampler"]
         )
-        unique_profiles_end["Type"] = "End"
+        unique_profiles_end["Type"] = "Simulated"
         unique_profiles_true["Type"] = "True"
         df_combined = pd.concat([unique_profiles_end, unique_profiles_true])
         unique_profiles = df_combined.rename(
@@ -335,7 +334,7 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
         plot(proximity_to_sp, "time_steps", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles", file_prefix)
         plot(proximity_to_voter_sp, "time_steps", "proximity_to_voter_sp", "Mean voter proximity to single peaked Profiles", file_prefix)
         plot(condorcet, "time_steps", "condorcet_proportion", "Mean number of Condorcet winners", file_prefix)
-        plot(unique_profiles, "time_steps", "unique", r"\#Unique Preferences", file_prefix)
+        plot(unique_profiles, "time_steps", "unique", "Mean number of Unique Preferences", file_prefix)
 
 
     generate_general_graphs(data_delib, "delib")
@@ -521,7 +520,7 @@ def _(np, pd):
 
 @app.cell
 def _(np, opinion_delib_df, pd, sklearn, sm, time_str):
-    independent_variables = ['bias',  'credibility', 'knowledge', 'ego', 'similarity', 'selfknowledge']
+    independent_variables = ['knowledge', 'ego', 'similarity', 'selfknowledge']
     def fit_regression(opinion_df):
 
         opinion_group = opinion_df.loc[opinion_df[time_str]> 0].groupby(independent_variables).mean(numeric_only=True)
@@ -661,7 +660,7 @@ def _(opinion_delib_df, time_str):
     opinion_delib_df["uniform"] = ~opinion_delib_df[["credibility", "knowledge", "ego", "similarity"]].any(axis=1)
 
     def plot_errors(opinion_df, ax):
-        independent_variables = ['credibility', 'knowledge', 'selfknowledge', 'ego', 'similarity','uniform']
+        independent_variables = ['knowledge', 'selfknowledge', 'ego', 'similarity','uniform']
         for indep in independent_variables:
             avg_error = opinion_df.loc[opinion_df[indep] == 1].groupby(time_str).mean(numeric_only=True)["PBS_error"]
             ax.plot(avg_error.index, avg_error, "o-",alpha=0.3, label=indep)
@@ -674,7 +673,7 @@ def _(np, opinion_delib_df, plot_errors, plt, time_str):
     def plot_errors_binned(opinion_df, ax):
         bins = np.linspace(0, 10, 100)
 
-        independent_variables = ['credibility', 'knowledge', 'selfknowledge', 'ego', 'similarity','uniform']
+        independent_variables = ['knowledge', 'selfknowledge', 'ego', 'similarity','uniform']
         for indep in independent_variables:
             time_errors = []
             times = opinion_df[time_str].unique()
@@ -756,6 +755,22 @@ def _(np, opinion_delib_df, pd, plt, time_str):
         im_show_bias_time_df,
         label_step_size,
     )
+
+
+@app.cell
+def _(independent_variables, opinion_delib_df):
+    opinion_delib_df.groupby(independent_variables).mean(numeric_only=True)["PBS_error"]
+    return
+
+
+@app.cell
+def _(opinion_delib_df, sm, time_str):
+    from statsmodels.formula.api import ols
+    fit_data = opinion_delib_df.loc[opinion_delib_df[time_str] == 1]
+    model = ols("PBS_error ~ C(knowledge) * C(ego) * C(similarity) * C(selfknowledge)", data=fit_data).fit()
+    anova_table = sm.stats.anova_lm(model, test="F", typ=2, robust="hc3")
+    anova_table.iloc[0:4][["F", "PR(>F)"]]
+    return anova_table, fit_data, model, ols
 
 
 if __name__ == "__main__":

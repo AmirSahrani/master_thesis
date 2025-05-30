@@ -192,7 +192,7 @@ let add_knowledge_bias adjacency_matrix knowledge =
     let rows = Owl.Mat.row_num adjacency_matrix in
         for i = 0 to rows - 1 do
           Owl.Mat.set adjacency_matrix i i
-            (Owl.Mat.get knowledge 0 0 *. Owl.Mat.get adjacency_matrix i i)
+            (Owl.Mat.get knowledge 0 i *. Owl.Mat.get adjacency_matrix i i)
         done;
         adjacency_matrix
 
@@ -201,8 +201,9 @@ let add_ego_bias adjacency_matrix =
 
     for i = 0 to rows - 1 do
       let credibility = Owl.Mat.sum' @@ Owl.Mat.col adjacency_matrix i in
+      let bias = Owl.Mat.get adjacency_matrix i i in
 
-      Owl.Mat.set adjacency_matrix i i credibility
+      Owl.Mat.set adjacency_matrix i i (bias *. credibility)
     done;
 
     adjacency_matrix
@@ -384,8 +385,8 @@ let create_trust_matrix pre_data graph credibility_bool knowledge_data
         add_self_bias optional_mat bias_factor
         |> (fun mat -> if ego_bias then add_ego_bias mat else optional_mat)
         |> (fun mat ->
-             if knowledge_bias then add_knowledge_bias mat knowledge_data
-             else optional_mat)
+        if knowledge_bias then add_knowledge_bias mat knowledge_data
+        else optional_mat)
         |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on
