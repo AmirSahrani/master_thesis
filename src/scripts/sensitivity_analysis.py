@@ -8,7 +8,7 @@ from SALib.analyze import sobol
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from typing import Tuple, List
+from typing import OrderedDict, Tuple, List
 
 plt.rcParams.update(
     {
@@ -42,8 +42,8 @@ global output_vars
 n_methods = 2
 sensitivity_vars = [
     ("Knowledge", [0, 1]),
-    ("Self Knowledge", [0, 1]),
     ("Ego", [0, 1]),
+    ("Self Knowledge", [0, 1]),
     ("Similarity", [0, 1]),
     ("Number of Voters", [3, 31]),
     ("Timesteps", [0, 20]),
@@ -81,21 +81,22 @@ def get_analysis_inputs(n_samples):
     all_vars = {
         "Knowledge": [],
         "Credibility": [0]*effective_n,
-        "Meta": [0]*effective_n,
-        "Substantive": [1]*effective_n,
-        "Self Ego": [],
+        "Ego": [],
         "Self Knowledge": [],
         "Similarity": [],
+        "Meta": [0]*effective_n,
+        "Substantive": [1]*effective_n,
         "Number of Voters": [],
         "Number of Candidates": [1] * effective_n,
-        "Timesteps": [1] * effective_n,
+        "Timesteps": [],
         "Bias Factor": [],
         "Candidate Generator": [1] * effective_n,
     }
-    for i, (var, samples) in enumerate(sensitivity_vars):
+    for i, (var, _) in enumerate(sensitivity_vars):
         all_vars[var] = param_values.T[i]
 
     param_values = pd.DataFrame.from_dict(all_vars)
+    print(param_values.head())
 
     return list(map(tuple, param_values.to_numpy()))
 

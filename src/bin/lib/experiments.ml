@@ -514,25 +514,25 @@ let list_to_config = function
     | [
         knowledge_bool;
         credibility_bool;
-        meta_bool;
-        substantive_bool;
         self_ego;
         self_knowledge_bool;
-        self_similarity;
+        similarity;
+        meta_bool;
+        substantive_bool;
         n_voters;
         n_candidates;
         timesteps;
-        cand_method;
         bias_factors;
+        cand_method;
       ] ->
         [
           `Bool (knowledge_bool > 0.5);
           `Bool (credibility_bool > 0.5);
-          `Bool (meta_bool > 0.5);
-          `Bool (substantive_bool > 0.5);
           `Bool (self_ego > 0.5);
           `Bool (self_knowledge_bool > 0.5);
-          `Bool (self_similarity > 0.5);
+          `Bool (similarity > 0.5);
+          `Bool (meta_bool > 0.5);
+          `Bool (substantive_bool > 0.5);
           `Int (int_of_float n_voters) |> filter_odd;
           `Int (int_of_float n_candidates);
           `TimeRange [ timesteps ];
