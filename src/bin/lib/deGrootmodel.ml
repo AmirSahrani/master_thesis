@@ -208,13 +208,6 @@ let add_ego_bias adjacency_matrix =
 
     adjacency_matrix
 
-let randomize_matrix adjcency_matrix _ =
-    let open Owl.Mat in
-    let rows, col = Owl.Mat.shape adjcency_matrix in
-    let random_mat = Owl.Mat.uniform ~a:1. ~b:10. rows col in
-    let out_mat = random_mat * adjcency_matrix in
-        out_mat
-
 (** Edge weights equal to the credibility of each voter, where credibility is
     defined as the number of out going edges from voter i*)
 let credibility_matrix adjcency_matrix use_cred =
@@ -385,8 +378,8 @@ let create_trust_matrix pre_data graph credibility_bool knowledge_data
         add_self_bias optional_mat bias_factor
         |> (fun mat -> if ego_bias then add_ego_bias mat else optional_mat)
         |> (fun mat ->
-        if knowledge_bias then add_knowledge_bias mat knowledge_data
-        else optional_mat)
+             if knowledge_bias then add_knowledge_bias mat knowledge_data
+             else optional_mat)
         |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on
@@ -429,7 +422,7 @@ let deGroot config =
     (* list of mat *)
     let candidates =
         List.init n_candidates (fun _ ->
-            gen_alterantive cand_method pre_data n_candidates)
+            gen_alterantive cand_method pre_data 10)
     in
 
     let candidates_arr =

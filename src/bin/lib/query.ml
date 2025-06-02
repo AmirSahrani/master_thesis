@@ -72,6 +72,7 @@ let open_db filename =
 let close_db db = Sqlite3.db_close db
 
 let extract_query_data db query =
+    print_endline query;
     let results = ref [] in
     let callback row =
         (* Convert row to a list of strings *)

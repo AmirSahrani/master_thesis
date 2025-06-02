@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -13,6 +13,7 @@ def _():
     import numpy as np
     import matplotlib.pyplot as plt
     from enum import Enum
+    import seaborn as sns
     import textwrap
 
     plt.style.use("default")
@@ -30,10 +31,10 @@ def _():
             "grid.alpha": 0.3,
             "image.cmap": "viridis",
             "text.usetex": True,
-            "font.family": "Computer Modern",
+            "font.family": "Charter",
         }
     )
-    return Enum, mo, np, pl, plt, sk, sqlite3, textwrap
+    return Enum, mo, np, pl, plt, sk, sns, sqlite3, textwrap
 
 
 @app.cell
@@ -102,7 +103,6 @@ def _(PK_correct_answers, pl):
     print(questions)
     print(pk)
     print(data)
-    print(data.columns)
     return (
         data,
         pk,
@@ -495,8 +495,65 @@ def _(conn, pl):
 
 
 @app.cell
-def _():
-    return
+def _(conn, pl):
+    pk_pbs_data = pl.read_database(
+        query = """SELECT response_PK.score, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C,
+     Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G 
+    FROM response_post 
+    INNER JOIN voter_info ON response_post.ID = voter_info.ID
+    INNER JOIN response_PK ON response_post.ID = response_PK.ID 
+    WHERE voter_info.CONDITION = 1
+    """,
+        connection=conn
+    ).drop_nulls()
+    score = pk_pbs_data["score"]
+    pbs = pk_pbs_data.drop("score").mean_horizontal()
+    return pbs, pk_pbs_data, score
+
+
+@app.cell
+def _(pbs, plt, score, sns):
+    import pandas as pd
+    # Your data
+    df = pd.DataFrame({
+        "Knowledge Score": score,
+        "pbs": pbs
+    })
+    df = df.loc[df["Knowledge Score"] > 0]
+
+    # Bin PBS values into integer bins [0–1), [1–2), ..., [9–10)
+    df["pbs_bin"] = pd.cut(df["pbs"], bins=range(2, 8), right=False)
+
+    # Prepare for ridge-style KDE plot
+    pal = sns.color_palette("viridis", len(df["pbs_bin"].unique()))
+    g = sns.FacetGrid(df, row="pbs_bin", hue="pbs_bin", aspect=6, height=1.5, palette=pal)
+
+    g.map(sns.histplot, "Knowledge Score",
+          kde=True, clip_on=False,
+          alpha=0.8, linewidth=1.5)
+
+
+    # Reference line at y=0
+    g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
+
+    # Label function for axes
+    def label(x, color, label):
+        ax = plt.gca()
+        ax.text(-0.05, 0.2, str(label).strip("[)").replace(",", " -"), fontweight="bold", color=color,
+                ha="left", va="center", transform=ax.transAxes)
+
+    # Add the labels on the left of each plot
+    g.map(label, "Knowledge Score")
+
+    # Set the subplots to overlap
+    g.figure.subplots_adjust(hspace=.05)
+
+    # Remove axes details that don't play well with overlap
+    g.set_titles("")
+    g.set(yticks=[], ylabel="")
+    g.despine(bottom=True, left=True)
+    plt.show()
+    return df, g, label, pal, pd
 
 
 if __name__ == "__main__":
