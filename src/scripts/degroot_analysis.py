@@ -415,9 +415,9 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    convergence_data_simi = pd.read_csv("results/degroot_deliberation_100_convergence_similarity.csv")
+    convergence_data_simi = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge.csv")
     convergence_data_know = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge.csv")
-    convergence_data_simi_group = pd.read_csv("results/degroot_deliberation_100_convergence_similarity_grouped.csv")
+    convergence_data_simi_group = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge_grouped.csv")
     convergence_data_know_group = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge_grouped.csv")
     return (
         convergence_data_know,
@@ -433,6 +433,7 @@ def _(
     convergence_data_know_group,
     convergence_data_simi,
     convergence_data_simi_group,
+    np,
     plt,
     sim_color,
     time_str,
@@ -443,10 +444,14 @@ def _(
     for i, convergence_data in enumerate([convergence_data_simi,  convergence_data_know, convergence_data_simi_group,  convergence_data_know_group]):
 
         grouped_by_cand_and_sampler = convergence_data.loc[convergence_data[time_str] > 1].groupby([time_str]).mean(numeric_only=True)
+        distances = grouped_by_cand_and_sampler['entrywise_distance'].values
+        delta_less_than_eps = np.abs(distances[1:] - distances[:-1]) < 0.1
+        loc_first = min(grouped_by_cand_and_sampler.index[1:][delta_less_than_eps])
 
         # Plot each combination
-        ax[0+i].plot(grouped_by_cand_and_sampler.index, grouped_by_cand_and_sampler['entrywise_distance'], 
-                     linestyle='--', color=sim_color)
+        ax[i].plot(grouped_by_cand_and_sampler.index, grouped_by_cand_and_sampler['entrywise_distance'], 
+                     linestyle='dashdot', color=sim_color)
+        ax[i].vlines(loc_first, ymin=min(distances), ymax=max(distances), color="gray", linestyle="--")
 
     ax[0].set_title('Similarity')
     ax[1].set_title('Knowledge')
@@ -471,11 +476,14 @@ def _(
     return (
         ax,
         convergence_data,
+        delta_less_than_eps,
+        distances,
         fig,
         grouped_by_cand_and_sampler,
         handles,
         i,
         labels,
+        loc_first,
     )
 
 

@@ -378,8 +378,8 @@ let create_trust_matrix pre_data graph credibility_bool knowledge_data
         add_self_bias optional_mat bias_factor
         |> (fun mat -> if ego_bias then add_ego_bias mat else optional_mat)
         |> (fun mat ->
-             if knowledge_bias then add_knowledge_bias mat knowledge_data
-             else optional_mat)
+        if knowledge_bias then add_knowledge_bias mat knowledge_data
+        else optional_mat)
         |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on
@@ -435,7 +435,7 @@ let deGroot config =
     let cand_ndarray = Owl.Dense.Ndarray.D.stack ~axis:0 v_candidates_arr in
     let shpe = Owl.Dense.Ndarray.D.shape cand_ndarray in
     let cand_noisy =
-        Owl.Dense.Ndarray.D.(cand_ndarray + gaussian ~mu:0. ~sigma:2. shpe)
+        Owl.Dense.Ndarray.D.(cand_ndarray + gaussian ~mu:0. ~sigma:1.37 shpe)
     in
         (* let estimated_candidates = *)
         List.map

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.12.0"
+__generated_with = "0.11.31"
 app = marimo.App(width="full")
 
 
@@ -496,19 +496,57 @@ def _(conn, pl):
 
 @app.cell
 def _(conn, pl):
+
+    voter_info_data_pre = pl.read_database(
+        query = """SELECT voter_info.ID, response_PK.score, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C,
+         Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G 
+        FROM response_pre 
+        INNER JOIN voter_info ON response_pre.ID = voter_info.ID
+        INNER JOIN response_PK ON response_pre.ID = response_PK.ID 
+        WHERE voter_info.CONDITION = 1""",
+        connection=conn
+    ).drop_nulls()
+
+
+    voter_info_data_post = pl.read_database(
+        query = """SELECT voter_info.ID, response_PK.score, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C,
+         Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G 
+        FROM response_post
+        INNER JOIN voter_info ON response_post.ID = voter_info.ID
+        INNER JOIN response_PK ON response_post.ID = response_PK.ID 
+        WHERE voter_info.CONDITION = 1""",
+        connection=conn
+    ).drop_nulls()
+
+    pre_ids = set(voter_info_data_pre["ID"])
+    post_ids = set(voter_info_data_post["ID"])
+
+    print(len(pre_ids & post_ids))
+    return post_ids, pre_ids, voter_info_data_post, voter_info_data_pre
+
+
+@app.cell
+def _(conn, pl):
     pk_pbs_data = pl.read_database(
         query = """SELECT response_PK.score, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C,
      Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G 
-    FROM response_post 
-    INNER JOIN voter_info ON response_post.ID = voter_info.ID
-    INNER JOIN response_PK ON response_post.ID = response_PK.ID 
+    FROM response_pre 
+    INNER JOIN voter_info ON response_pre.ID = voter_info.ID
+    INNER JOIN response_PK ON response_pre.ID = response_PK.ID 
     WHERE voter_info.CONDITION = 1
     """,
         connection=conn
     ).drop_nulls()
     score = pk_pbs_data["score"]
     pbs = pk_pbs_data.drop("score").mean_horizontal()
+
     return pbs, pk_pbs_data, score
+
+
+@app.cell
+def _(np, pbs):
+    np.std(pbs.to_numpy())
+    return
 
 
 @app.cell
@@ -522,11 +560,11 @@ def _(pbs, plt, score, sns):
     df = df.loc[df["Knowledge Score"] > 0]
 
     # Bin PBS values into integer bins [0–1), [1–2), ..., [9–10)
-    df["pbs_bin"] = pd.cut(df["pbs"], bins=range(2, 8), right=False)
+    df["pbs_bin"] = pd.cut(df["pbs"], bins=range(2, 10), right=False)
 
     # Prepare for ridge-style KDE plot
     pal = sns.color_palette("viridis", len(df["pbs_bin"].unique()))
-    g = sns.FacetGrid(df, row="pbs_bin", hue="pbs_bin", aspect=6, height=1.5, palette=pal)
+    g = sns.FacetGrid(df, row="pbs_bin", hue="pbs_bin", aspect=5, height=2.0, palette=pal)
 
     g.map(sns.histplot, "Knowledge Score",
           kde=True, clip_on=False,
