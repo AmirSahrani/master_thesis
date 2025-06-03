@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -222,8 +222,8 @@ def _(np, pd):
     for c in prox_voter_cols:
         data_control[c] = data_control[c].replace(-1, np.nan)
         data_delib[c] = data_delib[c].replace(-1, np.nan)
-        # data_control[c] = data_control[c] /data_control["n_voters"]
-        # data_delib[c] = data_delib[c] /data_delib["n_voters"]
+        data_control[c] = data_control[c] /data_control["n_voters"]
+        data_delib[c] = data_delib[c] /data_delib["n_voters"]
     return c, data_control, data_delib, prox_cols, prox_voter_cols
 
 
@@ -415,9 +415,9 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    convergence_data_simi = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge.csv")
+    convergence_data_simi = pd.read_csv("results/degroot_deliberation_100_convergence_similarity.csv")
     convergence_data_know = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge.csv")
-    convergence_data_simi_group = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge_grouped.csv")
+    convergence_data_simi_group = pd.read_csv("results/degroot_deliberation_100_convergence_similarity_grouped.csv")
     convergence_data_know_group = pd.read_csv("results/degroot_deliberation_100_convergence_knowledge_grouped.csv")
     return (
         convergence_data_know,
