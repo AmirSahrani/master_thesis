@@ -363,7 +363,7 @@ let run_one_job ~pre_data ~post_data ~knowledge_scores ~graph ~evals ~grouped
             [
               string_of_float bias;
               string_of_sampler methd;
-              string_of_int num_voters;
+              string_of_int (List.length experiment_results.true_preferences);
               string_of_int num_candidates;
               string_of_float (List.nth time j);
               string_of_int trial_id;

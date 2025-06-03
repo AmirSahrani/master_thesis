@@ -222,14 +222,14 @@ def _(np, pd):
     for c in prox_voter_cols:
         data_control[c] = data_control[c].replace(-1, np.nan)
         data_delib[c] = data_delib[c].replace(-1, np.nan)
-        data_control[c] = data_control[c] /data_control["n_voters"]
-        data_delib[c] = data_delib[c] /data_delib["n_voters"]
+        # data_control[c] = data_control[c] /data_control["n_voters"]
+        # data_delib[c] = data_delib[c] /data_delib["n_voters"]
     return c, data_control, data_delib, prox_cols, prox_voter_cols
 
 
 @app.cell
-def _(data_control):
-    data_control.describe()
+def _(data_delib):
+    data_delib.describe()
     return
 
 
@@ -331,8 +331,8 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
 
         # === Plotting all variants in one figure ===
         plot(cyclic, "time_steps", "cyclic_proportion", "Mean Number of Cyclic Profiles", file_prefix)
-        plot(proximity_to_sp, "time_steps", "proximity_to_cand_sp", "Mean candidate proximity to single peaked Profiles", file_prefix)
-        plot(proximity_to_voter_sp, "time_steps", "proximity_to_voter_sp", "Mean voter proximity to single peaked Profiles", file_prefix)
+        plot(proximity_to_sp, "time_steps", "proximity_to_cand_sp", "Mean PsT-C", file_prefix)
+        plot(proximity_to_voter_sp, "time_steps", "proximity_to_voter_sp", "Mean PsT-V", file_prefix)
         plot(condorcet, "time_steps", "condorcet_proportion", "Mean number of Condorcet winners", file_prefix)
         plot(unique_profiles, "time_steps", "unique", "Mean number of Unique Preferences", file_prefix)
 
