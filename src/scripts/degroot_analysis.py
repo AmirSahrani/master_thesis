@@ -10,6 +10,7 @@ def _():
     import pandas as pd
     import numpy as np
     from scipy import stats
+    from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
     import matplotlib.lines as mlines
     import seaborn as sns
@@ -28,6 +29,7 @@ def _():
         StandardScaler,
         alt,
         az,
+        curve_fit,
         mlines,
         mo,
         np,
@@ -49,7 +51,7 @@ def _(np, plt):
     plt.style.use("default")
     plt.rcParams.update(
         {
-            "font.size": 20,
+            "font.size": 12,
             "figure.figsize": [10, 8],
             "axes.linewidth": 1,
             "axes.grid"  : True,
@@ -109,10 +111,16 @@ def _(np, plt):
 
         # Convert Series to DataFrame and reset index
         return agg_prop.reset_index(name=new_col)
+    
+    def sigmoid(x, L ,x0, k, b):
+        y = L / (1 + np.exp(-k*(x-x0))) + b
+        return (y)
+
     return (
         compute_average,
         compute_percentage_change,
         compute_proportion,
+        sigmoid,
         sim_color,
         start_color,
         true_color,
@@ -120,9 +128,8 @@ def _(np, plt):
 
 
 @app.cell
-def _(compute_proportion, mlines, np, pd, plt):
-    def plot(df, x, y, ylabel, file_prefix):
-        fig, ax = plt.subplots(figsize=(10,7))
+def _(compute_proportion, curve_fit, mlines, np, pd, sigmoid):
+    def plot(df, x, y, ylabel, file_prefix, fit_sigmoid, ax, legend=False):
 
         # Define markers for each sampler (cycling if needed)
         marker_styles = ["o", "X", "^", "D", "v", "P", "X", "*"]
@@ -154,9 +161,24 @@ def _(compute_proportion, mlines, np, pd, plt):
                         linewidth=1,
                         alpha=0.4,
                     )
+                    if fit_sigmoid and typ == "Simulated":
+                        p0 = [max(subset[y]), np.median(subset[y]),1,min(subset[y])] # this is an mandatory initial guess
+                    
+                        popt, pcov = curve_fit(sigmoid, subset[x], subset[y],p0, method='dogbox')
+                        y_fit = sigmoid(subset[x], *popt)
+                        ax.plot(
+                            subset[x],
+                            y_fit,
+                            label=f"fit for {sampler}",
+                            color="black",
+                            linestyle="-",
+                            linewidth=1,
+                            alpha=0.8,
+                        )
+                
 
         ax.set_xlabel("Time")
-        ax.set_ylabel(ylabel.capitalize())
+        ax.set_ylabel(ylabel)
         ax.grid(True)
         type_handles = [
             mlines.Line2D(
@@ -165,6 +187,7 @@ def _(compute_proportion, mlines, np, pd, plt):
             for typ, color in types_used.items()
         ]
 
+    
         # Legend for Sampler (marker)
         sampler_handles = [
             mlines.Line2D(
@@ -179,18 +202,15 @@ def _(compute_proportion, mlines, np, pd, plt):
             for sampler, marker in sampler_markers.items()
         ]
 
-        legend1 = ax.legend(
-            handles=type_handles + sampler_handles,
-            title="Type (color),\nSampler (marker)",
-            loc="upper left",
-            bbox_to_anchor=(1.05, 1.0),  # Outside the axes, to the right
-            borderaxespad=0.
-        )
-
-        # ax.add_artist(legend1) 
-        plt.tight_layout()
-        plt.savefig(f"figures/{file_prefix}_{ylabel}")
-        plt.show()
+        if legend:
+            legend1 = ax.legend(
+                handles=type_handles + sampler_handles,
+                title="Type (color),\nSampler (marker)",
+                loc="upper left",
+                bbox_to_anchor=(1.05, 1.0),  # Outside the axes, to the right
+                borderaxespad=0.
+            )
+        return ax
 
     def compute_and_merge_proportions(
         data, start_col, end_col, true_col, name, group_by
@@ -268,7 +288,14 @@ def _(data_delib):
 
 
 @app.cell
-def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
+def _(
+    compute_and_merge_proportions,
+    compute_average,
+    data_delib,
+    pd,
+    plot,
+    plt,
+):
     def generate_general_graphs(data, file_prefix):
 
         cyclic = compute_and_merge_proportions(
@@ -329,12 +356,21 @@ def _(compute_and_merge_proportions, compute_average, data_delib, pd, plot):
             columns={"unique_start": "unique_profiles"}
         )
 
+        _, ax_three =  plt.subplots(1,3, figsize=(28,8))
         # === Plotting all variants in one figure ===
-        plot(cyclic, "time_steps", "cyclic_proportion", "Mean Number of Cyclic Profiles", file_prefix)
-        plot(proximity_to_sp, "time_steps", "proximity_to_cand_sp", "Mean PsT-C", file_prefix)
-        plot(proximity_to_voter_sp, "time_steps", "proximity_to_voter_sp", "Mean PsT-V", file_prefix)
-        plot(condorcet, "time_steps", "condorcet_proportion", "Mean number of Condorcet winners", file_prefix)
-        plot(unique_profiles, "time_steps", "unique", "Mean number of Unique Preferences", file_prefix)
+        plot(cyclic, "time_steps", "cyclic_proportion", "Mean Number of Cyclic Profiles", file_prefix, False, ax_three[0])
+        plot(condorcet, "time_steps", "condorcet_proportion", "Mean number of Condorcet winners", file_prefix, False, ax_three[1])
+        plot(unique_profiles, "time_steps", "unique", "Mean number of Unique Preferences", file_prefix, False, ax_three[2], True)
+        plt.tight_layout()
+        plt.savefig("figures/three_measures.png")
+        plt.show()
+    
+        _, ax_pst=  plt.subplots(1,2 ,figsize=(20,8))
+        plot(proximity_to_sp, "time_steps", "proximity_to_cand_sp", "Mean PtS-C", file_prefix, True, ax_pst[0])
+        plot(proximity_to_voter_sp, "time_steps", "proximity_to_voter_sp", "Mean PtS-V", file_prefix, True, ax_pst[1], True)
+        plt.tight_layout()
+        plt.savefig("figures/pst_measures.png")
+        plt.show()
 
 
     generate_general_graphs(data_delib, "delib")
@@ -433,58 +469,46 @@ def _(
     convergence_data_know_group,
     convergence_data_simi,
     convergence_data_simi_group,
-    np,
     plt,
     sim_color,
     time_str,
 ):
     # Begin plotting
-    fig, ax = plt.subplots(1, 4, figsize=(20, 5), sharex=True)
+    fig, ax = plt.subplots(1, 4, figsize=(8, 2.3), sharex=True)
     ax = ax.ravel()
     for i, convergence_data in enumerate([convergence_data_simi,  convergence_data_know, convergence_data_simi_group,  convergence_data_know_group]):
 
         grouped_by_cand_and_sampler = convergence_data.loc[convergence_data[time_str] > 1].groupby([time_str]).mean(numeric_only=True)
         distances = grouped_by_cand_and_sampler['entrywise_distance'].values
-        delta_less_than_eps = np.abs(distances[1:] - distances[:-1]) < 0.1
-        loc_first = min(grouped_by_cand_and_sampler.index[1:][delta_less_than_eps])
+        # delta_less_than_eps = np.abs(distances[1:] - distances[:-1]) < 0.05
+        # loc_first = min(grouped_by_cand_and_sampler.index[1:][delta_less_than_eps])
 
         # Plot each combination
         ax[i].plot(grouped_by_cand_and_sampler.index, grouped_by_cand_and_sampler['entrywise_distance'], 
                      linestyle='dashdot', color=sim_color)
-        ax[i].vlines(loc_first, ymin=min(distances), ymax=max(distances), color="gray", linestyle="--")
+        # ax[i].vlines(loc_first, ymin=min(distances), ymax=max(distances), color="gray", linestyle="--")
 
-    ax[0].set_title('Similarity')
-    ax[1].set_title('Knowledge')
-    ax[2].set_title('Similarity, Original Groups')
-    ax[3].set_title('Knowledge, Original Groups')
+    ax[0].set_title('Random Groups,\n Similarity')
+    ax[1].set_title('Random Groups,\n Knowledge')
+    ax[2].set_title('Original Groups,\n Similarity')
+    ax[3].set_title('Original Groups,\n Knowledge')
 
     # Labels and titles
-    ax[0].set_ylabel('$\ell_1$-norm to Starting Trust')
+    ax[0].set_ylabel('$\ell_1$-norm to T$^{(0)}$')
     ax[0].set_xlabel('Time Steps')
     ax[1].set_xlabel('Time Steps')
     ax[2].set_xlabel('Time Steps')
     ax[3].set_xlabel('Time Steps')
 
-    # Legend
-    handles, labels = ax[1].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', ncol=3,
-               bbox_to_anchor=(0.51, -0.15))
+    # # Legend
+    # handles, labels = ax[1].get_legend_handles_labels()
+    # fig.legend(handles, labels, loc='lower center', ncol=3,
+    #            bbox_to_anchor=(0.51, -0.15))
 
     plt.tight_layout()
-    fig.savefig("figures/convergence_groups.png", bbox_inches='tight')
+    fig.savefig("figures/convergence_groups.png", bbox_inches='tight', dpi=600)
     plt.show()
-    return (
-        ax,
-        convergence_data,
-        delta_less_than_eps,
-        distances,
-        fig,
-        grouped_by_cand_and_sampler,
-        handles,
-        i,
-        labels,
-        loc_first,
-    )
+    return ax, convergence_data, distances, fig, grouped_by_cand_and_sampler, i
 
 
 @app.cell(hide_code=True)
@@ -598,7 +622,7 @@ def _(
 
     all_zero_delib = opinion_delib_df.loc[(opinion_delib_df["selfknowledge"] == 0)]
     # Usage
-    figure_opinion, axes = plt.subplots(2, 4, figsize=(20, 10))
+    figure_opinion, axes = plt.subplots(2, 4, figsize=(16, 8))
     axes = axes.ravel()
     plot_opinion(all_zero_delib, axes[:4])
     plot_opinion(opinion_control_df.loc[opinion_control_df["ego"] == 1], axes[4:])
@@ -653,8 +677,9 @@ def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
 
 
     # Usage
-    figure_opinion_change, axes_change = plt.subplots(1, 4, figsize=(24, 5))
+    figure_opinion_change, axes_change = plt.subplots(1, 4, figsize=(16, 4))
     axes_change = axes_change.ravel()
+    figure_opinion_change
     plot_change_in_opinion(all_zero_delib, axes_change[:4])
     axes_change[0].set_ylabel("$\\Delta$PBS score")
     plt.tight_layout()
@@ -701,13 +726,13 @@ def _(np, opinion_delib_df, plot_errors, plt, time_str):
             ax.set_xlabel("Time")
             ax.grid(True)
 
-    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(18,8))
+    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(8,3))
     plot_errors(opinion_delib_df, axes_err_bin[0])
     plot_errors_binned(opinion_delib_df, axes_err_bin[1])
     axes_err_bin[0].set_ylabel("PBS Error")
 
     plt.legend()
-    plt.savefig("figures/errors_binned.png")
+    plt.savefig("figures/errors_binned.png", dpi=600)
     plt.show()
     return axes_err_bin, figure_errors_bin, plot_errors_binned
 
@@ -731,7 +756,7 @@ def _(np, opinion_delib_df, pd, plt, time_str):
         .pivot(index="bias_bin", columns=time_str, values="PBS_error")
     )
     # Create the fig_imshowure
-    fig_imshow, ax_imshow = plt.subplots(figsize=(8, 8))  # Square figure
+    fig_imshow, ax_imshow = plt.subplots(figsize=(8, 6))  # Square figure
 
     # Show the heatmap
     cax_imshow = ax_imshow.imshow(im_show_bias_time_df.values, aspect='auto', origin='lower')
@@ -767,7 +792,7 @@ def _(np, opinion_delib_df, pd, plt, time_str):
 
 @app.cell
 def _(independent_variables, opinion_delib_df):
-    opinion_delib_df.groupby(independent_variables).mean(numeric_only=True)["PBS_error"]
+    opinion_delib_df.groupby(independent_variables).mean(numeric_only=True)["PBS_simulated"]
     return
 
 
@@ -775,7 +800,7 @@ def _(independent_variables, opinion_delib_df):
 def _(opinion_delib_df, sm, time_str):
     from statsmodels.formula.api import ols
     fit_data = opinion_delib_df.loc[opinion_delib_df[time_str] == 1]
-    model = ols("PBS_error ~ C(knowledge) * C(ego) * C(similarity) * C(selfknowledge)", data=fit_data).fit()
+    model = ols("PBS_simulated ~ C(knowledge) * C(ego) * C(similarity) * C(selfknowledge)", data=fit_data).fit()
     anova_table = sm.stats.anova_lm(model, test="F", typ=2, robust="hc3")
     anova_table.iloc[0:4][["F", "PR(>F)"]]
     return anova_table, fit_data, model, ols

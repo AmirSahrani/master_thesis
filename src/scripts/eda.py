@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.31"
+__generated_with = "0.12.0"
 app = marimo.App(width="full")
 
 
@@ -487,7 +487,7 @@ def _(conn, pl):
                      """,
         connection=conn,
     ).drop_nulls()
-    print(groups.unique())
+    print(len(groups.unique()))
     for group in groups.unique().iter_rows():
         group = group[0]
         print(f'group: {group} has {len(groups.filter(pl.col("GROUP") == group))} members')
@@ -496,7 +496,6 @@ def _(conn, pl):
 
 @app.cell
 def _(conn, pl):
-
     voter_info_data_pre = pl.read_database(
         query = """SELECT voter_info.ID, response_PK.score, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C,
          Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G 
@@ -528,7 +527,7 @@ def _(conn, pl):
 @app.cell
 def _(conn, pl):
     pk_pbs_data = pl.read_database(
-        query = """SELECT response_PK.score, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C,
+        query = """SELECT voter_info."GROUP", response_PK.score, Q2A, Q2C, Q2E, Q2H, Q2I, Q3A, Q3B, Q3C, Q3D, Q3E, Q3H, Q4A, Q4B, Q4C,
      Q4F, Q4G, Q4H, Q4I, Q5A, Q5B, Q5C, Q5D, Q5H, Q6A, Q6F, Q6G 
     FROM response_pre 
     INNER JOIN voter_info ON response_pre.ID = voter_info.ID
@@ -538,15 +537,37 @@ def _(conn, pl):
         connection=conn
     ).drop_nulls()
     score = pk_pbs_data["score"]
-    pbs = pk_pbs_data.drop("score").mean_horizontal()
+    groups_filter = pk_pbs_data["GROUP"]
+    pbs = pk_pbs_data.drop(["score", "GROUP"]).mean_horizontal()
+    return groups_filter, pbs, pk_pbs_data, score
 
-    return pbs, pk_pbs_data, score
+
+@app.cell
+def _(groups_filter, pk_pbs_data):
+
+    print(groups_filter.unique())
+    count = 0
+    for group_f in groups_filter.unique():
+        group_f = group_f
+        if group_f != " ":
+            count += sum(pk_pbs_data["GROUP"] == str(group_f))
+
+    print(count/40)
+    return count, group_f
 
 
 @app.cell
 def _(np, pbs):
     np.std(pbs.to_numpy())
     return
+
+
+@app.cell
+def _(pbs, score):
+    import scipy 
+
+    scipy.stats.pearsonr(pbs, score)
+    return (scipy,)
 
 
 @app.cell
@@ -590,8 +611,14 @@ def _(pbs, plt, score, sns):
     g.set_titles("")
     g.set(yticks=[], ylabel="")
     g.despine(bottom=True, left=True)
+    plt.savefig("figures/knowledge_pbs_dist.png", dpi=600)
     plt.show()
     return df, g, label, pal, pd
+
+
+@app.cell
+def _():
+    return
 
 
 if __name__ == "__main__":

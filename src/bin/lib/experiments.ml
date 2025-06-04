@@ -204,7 +204,7 @@ let run_deGroot_experiment ~pre_data ~post_data ~credibility_bool
 
     let indices =
         if grouped then
-          let group_id = Random.int 33 + 1 in
+          let group_id = Random.int 40 + 1 in
               Array.init max_idx Fun.id |> Array.to_list
               |> List.filter_map (fun i ->
                      if int_of_float (Owl.Mat.get groups i 1) = group_id then
