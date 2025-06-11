@@ -112,6 +112,7 @@ let yaml_to_config_generator yaml_value =
         | "degroot" -> Evaluations.get_all_evals_degroot
         | "degroot_convergence" -> Evaluations.get_all_evals_degroot_convergence
         | "pbs" -> Evaluations.get_all_individual_evals
+        | "topic" -> Evaluations.get_all_individual_evals_split_on_topic
         | _ -> failwith "invalid evals"
     in
     let q =

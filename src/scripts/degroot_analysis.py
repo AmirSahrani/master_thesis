@@ -111,11 +111,10 @@ def _(np, plt):
 
         # Convert Series to DataFrame and reset index
         return agg_prop.reset_index(name=new_col)
-    
+
     def sigmoid(x, L ,x0, k, b):
         y = L / (1 + np.exp(-k*(x-x0))) + b
         return (y)
-
     return (
         compute_average,
         compute_percentage_change,
@@ -163,7 +162,7 @@ def _(compute_proportion, curve_fit, mlines, np, pd, sigmoid):
                     )
                     if fit_sigmoid and typ == "Simulated":
                         p0 = [max(subset[y]), np.median(subset[y]),1,min(subset[y])] # this is an mandatory initial guess
-                    
+
                         popt, pcov = curve_fit(sigmoid, subset[x], subset[y],p0, method='dogbox')
                         y_fit = sigmoid(subset[x], *popt)
                         ax.plot(
@@ -175,7 +174,7 @@ def _(compute_proportion, curve_fit, mlines, np, pd, sigmoid):
                             linewidth=1,
                             alpha=0.8,
                         )
-                
+
 
         ax.set_xlabel("Time")
         ax.set_ylabel(ylabel)
@@ -187,7 +186,7 @@ def _(compute_proportion, curve_fit, mlines, np, pd, sigmoid):
             for typ, color in types_used.items()
         ]
 
-    
+
         # Legend for Sampler (marker)
         sampler_handles = [
             mlines.Line2D(
@@ -364,7 +363,7 @@ def _(
         plt.tight_layout()
         plt.savefig("figures/three_measures.png")
         plt.show()
-    
+
         _, ax_pst=  plt.subplots(1,2 ,figsize=(20,8))
         plot(proximity_to_sp, "time_steps", "proximity_to_cand_sp", "Mean PtS-C", file_prefix, True, ax_pst[0])
         plot(proximity_to_voter_sp, "time_steps", "proximity_to_voter_sp", "Mean PtS-V", file_prefix, True, ax_pst[1], True)
@@ -804,6 +803,78 @@ def _(opinion_delib_df, sm, time_str):
     anova_table = sm.stats.anova_lm(model, test="F", typ=2, robust="hc3")
     anova_table.iloc[0:4][["F", "PR(>F)"]]
     return anova_table, fit_data, model, ols
+
+
+@app.cell
+def _(pd):
+    data_topics = pd.read_csv("results/degroot_pbs_topic.csv", index_col=False)
+
+    data_topics["PBS_simulated"] = data_topics["PBS_simulated"].apply(lambda x: x.strip("[]\"").split("|"))
+    data_topics["PBS_start"] = data_topics["PBS_start"].apply(lambda x: x.strip("[]\"").split("|"))
+    data_topics["PBS_true"] = data_topics["PBS_true"].apply(lambda x: x.strip("[]\"").split("|"))
+    return (data_topics,)
+
+
+@app.cell
+def _(data_topics, np):
+    data_topics_exp = data_topics.explode(["PBS_simulated", "PBS_true", "PBS_start"])
+
+
+    data_topics_exp["PBS_simulated"] = data_topics_exp["PBS_simulated"].apply(lambda x: np.array(list(map(float, x.strip("[]\" \''").split(", ")))))
+    data_topics_exp["PBS_start"] = data_topics_exp["PBS_start"].apply(lambda x: np.array(list(map(float, x.strip("[]\" \''").split(", ")))))
+    data_topics_exp["PBS_true"] = data_topics_exp["PBS_true"].apply(lambda x: np.array(list(map(float, x.strip("[]\" \''").split(", ")))))
+
+    data_topics_exp["per_topic_diff"] = np.abs(data_topics_exp["PBS_true"] - data_topics_exp["PBS_simulated"])
+
+
+    data_topics_exp["len"] = data_topics_exp["per_topic_diff"].apply(len)
+    data_topics_exp = data_topics_exp.loc[data_topics_exp["len"] == 5]
+    return (data_topics_exp,)
+
+
+@app.cell
+def _(data_topics_exp):
+    data_topics_exp
+    return
+
+
+@app.cell
+def _(data_topics_exp, np, plt, sim_color, time_str, true_color):
+    topics = ["Immigration", "Environment", "Economy", "Healthcare", "Foreign Policy"]
+
+
+    def plot_opinion_topic(opinion_df, ax):
+        times = opinion_df[time_str].unique()
+        time_val = np.sort(times)[1] 
+
+        filtered = opinion_df[np.isclose(opinion_df[time_str], time_val)]
+
+        opinion_plotting_data = filtered.sample(n=min(100000, len(filtered)))
+
+
+        start = np.stack(opinion_plotting_data["PBS_start"].to_numpy()).mean(axis=0)
+        sim = np.stack(opinion_plotting_data["PBS_simulated"].to_numpy()).mean(axis=0)
+        true = np.stack(opinion_plotting_data["PBS_true"].to_numpy()).mean(axis=0)
+    
+        x = np.arange(len(topics))  # positions for the bars
+        width = 0.35  # width of the bars
+        ax.bar(x - width/2, abs(start- sim), width, label='Simulated', alpha=0.8, color=sim_color)
+        ax.bar(x + width/2, abs(start- true), width, label='True', alpha=0.8, color=true_color)
+    
+        ax.set_xlabel('Topics')
+        ax.set_ylabel('Average Absolute in Change Score')
+        ax.set_xticks(x)
+        ax.set_xticklabels(topics, rotation=90)
+        ax.legend()
+    def show_topic_plot(df):
+        fig, ax = plt.subplots(1,1, figsize=(4,4))
+        plot_opinion_topic(df, ax)
+
+    show_topic_plot(data_topics_exp)
+
+    plt.show()
+
+    return plot_opinion_topic, show_topic_plot, topics
 
 
 if __name__ == "__main__":

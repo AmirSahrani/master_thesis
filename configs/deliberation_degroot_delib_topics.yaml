@@ -1,0 +1,48 @@
+file_out: "results/degroot_pbs_topic.csv"
+data_loc: "data/a1r.db"
+graph: "graphs/soc-astro.edges"
+questions: polarized
+random: true 
+n_trials: 5000
+n_voters: 
+  istart: 9
+  istop: 30
+  istep: 2
+n_candidates: 
+  istart: 3
+  istop: 3
+  istep: 1
+timesteps: 
+  start: 0.0
+  stop: 20
+  step: 1.0
+bias:
+  start: 0.2
+  stop: 3.0
+  step: 0.1
+condition: "1"
+cand_method: ["Voter"]
+eval: topic
+group: true 
+credibility: 
+  should_randomize: true 
+  value: false 
+include_similarity: 
+  should_randomize: true
+  value: true 
+include_knowledge: 
+  should_randomize: true
+  value: true 
+include_self_knowledge: 
+  should_randomize: true
+  value: true 
+include_ego: 
+  should_randomize: true
+  value: true 
+include_meta: 
+  should_randomize: false
+  value: false
+include_substantive: 
+  should_randomize: false
+  value: true
+sparse: false

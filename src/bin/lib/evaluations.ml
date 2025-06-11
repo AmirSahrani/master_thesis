@@ -493,3 +493,49 @@ let get_all_individual_evals =
           |> Owl.Mat.to_array |> Array.to_list
           |> fun a -> string_of_list a string_of_float ", ");
       ] )
+
+let mean_per_topic topic_lengths mat =
+    let rec aux idx = function
+        | [] -> []
+        | len :: rest ->
+            let cols = Owl.Mat.get_slice [ []; [ idx; idx + len - 1 ] ] mat in
+
+            let mean_col =
+                Owl.Mat.mean ~axis:1 cols |> Owl.Mat.to_array |> Array.to_list
+            in
+                mean_col :: aux (idx + len) rest
+    in
+        aux 0 topic_lengths
+
+let format_means mean_lists =
+    mean_lists
+    |> List.map (fun l -> string_of_list l string_of_float ", ")
+    |> String.concat " | " (* separator between topics *)
+
+let get_all_individual_evals_split_on_topic =
+    (* let polarizing_questions =
+       Q2A, Q2C, Q2E, Q2H, Q2I,
+       Q3A, Q3B, Q3C, Q3D, Q3E, Q3H,
+       Q4A, Q4B, Q4C, Q4F, Q4G, Q4H, Q4I,
+       Q5A, Q5B, Q5C, Q5D, Q5H,
+       Q6A, Q6F, Q6G *)
+    let topic_lengths = [ 5; 6; 7; 5; 3 ] in
+
+    ( [ "PBS_start"; "PBS_simulated"; "PBS_true" ],
+      [
+        (fun res ->
+          assert (
+            List.fold_left ( + ) 0 topic_lengths
+            = Owl.Mat.col_num res.original_opinion);
+          mean_per_topic topic_lengths res.original_opinion |> format_means);
+        (fun res ->
+          assert (
+            List.fold_left ( + ) 0 topic_lengths
+            = Owl.Mat.col_num res.simulated_opinion);
+          mean_per_topic topic_lengths res.simulated_opinion |> format_means);
+        (fun res ->
+          assert (
+            List.fold_left ( + ) 0 topic_lengths
+            = Owl.Mat.col_num res.true_opinion);
+          mean_per_topic topic_lengths res.true_opinion |> format_means);
+      ] )

@@ -7,18 +7,17 @@
 (source
  (github username/reponame))
 
-(authors "Author Name <author@example.com>")
+(authors "Amir Sahrani <contact@amirsahrani.com")
 
-(maintainers "Maintainer Name <maintainer@example.com>")
+(maintainers "Amir Sahrani <contact@amirsahrani.com")
 
 (license MIT)
 
-(documentation https://url/to/documentation)
 
 (package
  (name deliberation_model)
- (synopsis "A short synopsis")
- (description "A longer description")
+ (synopsis "Deliberation model for my master's thesis")
+ (description "This repository contains all the code needed to generate the data and figures for my master thesis")
  (depends ocaml pyml owl)
  (tags
   ("add topics" "to describe" your project)))
