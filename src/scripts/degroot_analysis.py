@@ -610,8 +610,8 @@ def _(
 
             ax.scatter(pbs_start, pbs_sim, alpha=0.1, color=sim_color, s=3, label="Simulated")
             ax.scatter(pbs_start, pbs_true, alpha=0.05, color=true_color, s=3, label="True")
-            ax.scatter(bin_means_start, bin_means_sim, color=sim_color, label="Binned Sim")
-            ax.scatter(bin_means_start, bin_means_true, color=true_color, label="Binned True")
+            ax.scatter(bin_means_start, bin_means_sim, marker="1", s=100, color=sim_color, label="Binned Sim")
+            ax.scatter(bin_means_start, bin_means_true, marker="1", s=100,color=true_color, label="Binned True")
 
             ax.set_xlabel(f"t = {time_val:.2f}")
             ax.set_title(f"Mean Absolute Error: {np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean():.2f}")
@@ -619,12 +619,12 @@ def _(
             ax.grid(True)
 
 
-    all_zero_delib = opinion_delib_df.loc[(opinion_delib_df["selfknowledge"] == 0)]
+    all_zero_delib = opinion_delib_df[opinion_delib_df["ego"] == 1]
     # Usage
     figure_opinion, axes = plt.subplots(2, 4, figsize=(16, 8))
     axes = axes.ravel()
     plot_opinion(all_zero_delib, axes[:4])
-    plot_opinion(opinion_control_df.loc[opinion_control_df["ego"] == 1], axes[4:])
+    plot_opinion(opinion_control_df, axes[4:])
     axes[0].set_ylabel("Deliberation\n PBS")
     axes[4].set_ylabel("Control\n PBS")
     plt.tight_layout()
@@ -721,16 +721,18 @@ def _(np, opinion_delib_df, plot_errors, plt, time_str):
                 bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
                 time_errors.append(np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean())
 
-            ax.plot(times, time_errors,"o-", alpha=0.3, label=indep.capitalize())
+            indep = indep.capitalize() if indep != "selfknowledge" else "Self Knowledge"
+            ax.plot(times, time_errors,"o-", alpha=0.3, label=indep)
             ax.set_xlabel("Time")
             ax.grid(True)
 
-    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(8,3))
+    figure_errors_bin, axes_err_bin = plt.subplots(1,2, figsize=(10,4))
     plot_errors(opinion_delib_df, axes_err_bin[0])
     plot_errors_binned(opinion_delib_df, axes_err_bin[1])
     axes_err_bin[0].set_ylabel("PBS Error")
 
     plt.legend()
+    plt.tight_layout()
     plt.savefig("figures/errors_binned.png", dpi=600)
     plt.show()
     return axes_err_bin, figure_errors_bin, plot_errors_binned
@@ -791,18 +793,78 @@ def _(np, opinion_delib_df, pd, plt, time_str):
 
 @app.cell
 def _(independent_variables, opinion_delib_df):
-    opinion_delib_df.groupby(independent_variables).mean(numeric_only=True)["PBS_simulated"]
+    opinion_delib_df.groupby(independent_variables).mean(numeric_only=True)["PBS_error"]
     return
 
 
 @app.cell
-def _(opinion_delib_df, sm, time_str):
-    from statsmodels.formula.api import ols
-    fit_data = opinion_delib_df.loc[opinion_delib_df[time_str] == 1]
-    model = ols("PBS_simulated ~ C(knowledge) * C(ego) * C(similarity) * C(selfknowledge)", data=fit_data).fit()
-    anova_table = sm.stats.anova_lm(model, test="F", typ=2, robust="hc3")
-    anova_table.iloc[0:4][["F", "PR(>F)"]]
-    return anova_table, fit_data, model, ols
+def _(opinion_delib_df, time_str):
+    def _():
+        from statsmodels.formula.api import ols
+        import statsmodels.api as sm
+        import pandas as pd
+
+        # Filter data
+        fit_data = opinion_delib_df.loc[opinion_delib_df[time_str] == 2]
+
+        # Check sample sizes per group (important for ANOVA assumptions)
+        print("Sample sizes per combination:")
+        sample_sizes = fit_data.groupby(['knowledge', 'ego', 'similarity', 'selfknowledge']).size()
+        print(sample_sizes.describe())
+        print(f"Minimum group size: {sample_sizes.min()}")
+
+        # Fit the model
+        model = ols("PBS_error ~ C(knowledge) * C(ego) * C(similarity) * C(selfknowledge)", 
+                    data=fit_data).fit()
+
+        # Get full ANOVA table with robust standard errors
+        anova_table = sm.stats.anova_lm(model, test="F", typ=2, robust="hc3")
+
+        # Display main effects and key interactions
+        print("\nMain Effects:")
+        main_effects = anova_table.iloc[0:4][["sum_sq", "df", "F", "PR(>F)"]]
+        main_effects.columns = ["Sum_Sq", "DF", "F_stat", "p_value"]
+        print(main_effects)
+
+        print(f"\nModel R²: {model.rsquared:.4f}")
+        print(f"Adjusted R²: {model.rsquared_adj:.4f}")
+
+        # Check for significant effects (with Bonferroni correction for multiple comparisons)
+        alpha = 0.05
+        n_tests = len(anova_table)
+        bonferroni_alpha = alpha / n_tests
+
+        print(f"\nSignificant effects (α = {alpha}, Bonferroni corrected α = {bonferroni_alpha:.4f}):")
+        significant = anova_table[anova_table["PR(>F)"] < bonferroni_alpha]
+        if len(significant) > 0:
+            print(significant[["F", "PR(>F)"]])
+        else:
+            print("No significant effects after Bonferroni correction")
+        
+        # Show uncorrected significant effects
+        print(f"\nUncorrected significant effects (α = {alpha}):")
+        uncorrected_sig = anova_table[anova_table["PR(>F)"] < alpha]
+        print(uncorrected_sig[["F", "PR(>F)"]])
+
+        # Model diagnostics
+        print(f"\nModel diagnostics:")
+        print(f"AIC: {model.aic:.2f}")
+        print(f"BIC: {model.bic:.2f}")
+
+        # Check residuals normality (important ANOVA assumption)
+        from scipy import stats
+        shapiro_stat, shapiro_p = stats.shapiro(model.resid)
+        print(f"Shapiro-Wilk test for normality: W = {shapiro_stat:.4f}, p = {shapiro_p:.4f}")
+
+        # If you want to see which specific combinations perform best:
+        print(f"\nMean PBS_error by combination (top 5 best):")
+        combination_means = fit_data.groupby(['knowledge', 'ego', 'similarity', 'selfknowledge'])['PBS_error'].agg(['mean', 'count', 'std'])
+        best_combinations = combination_means.sort_values('mean').head()
+        return print(best_combinations)
+
+
+    _()
+    return
 
 
 @app.cell
@@ -840,12 +902,12 @@ def _(data_topics_exp):
 
 @app.cell
 def _(data_topics_exp, np, plt, sim_color, time_str, true_color):
-    topics = ["Immigration", "Environment", "Economy", "Healthcare", "Foreign Policy"]
+    topics = ["Immigration", "Environment", "The Economy", "Healthcare", "Foreign Policy"]
 
 
     def plot_opinion_topic(opinion_df, ax):
         times = opinion_df[time_str].unique()
-        time_val = np.sort(times)[1] 
+        time_val = np.sort(times)[20] 
 
         filtered = opinion_df[np.isclose(opinion_df[time_str], time_val)]
 
@@ -855,26 +917,25 @@ def _(data_topics_exp, np, plt, sim_color, time_str, true_color):
         start = np.stack(opinion_plotting_data["PBS_start"].to_numpy()).mean(axis=0)
         sim = np.stack(opinion_plotting_data["PBS_simulated"].to_numpy()).mean(axis=0)
         true = np.stack(opinion_plotting_data["PBS_true"].to_numpy()).mean(axis=0)
-    
+
         x = np.arange(len(topics))  # positions for the bars
         width = 0.35  # width of the bars
         ax.bar(x - width/2, abs(start- sim), width, label='Simulated', alpha=0.8, color=sim_color)
         ax.bar(x + width/2, abs(start- true), width, label='True', alpha=0.8, color=true_color)
-    
-        ax.set_xlabel('Topics')
-        ax.set_ylabel('Average Absolute in Change Score')
+
+        ax.set_ylabel('Average Absolute Change in PBS')
         ax.set_xticks(x)
         ax.set_xticklabels(topics, rotation=90)
         ax.legend()
-    def show_topic_plot(df):
-        fig, ax = plt.subplots(1,1, figsize=(4,4))
-        plot_opinion_topic(df, ax)
+    
+    fig_topic, ax_topic = plt.subplots(1,1, figsize=(4,4))
+    plot_opinion_topic(data_topics_exp, ax_topic)
 
-    show_topic_plot(data_topics_exp)
 
+    plt.tight_layout()
+    plt.savefig("figures/per_topic_change.png", dpi=600)
     plt.show()
-
-    return plot_opinion_topic, show_topic_plot, topics
+    return ax_topic, fig_topic, plot_opinion_topic, topics
 
 
 if __name__ == "__main__":

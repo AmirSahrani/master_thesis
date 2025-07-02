@@ -93,6 +93,7 @@ def get_analysis_inputs(n_samples):
         "Candidate Generator": [1] * effective_n,
     }
     for i, (var, _) in enumerate(sensitivity_vars):
+        print(var)
         all_vars[var] = param_values.T[i]
 
     param_values = pd.DataFrame.from_dict(all_vars)
@@ -110,7 +111,7 @@ def run_analysis(outputs, problem):
 if __name__ == "__main__":
     data = pd.read_csv("results/sensivity.csv")
     problem = get_problem()
-
+    print(problem["names"])
     for var in output_vars:
         data_out = data[var].to_numpy().squeeze()
         st, s1, s2 = run_analysis(data_out, problem).to_df()

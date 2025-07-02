@@ -377,10 +377,10 @@ let create_trust_matrix pre_data graph credibility_bool knowledge_data
         in
 
         add_self_bias optional_mat bias_factor
-        |> (fun mat -> if ego_bias then add_ego_bias mat else optional_mat)
+        |> (fun mat -> if ego_bias then add_ego_bias mat else mat)
         |> (fun mat ->
-        if knowledge_bias then add_knowledge_bias mat knowledge_data
-        else optional_mat)
+             if knowledge_bias then add_knowledge_bias mat knowledge_data
+             else mat)
         |> normalize_matrix
 
 (** [deGroot] takes in a configuration to simulate a deGroot learning process on

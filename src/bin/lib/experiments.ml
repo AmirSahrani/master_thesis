@@ -526,13 +526,13 @@ let list_to_config = function
         cand_method;
       ] ->
         [
-          `Bool (knowledge_bool > 0.5);
-          `Bool (credibility_bool > 0.5);
-          `Bool (self_ego > 0.5);
-          `Bool (self_knowledge_bool > 0.5);
-          `Bool (similarity > 0.5);
-          `Bool (meta_bool > 0.5);
-          `Bool (substantive_bool > 0.5);
+          `Bool (knowledge_bool >= 0.5);
+          `Bool (credibility_bool >= 0.5);
+          `Bool (self_ego >= 0.5);
+          `Bool (self_knowledge_bool >= 0.5);
+          `Bool (similarity >= 0.5);
+          `Bool (meta_bool >= 0.5);
+          `Bool (substantive_bool >= 0.5);
           `Int (int_of_float n_voters) |> filter_odd;
           `Int (int_of_float n_candidates);
           `TimeRange [ timesteps ];

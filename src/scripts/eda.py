@@ -544,7 +544,6 @@ def _(conn, pl):
 
 @app.cell
 def _(groups_filter, pk_pbs_data):
-
     print(groups_filter.unique())
     count = 0
     for group_f in groups_filter.unique():
@@ -617,8 +616,33 @@ def _(pbs, plt, score, sns):
 
 
 @app.cell
-def _():
-    return
+def _(plt):
+    voters_pref = [[1,2,5,4,3],
+                   [2,3,4,5,1],
+                   [2,5,4,3,1],
+                  ]
+
+    y_labels = ["1\\textsuperscript{st}", "2\\textsuperscript{nd}", "3\\textsuperscript{rd}", "4\\textsuperscript{th}", "5\\textsuperscript{th}"]
+
+    axis = [1, 2, 3, 4, 5]  # assumed to be the axis over which preferences are single-peaked
+
+    plt.figure(figsize=(8, 4))
+
+
+
+    colors = ["#008B72", "#613F99", "#D9027D"]
+    for i, ranking in enumerate(voters_pref):
+        # Convert ranking to a dictionary: candidate -> rank
+        plt.plot(axis, voters_pref[i], "--o", label=f'Voter {i + 1}', color=colors[i], alpha=0.8)
+
+    plt.xticks(axis, labels= ["$a$", "$b$", "$c$", "$d$", "$e$"])
+    plt.yticks(ticks=[5, 4, 3, 2, 1], labels=y_labels)
+    plt.legend(loc="upper right")
+    plt.grid(True, linestyle=':')
+    plt.tight_layout()
+    plt.savefig("figures/single_peak_vis.png", dpi=600)
+    plt.show()
+    return axis, colors, i, ranking, voters_pref, y_labels
 
 
 if __name__ == "__main__":

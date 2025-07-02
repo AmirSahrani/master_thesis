@@ -12,6 +12,14 @@ n_candidates:
   istart: 3
   istop: 7
   istep: 1
+timesteps: 
+  start: 3.0
+  stop: 3.0
+  step: 1.0
+bias:
+  start: 0.8
+  stop: 3.0
+  step: 0.1
 condition: "1"
 credibility: 
   should_randomize: true 
@@ -35,14 +43,6 @@ include_substantive:
   should_randomize: false
   value: true
 sparse: false
-timesteps: 
-  start: 20.0
-  stop: 20.0
-  step: 1.0
-bias:
-  start: 0.8
-  stop: 1.5
-  step: 0.1
 cand_method: ["SampleVoters", "Voter"]
 eval: pbs 
 group: false

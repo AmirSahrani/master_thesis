@@ -23,9 +23,9 @@ bias:
 condition: "1"
 cand_method: ["Voter"]
 eval: pbs 
-group: true 
+group: true
 credibility: 
-  should_randomize: true 
+  should_randomize: false
   value: false 
 include_similarity: 
   should_randomize: true
