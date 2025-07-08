@@ -17,7 +17,7 @@ clean:
 	dune clean --root="src/bin/"
 
 install:
-	opam install ./src/bin --deps-only
+	opam install owl pyml ocamlgraph progress csv sqlite3 yaml parmap ppx_deriving_yaml
 
 vis: 
 	uv run ./src/scripts/visualize.py

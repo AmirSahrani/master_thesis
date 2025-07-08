@@ -577,6 +577,7 @@ def _(np, opinion_delib_df, pd, sklearn, sm, time_str):
 
 @app.cell
 def _(
+    mlines,
     np,
     opinion_control_df,
     opinion_delib_df,
@@ -596,8 +597,8 @@ def _(
             if len(filtered) == 0:
                 continue
 
-            opinion_plotting_data = filtered.sample(n=min(100000, len(filtered)))
-            _, bins = pd.cut(opinion_plotting_data["PBS_start"], 80, retbins=True)
+            opinion_plotting_data = filtered.sample(n=min(10000, len(filtered)))
+            _, bins = pd.cut(opinion_plotting_data["PBS_start"], 10, retbins=True)
 
 
             pbs_start = opinion_plotting_data["PBS_start"]
@@ -608,29 +609,68 @@ def _(
             bin_means_sim = np.array([pbs_sim[digitized_start == i].mean() for i in range(1, len(bins))])
             bin_means_true = np.array([pbs_true[digitized_start == i].mean() for i in range(1, len(bins))])
 
-            ax.scatter(pbs_start, pbs_sim, alpha=0.1, color=sim_color, s=3, label="Simulated")
+            ax.scatter(pbs_start, pbs_sim, alpha=0.1, color="gray", s=3, label="Simulated")
             ax.scatter(pbs_start, pbs_true, alpha=0.05, color=true_color, s=3, label="True")
-            ax.scatter(bin_means_start, bin_means_sim, marker="1", s=100, color=sim_color, label="Binned Sim")
+            ax.scatter(bin_means_start, bin_means_sim, marker="1", s=100, color=sim_color, label="Binned Simulated")
             ax.scatter(bin_means_start, bin_means_true, marker="1", s=100,color=true_color, label="Binned True")
 
+            # Create custom legend handles with larger size and higher alpha
+            # Create proxy artists for just the faint points
+            custom_handles = {
+                "Simulated": mlines.Line2D([0], [0], marker='o', color='w',
+                                    markerfacecolor=sim_color, markersize=6, alpha=0.6),
+                "True": mlines.Line2D([0], [0], marker='o', color='w',
+                               markerfacecolor=true_color, markersize=6, alpha=0.6)
+            }
+        
             ax.set_xlabel(f"t = {time_val:.2f}")
             ax.set_title(f"Mean Absolute Error: {np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean():.2f}")
             ax.set_ylim((0,10))
             ax.grid(True)
 
+    # Create proxy handles for clearer legend
+    custom_handles = {
+        "Simulated": mlines.Line2D([0], [0], marker='o', color='w',
+                            markerfacecolor="gray", markersize=6, alpha=0.6),
+        "True": mlines.Line2D([0], [0], marker='o', color='w',
+                       markerfacecolor=true_color, markersize=6, alpha=0.6)
+    }
 
-    all_zero_delib = opinion_delib_df[opinion_delib_df["ego"] == 1]
+
+    all_zero_delib = opinion_delib_df
     # Usage
-    figure_opinion, axes = plt.subplots(2, 4, figsize=(16, 8))
+    figure_opinion, axes = plt.subplots(2, 4, figsize=(12, 6))
     axes = axes.ravel()
     plot_opinion(all_zero_delib, axes[:4])
     plot_opinion(opinion_control_df, axes[4:])
+
+    handles, labels = axes[0].get_legend_handles_labels()
+
+    # Replace faint entries with proxies
+    new_handles = [custom_handles.get(label, handle) for label, handle in zip(labels, handles)]
+
+    figure_opinion.legend(
+        handles=new_handles, labels=labels,
+        loc='lower center',
+        ncol=4,
+        bbox_to_anchor=(0.5, -0.05)  # adjust vertical spacing
+    )
+
     axes[0].set_ylabel("Deliberation\n PBS")
     axes[4].set_ylabel("Control\n PBS")
     plt.tight_layout()
-    plt.savefig("figures/pbs_scores.png")
+    plt.savefig("figures/pbs_scores.png", bbox_inches="tight")
     plt.show()
-    return all_zero_delib, axes, figure_opinion, plot_opinion
+    return (
+        all_zero_delib,
+        axes,
+        custom_handles,
+        figure_opinion,
+        handles,
+        labels,
+        new_handles,
+        plot_opinion,
+    )
 
 
 @app.cell
@@ -640,7 +680,18 @@ def _(opinion_delib_df):
 
 
 @app.cell
-def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
+def _(
+    all_zero_delib,
+    labels,
+    mlines,
+    new_handles,
+    np,
+    pd,
+    plt,
+    sim_color,
+    time_str,
+    true_color,
+):
     def plot_change_in_opinion(opinion_df, axes):
         times = opinion_df[time_str].unique()
         times = np.sort(times)  # ensure consistency
@@ -651,8 +702,8 @@ def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
             if len(filtered) == 0:
                 continue
 
-            opinion_plotting_data = filtered.sample(n=min(100000, len(filtered)))
-            _, bins = pd.cut(opinion_plotting_data["PBS_start"], 80, retbins=True)
+            opinion_plotting_data = filtered.sample(n=min(10000, len(filtered)))
+            _, bins = pd.cut(opinion_plotting_data["PBS_start"], 10, retbins=True)
 
             # Prepare data
             pbs_start = opinion_plotting_data["PBS_start"]
@@ -664,25 +715,40 @@ def _(all_zero_delib, np, pd, plt, sim_color, time_str, true_color):
             bin_means_start = np.array([pbs_start[digitized_start == i].mean(skipna=True) for i in range(1, len(bins))])
             bin_means_sim = np.array([pbs_sim[digitized_start == i].mean(skipna=True) for i in range(1, len(bins))])
             bin_means_true = np.array([pbs_true[digitized_start == i].mean(skipna=True) for i in range(1, len(bins))])
-            ax.scatter(pbs_start, pbs_sim, alpha=0.05, color=sim_color, s=3, label="Simulated")
+            ax.scatter(pbs_start, pbs_sim, alpha=0.05, color="gray", s=3, label="Simulated")
             ax.scatter(pbs_start, pbs_true, alpha=0.05, color=true_color, s=3, label="True")
-            ax.scatter(bin_means_start, bin_means_sim, color=sim_color, label="Binned Sim")
-            ax.scatter(bin_means_start, bin_means_true, color=true_color, label="Binned True")
+            ax.scatter(bin_means_start, bin_means_sim, marker="1", s=100, color=sim_color, label="Binned Sim")
+            ax.scatter(bin_means_start, bin_means_true, marker="1", s=100, color=true_color, label="Binned True")
 
+            custom_handles = {
+                "Simulated": mlines.Line2D([0], [0], marker='o', color='w',
+                                    markerfacecolor="gray", markersize=6, alpha=0.6),
+                "True": mlines.Line2D([0], [0], marker='o', color='w',
+                               markerfacecolor=true_color, markersize=6, alpha=0.6)
+            }
             ax.set_xlabel(f"t = {time_val:.2f}")
             ax.set_title(f"Mean Absolute Error: {np.abs((bin_means_sim[~np.isnan(bin_means_sim)] - bin_means_true[~np.isnan(bin_means_true)])).mean():.2f}")
             ax.set_ylim((-3,3))
             ax.grid(True)
+        
 
-
-    # Usage
-    figure_opinion_change, axes_change = plt.subplots(1, 4, figsize=(16, 4))
+    # Create subplots
+    figure_opinion_change, axes_change = plt.subplots(1, 4, figsize=(12, 4))
     axes_change = axes_change.ravel()
-    figure_opinion_change
+
+    # Plotting
     plot_change_in_opinion(all_zero_delib, axes_change[:4])
     axes_change[0].set_ylabel("$\\Delta$PBS score")
+
+    # Add global legend at the bottom
+    figure_opinion_change.legend(
+        handles=new_handles, labels=labels,
+        loc='lower center',
+        ncol=4,
+        bbox_to_anchor=(0.5, -0.05)  # adjust vertical spacing
+    )
     plt.tight_layout()
-    plt.savefig("figures/change_pbs_scores.png")
+    plt.savefig("figures/change_pbs_scores.png", bbox_inches="tight")
     plt.show()
     return axes_change, figure_opinion_change, plot_change_in_opinion
 
@@ -703,7 +769,7 @@ def _(opinion_delib_df, time_str):
 @app.cell
 def _(np, opinion_delib_df, plot_errors, plt, time_str):
     def plot_errors_binned(opinion_df, ax):
-        bins = np.linspace(0, 10, 100)
+        bins = np.linspace(0, 10, 10)
 
         independent_variables = ['knowledge', 'selfknowledge', 'ego', 'similarity','uniform']
         for indep in independent_variables:
@@ -741,7 +807,7 @@ def _(np, opinion_delib_df, plot_errors, plt, time_str):
 @app.cell
 def _(np, opinion_delib_df, pd, plt, time_str):
     # Filter the DataFrame
-    # filtered_df = opinion_delib_df[opinion_delib_df["selfknowledge"]==0]
+    # filtered_df = opinion_delib_df[opinion_delib_df["ego"]== 1]
     filtered_df = opinion_delib_df
 
     # Create bins of width 0.5 for bias
@@ -757,7 +823,7 @@ def _(np, opinion_delib_df, pd, plt, time_str):
         .pivot(index="bias_bin", columns=time_str, values="PBS_error")
     )
     # Create the fig_imshowure
-    fig_imshow, ax_imshow = plt.subplots(figsize=(8, 6))  # Square figure
+    fig_imshow, ax_imshow = plt.subplots(figsize=(5, 4))  # Square figure
 
     # Show the heatmap
     cax_imshow = ax_imshow.imshow(im_show_bias_time_df.values, aspect='auto', origin='lower')
@@ -778,7 +844,7 @@ def _(np, opinion_delib_df, pd, plt, time_str):
     ax_imshow.set_ylabel("Bias")
 
     plt.tight_layout()
-    plt.savefig("figures/bias_time_imshow.png")
+    plt.savefig("figures/bias_time_imshow.png", dpi=600)
     plt.show()
     return (
         ax_imshow,
@@ -840,7 +906,7 @@ def _(opinion_delib_df, time_str):
             print(significant[["F", "PR(>F)"]])
         else:
             print("No significant effects after Bonferroni correction")
-        
+
         # Show uncorrected significant effects
         print(f"\nUncorrected significant effects (α = {alpha}):")
         uncorrected_sig = anova_table[anova_table["PR(>F)"] < alpha]
@@ -907,7 +973,7 @@ def _(data_topics_exp, np, plt, sim_color, time_str, true_color):
 
     def plot_opinion_topic(opinion_df, ax):
         times = opinion_df[time_str].unique()
-        time_val = np.sort(times)[20] 
+        time_val = np.sort(times)[4] 
 
         filtered = opinion_df[np.isclose(opinion_df[time_str], time_val)]
 
@@ -920,16 +986,16 @@ def _(data_topics_exp, np, plt, sim_color, time_str, true_color):
 
         x = np.arange(len(topics))  # positions for the bars
         width = 0.35  # width of the bars
-        ax.bar(x - width/2, abs(start- sim), width, label='Simulated', alpha=0.8, color=sim_color)
-        ax.bar(x + width/2, abs(start- true), width, label='True', alpha=0.8, color=true_color)
+        ax.bar(x - width/2, start- sim, width, label='Simulated', alpha=0.8, color=sim_color)
+        ax.bar(x + width/2, start- true, width, label='True', alpha=0.8, color=true_color)
 
         ax.set_ylabel('Average Absolute Change in PBS')
         ax.set_xticks(x)
         ax.set_xticklabels(topics, rotation=90)
         ax.legend()
-    
-    fig_topic, ax_topic = plt.subplots(1,1, figsize=(4,4))
-    plot_opinion_topic(data_topics_exp, ax_topic)
+
+    fig_topic, ax_topic = plt.subplots(1,1, figsize=(5,5))
+    plot_opinion_topic(data_topics_exp[data_topics_exp["bias"] < 0.4], ax_topic)
 
 
     plt.tight_layout()
